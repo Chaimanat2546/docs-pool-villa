@@ -36,3 +36,11 @@ Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migra
 - Redirect old path ต้อง unique และห้ามชน Reserved/current route
 - `pg_trgm` และ GIN index ใช้เฉพาะตาราง Docs
 
+## M02 structure additions
+
+- Migration `20260811060703_docs_structure_management.sql` เพิ่ม `description`, `is_published` และ audit actor fields ให้ `doc_sections`; เพิ่ม `sort_order` ให้ `doc_documents`
+- Trigger ของ Docs บังคับ slug สงวน, ห้าม self-parent และจำกัด section tree ไว้ที่ 2 ระดับ
+- Route ของ Section ห้ามชน `doc_route_redirects.old_path`
+- `public.doc_section_delete_preview()` คืนจำนวนหมวดย่อย เอกสาร รูป และรายชื่อเอกสารสำหรับ Dialog ยืนยัน
+- `public.doc_delete_section()` ลบได้เฉพาะ subtree ที่ไม่มี Media; เมื่อพบ Media จะ fail-closed โดยไม่เปลี่ยน DB
+

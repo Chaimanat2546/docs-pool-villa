@@ -17,6 +17,8 @@
 
 ห้ามใช้ `admin`, `api`, `search`, `login`, `_next` และชื่อระบบที่เพิ่มภายหลัง
 
+M02 บังคับรายการนี้ใน trigger ของ `doc_sections` และปฏิเสธ Section route ที่ชนกับ `doc_route_redirects.old_path` ที่มีอยู่
+
 ## Redirect/visibility
 
 - เปลี่ยน Slug หรือย้ายเอกสาร: เก็บ old path และ permanent redirect

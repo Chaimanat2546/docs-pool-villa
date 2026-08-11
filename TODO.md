@@ -12,7 +12,7 @@
 | Module | สถานะ | รายละเอียด |
 |---|---|---|
 | M01 Foundation/Auth/RLS | Complete | [TODO](docs/todo/M01-foundation.md) |
-| M02 Structure | Not started | [TODO](docs/todo/M02-structure.md) |
+| M02 Structure | Complete | [TODO](docs/todo/M02-structure.md) |
 | M03 Editor/Media | Not started | [TODO](docs/todo/M03-editor-media.md) |
 | M04 Documents | Not started | [TODO](docs/todo/M04-documents.md) |
 | M05 Public Docs | Not started | [TODO](docs/todo/M05-public-docs.md) |

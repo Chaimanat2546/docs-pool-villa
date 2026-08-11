@@ -19,6 +19,9 @@
 - Browser smoke ที่ `http://localhost:3000` — `/` เปิดได้, Guest `/admin` redirect ไป `/auth/login`, invalid credentials แสดงข้อความ generic และ form กลับมาใช้งานได้; non-admin ถูกส่งกลับ `/`, Admin เข้า `/admin` ได้
 - Staging Test-account setup — ภูสร้าง Auth users ผ่าน Dashboard; เพิ่ม Test role/mapping เฉพาะ Staging ตามข้อยกเว้นที่ภูอนุมัติ และไม่ใช้ข้อมูลผู้ใช้จริงจาก Production
 - อนุญาตเฉพาะ Local build/test จนกว่าภูจะสั่ง Deploy
+- M02 Local verification (11 สิงหาคม 2026): `db reset`, `npm run test:db` (55 pgTAP tests), `npm run lint`, `npm run build` และ Local db lint ผ่าน; Local advisor ไม่พบ warning ของ `doc_*`
+- M02 Staging (11 สิงหาคม 2026): dry-run ยืนยัน migration เดียว แล้ว `npx supabase@latest db push --linked --yes` apply `20260811060703_docs_structure_management.sql` สำเร็จ; `migration list --linked` ตรง Local
+- M02 Browser smoke บน Staging Admin: `/admin/structure` โหลดได้, สร้างหมวดหลัก/หมวดย่อย และลบข้อมูลทดสอบกลับสำเร็จ; Mobile 390px ไม่มี console error
 
 ## Required checks by the end of MVP
 
