@@ -2,7 +2,7 @@
 
 ## Product
 
-Poolvilla Docs เป็นเว็บไซต์คู่มือแนว Mintlify/Next.js Docs มีหน้า Public และ Admin ใช้ภาษาไทยเป็นหลัก
+Poolvilla Docs เป็นเว็บไซต์คู่มือแนว Mintlify/Next.js Docs มีหน้า Public และ Admin ใช้ภาษาไทยเป็นหลัก ชื่อระบบที่แสดงต่อผู้ใช้คือ "คู่มือสำหรับเว็บ Baan Pool Villa"
 
 ## Users
 

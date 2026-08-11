@@ -1,17 +1,27 @@
 # M01 — Foundation, Supabase Auth & Docs-only RLS
 
-**Status:** Not started — รอภูอนุมัติ
+**Status:** Complete
+
+แผนแก้ไข: [M01 Remediation Implementation Plan](M01-fix-implementation-plan.md)
 
 ## Scope
 
-- [ ] ตรวจ Project structure และ Environment variables โดยไม่เปิดเผย Secret
-- [ ] ยืนยัน Staging/Production configuration boundary
-- [ ] ออกแบบ Docs schema baseline และ Migration workflow
-- [ ] เชื่อม Supabase Auth ฝั่ง Server
-- [ ] สร้าง Admin route guard ด้วย `EXISTS(uid = auth.uid() AND role_id = 1)`
-- [ ] สร้าง Docs-only RLS โดยไม่แก้ Legacy objects
-- [ ] เพิ่ม Tests สำหรับ Guest, non-admin และ Admin
-- [ ] อัปเดต Context/Commands หลังทดสอบจริง
+- [x] ตรวจ Project structure และ Environment variables โดยไม่เปิดเผย Secret
+- [x] ยืนยัน Staging/Production configuration boundary
+- [x] ออกแบบ Docs schema baseline และ Migration workflow
+- [x] เชื่อม Supabase Auth ฝั่ง Server
+- [x] สร้าง Admin route guard ด้วย `EXISTS(uid = auth.uid() AND role_id = 1)`
+- [x] สร้าง Docs-only RLS โดยไม่แก้ Legacy objects
+- [x] รัน Tests สำหรับ Guest, non-admin และ Admin
+- [x] อัปเดต Context/Commands หลังทดสอบจริง
+- [x] เทียบ migration history กับ Production แบบ read-only
+- [x] เปลี่ยน Local environment/CLI ออกจาก Production ไป Staging และ reset Staging ตาม Production baseline
+- [x] แก้ `doc_sections` RLS recursion และ privileged helper placement
+- [x] ขยาย pgTAP role matrix ครบทุก Docs table
+- [x] Harden Login exception/error handling
+- [x] รัน Local verification sequence ใหม่ครบชุด
+- [x] Apply Docs migrations ไป Staging และตรวจ history/RLS/RPC privilege
+- [x] ทำ Browser smoke สำหรับ Staging non-admin และ Admin ด้วย Test account
 
 ## Acceptance
 
@@ -23,4 +33,22 @@
 ## Stop
 
 สรุปผล ไฟล์ Tests และประเด็นค้าง แล้วรอภูยืนยัน M02
+
+## Previous verification result
+
+- Production migration versions 45 รายการตรงกับ local marker ทั้งหมด
+- `20260811032210_docs_foundation_auth_rls.sql` เป็น migration Docs เดียวที่ pending และยังไม่ถูก apply ไปยัง remote
+- `npx supabase db reset`, `npm run test:db`, `npm run lint` และ `npm run build` ผ่านใน Local
+
+ผลเดิมยังไม่เพียงพอสำหรับปิด Module เพราะ test ไม่ครอบคลุม `SELECT doc_sections`; direct regression check พบ `infinite recursion detected in policy for relation doc_sections` และ Local environment ยังชี้ Production
+
+## Rework verification result
+
+- `doc_private` เก็บ privileged helper และ `public.doc_is_admin()` เป็น SECURITY INVOKER wrapper สำหรับ Server guard
+- RLS ไม่มี self-recursion แล้ว; Guest/non-admin เห็นเฉพาะ Published structure/documents/media ส่วน Admin ทำ CRUD ได้ครบ
+- `npx supabase@latest db reset`, `npm run test:db` (41 pgTAP tests), `db lint`, security/performance advisors, `npm run lint` และ `npm run build` ผ่านใน Local
+- Advisor ที่เหลือเป็น Legacy objects เท่านั้น; ไม่พบ warning ของ `doc_*`
+- Staging ถูก reset ถึง Production baseline version `20260806173000`; จากนั้น apply Docs migrations `20260811032210` และ `20260811043215` สำเร็จ
+- Browser smoke ผ่านครบ: Guest ไป Login, non-admin ถูกส่งกลับหน้า Public และ Admin เข้า `/admin` ได้
+- Staging มี Test accounts ที่ภูสร้างและ mapping test roles 1/2 สำหรับการทดสอบครั้งนี้; ไม่มีข้อมูลผู้ใช้จริงจาก Production
 

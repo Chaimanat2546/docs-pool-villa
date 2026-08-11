@@ -18,6 +18,15 @@ Production มี Auth UID หนึ่งรายการที่อ้า�
 - ห้ามใช้ user-editable metadata เพื่อตัดสินสิทธิ์
 - Secret/Service Role อยู่ Server เท่านั้น
 
+## M01 implementation
+
+- `doc_private.doc_is_admin()` เป็น `SECURITY DEFINER` helper นอก Data API schema เพื่ออ่าน Legacy authorization data โดยไม่ต้อง grant ให้ Client อ่าน `public.users`; จำกัด `EXECUTE` เฉพาะ `authenticated`
+- `public.doc_is_admin()` เป็น `SECURITY INVOKER` RPC wrapper สำหรับ Server guard และคืน Boolean ของผู้เรียกเท่านั้น; revoke privilege จาก `PUBLIC`, `anon` และ `service_role` แล้ว grant เฉพาะ `authenticated`
+- `doc_private.doc_section_is_public()` และ `doc_private.doc_document_is_published()` คำนวณ Public visibility โดยไม่ให้ RLS query table ตัวเองซ้ำ
+- ทุก helper มี fixed `search_path` และ explicit grants
+- RLS ของ `doc_sections`, `doc_documents`, `doc_media` และ `doc_route_redirects` เปิดใช้งานแล้วใน migration local
+- Public read ได้เฉพาะเอกสาร Published และโครงสร้าง/รูปที่จำเป็นต่อเอกสารนั้น; สิทธิ์ Admin แยกตาม operation พร้อม `USING` และ `WITH CHECK`
+
 ## Safety
 
 การเปลี่ยน RLS ของระบบเก่าเป็นงานนอกขอบเขต ต้อง Audit และขออนุมัติแยก

@@ -19,6 +19,9 @@
 - Search ใช้ `pg_trgm` เฉพาะ Docs
 - Homepage สร้างอัตโนมัติ ไม่มี Admin configuration
 - Staging/Production แยก Cloudflare/Supabase ทั้งหมด
+- ชื่อระบบที่แสดง: "คู่มือสำหรับเว็บ Baan Pool Villa"
+- Domain Production ที่วางแผน: `docs.poolvilla.co.th` แต่ยังไม่ตั้งค่าหรือใช้งานจริง
+- Staging ต้องการชื่อ `docs-pool-villa`; รอระบุ FQDN ก่อนตั้งค่า
 - Production migration/deploy ต้องผ่าน Staging, มี Backup/Rollback และรอภูยืนยัน
 - ทำทีละ Module และหยุดรออนุมัติหลังจบทุก Module
 

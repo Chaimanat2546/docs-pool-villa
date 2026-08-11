@@ -5,13 +5,13 @@
 - [x] จัดทำ Requirement ภาษาไทย
 - [x] ตรวจ Requirement และยืนยันประเด็นสำคัญ
 - [x] แยก Context/TODO สำหรับการทำงานแบบ Module
-- [ ] ขออนุมัติจากภูก่อนเริ่ม M01
+- [x] ภูอนุมัติให้เริ่ม M01
 
 ## Module progress
 
 | Module | สถานะ | รายละเอียด |
 |---|---|---|
-| M01 Foundation/Auth/RLS | Not started | [TODO](docs/todo/M01-foundation.md) |
+| M01 Foundation/Auth/RLS | Complete | [TODO](docs/todo/M01-foundation.md) |
 | M02 Structure | Not started | [TODO](docs/todo/M02-structure.md) |
 | M03 Editor/Media | Not started | [TODO](docs/todo/M03-editor-media.md) |
 | M04 Documents | Not started | [TODO](docs/todo/M04-documents.md) |

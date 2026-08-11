@@ -6,8 +6,9 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current module: ยังไม่เริ่ม — รอภูอนุมัติ M01
+- Current module: M01 Foundation/Auth/RLS — complete; รอภูอนุมัติเริ่ม M02
 - Deployment: Local build/test เท่านั้น ห้าม Deploy จนกว่าภูจะสั่ง
+- Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
 ## Context ตามหัวข้อ
 

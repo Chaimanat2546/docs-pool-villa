@@ -8,12 +8,15 @@
 - Cloudflare R2: Image objects
 - Docs Media Worker: Upload/Delete เฉพาะ `docs/`
 
-## Production facts
+## Environment identifiers
 
-- Supabase project ref: `rqizfiayvcbozlzuvbok`
-- Existing R2 bucket: `webook-media`
+| Environment | Supabase URL | Cloudflare Account ID | Docs domain status |
+|---|---|---|---|
+| Production | `https://rqizfiayvcbozlzuvbok.supabase.co` | `7c1d945e149fc6fad2124176124d8f33` | วางแผนใช้ `docs.poolvilla.co.th` แต่ยังไม่ตั้งค่าหรือใช้งานจริง |
+| Staging | `https://sxvkhzhqtrpxgzumsswl.supabase.co` | `0df55f166fa309dcc904e992c43f86db` | ต้องการชื่อ `docs-pool-villa`; ยังไม่ได้ระบุ FQDN และยังไม่ตั้งค่า |
+
+- Existing R2 bucket: `webook-media` (Production legacy bucket; Docs ต้องใช้ Worker แยก)
 - Docs object key: `docs/{document_id}/{image_name}`
-- Public domain: `docs.poolvilla.co.th`
 - Admin path: `/admin`
 
 ค่าข้างต้นเป็น Identifier ไม่ใช่ Secret ห้ามเพิ่ม Key/Token ลงไฟล์นี้
@@ -24,5 +27,5 @@
 - Worker จำกัดสิทธิ์เฉพาะ prefix `docs/`
 - Staging และ Production แยก Cloudflare Account, Supabase Project, Auth, DB, R2, Worker, Domain และ Secrets
 - Staging ใช้ Test users และห้าม Copy ข้อมูลผู้ใช้จริง
-- ห้าม Deploy หรือ Migration จนกว่าภูจะสั่ง
+- ห้าม Deploy, ตั้งค่า Domain หรือ Migration จนกว่าภูจะสั่ง
 

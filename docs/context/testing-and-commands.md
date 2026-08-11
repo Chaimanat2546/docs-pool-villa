@@ -4,8 +4,20 @@
 
 ## Current state
 
-- ยังไม่เริ่ม M01
-- ยังไม่มีคำสั่ง Test ที่รับรองเป็น Baseline
+- M01 complete: `.env.local` และ CLI ใช้ Staging, Staging ถูก reset ถึง Production baseline `20260806173000`, Docs migrations ผ่าน Staging แล้ว และ Browser smoke ครบทุก role
+- `npm run lint` — ผ่าน เมื่อ 11 สิงหาคม 2026
+- `npm run build` — ผ่าน เมื่อ 11 สิงหาคม 2026
+- `npm run test:db` — ผ่าน 41 pgTAP tests เมื่อ 11 สิงหาคม 2026: Guest, Authenticated non-admin และ Admin (`role_id = 1` แม้ UID ซ้ำ); ครอบคลุม Sections/Documents/Media/Redirects, CRUD และ direct `SELECT doc_sections`
+- `npx supabase@latest db reset` — ผ่าน: สร้าง Local database จาก Production schema baseline, history markers และ migration Docs ตามลำดับ
+- `npx supabase@latest db lint --local --schema public --level warning --fail-on error` — ผ่าน
+- `npx supabase@latest db advisors --local --type security --level warn --fail-on error` — ผ่านโดยไม่มี warning ของ Docs; warning ที่เหลือเป็น Legacy objects นอกขอบเขต
+- `npx supabase@latest db advisors --local --type performance --level warn --fail-on none` — ไม่พบ warning ของ `doc_*`
+- `npx supabase@latest db reset --linked --version 20260806173000 --yes` — reset Staging ตาม Production baseline โดยภูยืนยันให้ลบ Test data; ไม่ apply Docs migration
+- `npx supabase@latest db push --linked --yes` — apply Docs migrations `20260811032210_docs_foundation_auth_rls.sql` และ `20260811043215_restrict_doc_is_admin_rpc.sql` ไป Staging หลัง dry-run
+- `npx supabase@latest migration list --linked` — Staging history ตรง Local รวม Docs migrations แล้ว
+- Staging remote checks — พบ RPC `public.doc_is_admin()`, RLS เปิดครบ 4 Docs tables, `anon` เรียก Admin RPC ไม่ได้ และ `authenticated` เรียกได้
+- Browser smoke ที่ `http://localhost:3000` — `/` เปิดได้, Guest `/admin` redirect ไป `/auth/login`, invalid credentials แสดงข้อความ generic และ form กลับมาใช้งานได้; non-admin ถูกส่งกลับ `/`, Admin เข้า `/admin` ได้
+- Staging Test-account setup — ภูสร้าง Auth users ผ่าน Dashboard; เพิ่ม Test role/mapping เฉพาะ Staging ตามข้อยกเว้นที่ภูอนุมัติ และไม่ใช้ข้อมูลผู้ใช้จริงจาก Production
 - อนุญาตเฉพาะ Local build/test จนกว่าภูจะสั่ง Deploy
 
 ## Required checks by the end of MVP

@@ -1,0 +1,2 @@
+﻿-- Historical Production migration marker. The schema snapshot is in 20260626050000_production_baseline.sql.
+-- Intentionally empty: do not add SQL here.

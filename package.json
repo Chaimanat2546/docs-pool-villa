@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:db": "npx --yes supabase@latest test db --local supabase/tests"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

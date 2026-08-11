@@ -2,12 +2,21 @@
 
 ## New Docs-owned objects
 
-Schema ขั้นสุดท้ายออกแบบใน M01/M02 แต่ใช้ prefix `doc_*` และคาดว่าจะมีอย่างน้อย:
+Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migration ภายใต้ `supabase/migrations/` โดยใช้ prefix `doc_*`:
 
 - `doc_sections`
 - `doc_documents`
 - `doc_media`
 - `doc_route_redirects`
+
+มี schema private ของ Docs ชื่อ `doc_private` สำหรับ privileged Boolean helpers; `public.doc_is_admin()` เป็น SECURITY INVOKER RPC wrapper ที่คืนค่า Boolean ของผู้เรียกเท่านั้น และตรวจ `EXISTS` จาก `public.users` ด้วย `uid = auth.uid()` และ `role_id = 1` โดยไม่แก้ตาราง Legacy
+
+## Production baseline and migration history
+
+- `20260626050000_production_baseline.sql` เป็น schema-only snapshot ของ Production schemas `public` และ `private` ณ วันที่ 11 สิงหาคม 2026; ไม่มี object `doc_*`
+- Marker migrations ที่ตามมาไม่มี SQL และมีไว้เพื่อให้ version history ตรงกับ Production ทั้ง 45 รายการ
+- ห้ามแก้ baseline หรือ marker ด้วยมือ และห้ามใช้ `migration repair` กับ Production ภายใต้งาน Docs
+- Docs migrations เริ่มหลัง version ล่าสุดของ Production, ผ่าน Staging แล้ว และยังไม่ได้ apply Production
 
 ## Legacy boundary
 
