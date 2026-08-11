@@ -1,4 +1,37 @@
 @import "tailwindcss";
+
+.docs-editor-content,
+.ProseMirror {
+  min-height: 22rem;
+  padding: 1.25rem;
+  outline: none;
+}
+
+.docs-editor-content > * + *,
+.ProseMirror > * + * {
+  margin-top: 1rem;
+}
+
+.docs-editor-content h2,
+.ProseMirror h2 { font-size: 1.5rem; font-weight: 600; }
+.docs-editor-content h3,
+.ProseMirror h3 { font-size: 1.25rem; font-weight: 600; }
+.docs-editor-content ul,
+.docs-editor-content ol,
+.ProseMirror ul,
+.ProseMirror ol { padding-left: 1.5rem; }
+.docs-editor-content ul,
+.ProseMirror ul { list-style: disc; }
+.docs-editor-content ol,
+.ProseMirror ol { list-style: decimal; }
+.doc-image { max-width: 100%; height: auto; border-radius: 0.75rem; }
+.doc-table { width: 100%; border-collapse: collapse; }
+.doc-table td, .doc-table th { border: 1px solid var(--border); padding: 0.5rem; vertical-align: top; }
+.doc-callout { border-left: 4px solid var(--primary); border-radius: 0.5rem; background: var(--muted); padding: 1rem; }
+.doc-callout-warning { border-left-color: #c37d0d; }
+.doc-callout-tip { border-left-color: #00b48a; }
+.docs-slash-menu { position: fixed; z-index: 60; width: 18rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--card); padding: 0.25rem; box-shadow: 0 10px 20px rgb(0 0 0 / 0.12); }
+.docs-slash-menu button { display: block; width: 100%; border-radius: 0.375rem; padding: 0.5rem; text-align: left; font-size: 0.875rem; }
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 

@@ -6,7 +6,7 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current module: M02 Structure Management — complete; รอภูอนุมัติเริ่ม M03
+- Current module: M03 Editor Core & Docs Media Worker/R2 — complete; รอภูอนุมัติเริ่ม M04
 - Deployment: Local build/test เท่านั้น ห้าม Deploy จนกว่าภูจะสั่ง
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 

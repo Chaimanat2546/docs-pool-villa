@@ -18,6 +18,15 @@
 6. หาก DB Save ล้มเหลว ให้ลบรูปใหม่ทันที
 7. หากล้างรูปใหม่ไม่สำเร็จ ใช้ `cleanup_required` และ Retry เมื่อเปิด/Save เอกสารครั้งถัดไป
 
+## M03 upload contract
+
+- Browser เตรียมรูปเป็น WebP และเก็บ Blob/preview URL ชั่วคราวจนกด Save
+- Upload button และ Clipboard paste ใช้ pipeline เดียวกัน; รูปต้องมี alt text
+- Next.js Server Action ตรวจ Admin และออก HMAC upload ticket อายุ 5 นาที; secret ไม่ส่ง Client
+- Worker รับ `PUT /uploads` เฉพาะ ticket ที่ผูกกับ `docs/{document_id}/{media_id}.webp`, Origin ที่อนุญาต, `image/webp`, WebP bytes และขนาดไม่เกิน 10 MB
+- Worker Local config อยู่ที่ `workers/docs-media/wrangler.jsonc`; secret local อยู่ใน `.dev.vars` ที่ถูก ignore และห้าม deploy จนกว่าภูจะอนุมัติ
+- M04 เป็นผู้เรียก upload เมื่อ manual Save; M06 รับผิดชอบ DELETE/rollback/cleanup
+
 ## Remove image
 
 - ลบ R2 ก่อน Save content ใหม่

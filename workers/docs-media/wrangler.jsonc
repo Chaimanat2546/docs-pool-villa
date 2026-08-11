@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "poolvilla-docs-media-local",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "ALLOWED_ORIGIN": "http://localhost:3000",
+    "MAX_UPLOAD_BYTES": 10485760
+  },
+  "secrets": {
+    "required": ["DOCS_MEDIA_UPLOAD_SECRET"]
+  },
+  "r2_buckets": [
+    { "binding": "DOCS_MEDIA_BUCKET", "bucket_name": "poolvilla-docs-media-local" }
+  ],
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}

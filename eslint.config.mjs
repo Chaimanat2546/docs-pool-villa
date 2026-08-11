@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "supabase/.temp/**",
+    "workers/docs-media/src/env.d.ts",
   ]),
 ]);
 

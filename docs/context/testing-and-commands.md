@@ -22,6 +22,8 @@
 - M02 Local verification (11 สิงหาคม 2026): `db reset`, `npm run test:db` (55 pgTAP tests), `npm run lint`, `npm run build` และ Local db lint ผ่าน; Local advisor ไม่พบ warning ของ `doc_*`
 - M02 Staging (11 สิงหาคม 2026): dry-run ยืนยัน migration เดียว แล้ว `npx supabase@latest db push --linked --yes` apply `20260811060703_docs_structure_management.sql` สำเร็จ; `migration list --linked` ตรง Local
 - M02 Browser smoke บน Staging Admin: `/admin/structure` โหลดได้, สร้างหมวดหลัก/หมวดย่อย และลบข้อมูลทดสอบกลับสำเร็จ; Mobile 390px ไม่มี console error
+- M03 Local verification (11 สิงหาคม 2026): `npm run test:content` (4 tests), `npm run test:worker` (3 Local R2 tests), `npx tsc --noEmit`, `npm run typecheck:worker`, `npm run lint`, `npm run build` และ `npm audit --omit=dev` ผ่านทั้งหมด
+- M03 Browser smoke (11 สิงหาคม 2026): Admin เปิด `/admin/editor` ได้, Editor/Toolbar render, เปิด/ปิด Preview state ที่ยังไม่ Save ได้ และไม่มี console error
 
 ## Required checks by the end of MVP
 

@@ -7,12 +7,23 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:db": "npx --yes supabase@latest test db --local supabase/tests"
+    "test:db": "npx --yes supabase@latest test db --local supabase/tests",
+    "test:worker": "vitest --config workers/docs-media/vitest.config.mts run",
+    "test:content": "vitest --config vitest.config.mts run src/lib/docs/content.test.ts src/components/editor/document-editor.test.tsx",
+    "typecheck:worker": "wrangler types src/env.d.ts --cwd workers/docs-media && tsc -p workers/docs-media/tsconfig.json --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.2",
+    "@tiptap/extension-image": "^3.29.2",
+    "@tiptap/extension-link": "^3.29.2",
+    "@tiptap/extension-table": "^3.29.2",
+    "@tiptap/extension-youtube": "^3.29.2",
+    "@tiptap/pm": "^3.29.2",
+    "@tiptap/react": "^3.29.2",
+    "@tiptap/starter-kit": "^3.29.2",
+    "@tiptap/suggestion": "^3.29.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.31.0",
@@ -24,13 +35,19 @@
     "tw-animate-css": "^1.4.0"
   },
   "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.21.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
+    "jsdom": "^30.0.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.10",
+    "wrangler": "^4.120.1"
   }
 }

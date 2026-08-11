@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.wrangler/
+workers/docs-media/.dev.vars*
+workers/docs-media/src/env.d.ts
