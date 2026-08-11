@@ -6,8 +6,8 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current module: M03 Editor Core & Docs Media Worker/R2 — complete; รอภูอนุมัติเริ่ม M04
-- Deployment: Local build/test เท่านั้น ห้าม Deploy จนกว่าภูจะสั่ง
+- Current work: Pre-M04 Remediation (M01–M03) — accepted on Staging after authenticated structure/editor smoke; รอภูอนุมัติเริ่ม M04
+- Deployment: Staging database remediation is approved and complete; ห้าม Deploy หรือ migrate Production จนกว่าภูจะสั่งแยก
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
 ## Context ตามหัวข้อ

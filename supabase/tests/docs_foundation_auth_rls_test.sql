@@ -1,5 +1,5 @@
 begin;
-select plan(41);
+select plan(45);
 
 -- The production baseline supplies Legacy tables. Rows below exist only in the
 -- rolled-back local test and never modify Staging or Production.
@@ -19,17 +19,27 @@ insert into public.users (uid, role_id) values
 insert into public.doc_sections (id, parent_id, title, slug) values
   ('10000000-0000-0000-0000-000000000001', null, 'หมวดที่มีเอกสาร', 'published-root'),
   ('10000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'หมวดย่อยที่มีเอกสาร', 'published-child'),
-  ('10000000-0000-0000-0000-000000000003', null, 'หมวดร่าง', 'draft-root');
+  ('10000000-0000-0000-0000-000000000003', null, 'หมวดร่าง', 'draft-root'),
+  ('10000000-0000-0000-0000-000000000004', null, 'หมวดที่ซ่อน', 'hidden-root'),
+  ('10000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000004', 'หมวดย่อยของหมวดที่ซ่อน', 'hidden-child');
+
+update public.doc_sections
+set is_published = false
+where id = '10000000-0000-0000-0000-000000000004';
 
 insert into public.doc_documents (id, section_id, title, slug, status) values
   ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'เผยแพร่ระดับบน', 'published-root', 'published'),
   ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'เผยแพร่ระดับล่าง', 'published-child', 'published'),
-  ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'ฉบับร่าง', 'draft', 'draft');
+  ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', 'ฉบับร่าง', 'draft', 'draft'),
+  ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'เผยแพร่ในหมวดที่ซ่อน', 'hidden-direct', 'published'),
+  ('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'เผยแพร่ใต้หมวดแม่ที่ซ่อน', 'hidden-descendant', 'published');
 
 insert into public.doc_media (id, document_id, object_key, public_url) values
   ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'docs/published-root.png', 'https://example.test/published-root.png'),
   ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'docs/published-child.png', 'https://example.test/published-child.png'),
-  ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003', 'docs/draft.png', 'https://example.test/draft.png');
+  ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003', 'docs/draft.png', 'https://example.test/draft.png'),
+  ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004', 'docs/hidden-direct.png', 'https://example.test/hidden-direct.png'),
+  ('30000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000005', 'docs/hidden-descendant.png', 'https://example.test/hidden-descendant.png');
 
 insert into public.doc_route_redirects (id, old_path, target_path) values
   ('40000000-0000-0000-0000-000000000001', '/old', '/new');
@@ -39,6 +49,8 @@ select lives_ok($$select * from public.doc_sections$$, 'Guest section SELECT doe
 select is((select count(*) from public.doc_sections), 2::bigint, 'Guest sees published structure, including parent sections');
 select is((select count(*) from public.doc_documents), 2::bigint, 'Guest reads only published documents');
 select is((select count(*) from public.doc_media), 2::bigint, 'Guest reads media only for published documents');
+select is((select count(*) from public.doc_documents where id in ('20000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000005')), 0::bigint, 'Guest cannot read Published documents in hidden sections');
+select is((select count(*) from public.doc_media where id in ('30000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000005')), 0::bigint, 'Guest cannot read media in hidden sections');
 select is((select count(*) from public.doc_route_redirects), 0::bigint, 'Guest cannot read redirects');
 select throws_ok($$select public.doc_is_admin()$$, '42501', null, 'Guest cannot call the admin RPC');
 select throws_ok($$insert into public.doc_sections (title, slug) values ('Guest', 'guest')$$, '42501', null, 'Guest cannot create sections');
@@ -54,6 +66,8 @@ select lives_ok($$select * from public.doc_sections$$, 'Non-admin section SELECT
 select is((select count(*) from public.doc_sections), 2::bigint, 'Non-admin sees published structure only');
 select is((select count(*) from public.doc_documents), 2::bigint, 'Non-admin reads only published documents');
 select is((select count(*) from public.doc_media), 2::bigint, 'Non-admin reads media only for published documents');
+select is((select count(*) from public.doc_documents where id in ('20000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000005')), 0::bigint, 'Non-admin cannot read Published documents in hidden sections');
+select is((select count(*) from public.doc_media where id in ('30000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000005')), 0::bigint, 'Non-admin cannot read media in hidden sections');
 select is((select count(*) from public.doc_route_redirects), 0::bigint, 'Non-admin cannot read redirects');
 select throws_ok($$insert into public.doc_sections (title, slug) values ('Non-admin', 'non-admin')$$, '42501', null, 'Non-admin cannot create sections');
 select throws_ok($$insert into public.doc_documents (section_id, title, slug) values ('10000000-0000-0000-0000-000000000001', 'Non-admin', 'non-admin')$$, '42501', null, 'Non-admin cannot create documents');
@@ -64,21 +78,21 @@ reset role;
 set local role authenticated;
 set local request.jwt.claim.sub = '00000000-0000-0000-0000-000000000002';
 select ok(public.doc_is_admin(), 'A UID with an additional role_id = 1 row is an administrator');
-select is((select count(*) from public.doc_sections), 3::bigint, 'Admin reads all sections');
-select is((select count(*) from public.doc_documents), 3::bigint, 'Admin reads every document status');
-select is((select count(*) from public.doc_media), 3::bigint, 'Admin reads all media');
+select is((select count(*) from public.doc_sections), 5::bigint, 'Admin reads all sections');
+select is((select count(*) from public.doc_documents), 5::bigint, 'Admin reads every document status');
+select is((select count(*) from public.doc_media), 5::bigint, 'Admin reads all media');
 select is((select count(*) from public.doc_route_redirects), 1::bigint, 'Admin reads redirects');
-select lives_ok($$insert into public.doc_sections (id, title, slug) values ('10000000-0000-0000-0000-000000000004', 'Admin', 'admin-section')$$, 'Admin can create sections');
-select lives_ok($$update public.doc_sections set title = 'Admin updated' where id = '10000000-0000-0000-0000-000000000004'$$, 'Admin can update sections');
-select lives_ok($$insert into public.doc_documents (id, section_id, title, slug) values ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'Admin', 'admin-document')$$, 'Admin can create documents');
-select lives_ok($$update public.doc_documents set title = 'Admin updated' where id = '20000000-0000-0000-0000-000000000004'$$, 'Admin can update documents');
-select lives_ok($$insert into public.doc_media (id, document_id, object_key, public_url) values ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004', 'docs/admin.png', 'https://example.test/admin.png')$$, 'Admin can create media');
-select lives_ok($$update public.doc_media set cleanup_required = true where id = '30000000-0000-0000-0000-000000000004'$$, 'Admin can update media');
+select lives_ok($$insert into public.doc_sections (id, title, slug) values ('10000000-0000-0000-0000-000000000006', 'Admin', 'admin-section')$$, 'Admin can create sections');
+select lives_ok($$update public.doc_sections set title = 'Admin updated' where id = '10000000-0000-0000-0000-000000000006'$$, 'Admin can update sections');
+select lives_ok($$insert into public.doc_documents (id, section_id, title, slug) values ('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', 'Admin', 'admin-document')$$, 'Admin can create documents');
+select lives_ok($$update public.doc_documents set title = 'Admin updated' where id = '20000000-0000-0000-0000-000000000006'$$, 'Admin can update documents');
+select lives_ok($$insert into public.doc_media (id, document_id, object_key, public_url) values ('30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000006', 'docs/admin.png', 'https://example.test/admin.png')$$, 'Admin can create media');
+select lives_ok($$update public.doc_media set cleanup_required = true where id = '30000000-0000-0000-0000-000000000006'$$, 'Admin can update media');
 select lives_ok($$insert into public.doc_route_redirects (id, old_path, target_path) values ('40000000-0000-0000-0000-000000000002', '/admin-old', '/admin-new')$$, 'Admin can create redirects');
 select lives_ok($$update public.doc_route_redirects set target_path = '/admin-newer' where id = '40000000-0000-0000-0000-000000000002'$$, 'Admin can update redirects');
-select lives_ok($$delete from public.doc_media where id = '30000000-0000-0000-0000-000000000004'$$, 'Admin can delete media');
-select lives_ok($$delete from public.doc_documents where id = '20000000-0000-0000-0000-000000000004'$$, 'Admin can delete documents');
-select lives_ok($$delete from public.doc_sections where id = '10000000-0000-0000-0000-000000000004'$$, 'Admin can delete sections');
+select lives_ok($$delete from public.doc_media where id = '30000000-0000-0000-0000-000000000006'$$, 'Admin can delete media');
+select lives_ok($$delete from public.doc_documents where id = '20000000-0000-0000-0000-000000000006'$$, 'Admin can delete documents');
+select lives_ok($$delete from public.doc_sections where id = '10000000-0000-0000-0000-000000000006'$$, 'Admin can delete sections');
 select lives_ok($$delete from public.doc_route_redirects where id = '40000000-0000-0000-0000-000000000002'$$, 'Admin can delete redirects');
 reset role;
 

@@ -24,6 +24,8 @@
 - M02 Browser smoke บน Staging Admin: `/admin/structure` โหลดได้, สร้างหมวดหลัก/หมวดย่อย และลบข้อมูลทดสอบกลับสำเร็จ; Mobile 390px ไม่มี console error
 - M03 Local verification (11 สิงหาคม 2026): `npm run test:content` (4 tests), `npm run test:worker` (3 Local R2 tests), `npx tsc --noEmit`, `npm run typecheck:worker`, `npm run lint`, `npm run build` และ `npm audit --omit=dev` ผ่านทั้งหมด
 - M03 Browser smoke (11 สิงหาคม 2026): Admin เปิด `/admin/editor` ได้, Editor/Toolbar render, เปิด/ปิด Preview state ที่ยังไม่ Save ได้ และไม่มี console error
+- Pre-M04 Remediation Local verification (11 สิงหาคม 2026): `db reset` apply corrective migration, `npm run test:db` (63 pgTAP tests), `npm run test:content` (6 tests), `npm run test:worker` (5 tests), TypeScript/Worker typecheck, lint, build และ `npm audit --omit=dev` ผ่าน; DB lint/advisors ไม่พบ warning ของ `doc_*`
+- Pre-M04 Remediation Browser smoke: Slash Command เลือกด้วย mouse ได้, Toolbar keyboard focus, Preview เปิด/ปิด และ Mobile 390px ไม่มี horizontal overflow หรือ console error ใหม่
 
 ## Required checks by the end of MVP
 

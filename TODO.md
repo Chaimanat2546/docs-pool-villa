@@ -11,9 +11,10 @@
 
 | Module | สถานะ | รายละเอียด |
 |---|---|---|
-| M01 Foundation/Auth/RLS | Complete | [TODO](docs/todo/M01-foundation.md) |
-| M02 Structure | Complete | [TODO](docs/todo/M02-structure.md) |
-| M03 Editor/Media | Complete | [TODO](docs/todo/M03-editor-media.md) |
+| M01 Foundation/Auth/RLS | Remediation accepted on Staging | [TODO](docs/todo/M01-foundation.md) |
+| M02 Structure | Remediation accepted on Staging | [TODO](docs/todo/M02-structure.md) |
+| M03 Editor/Media | Remediation accepted on Staging | [TODO](docs/todo/M03-editor-media.md) |
+| Pre-M04 Remediation | Complete; awaiting M04 approval | [TODO](docs/todo/M01-M03-remediation.md) |
 | M04 Documents | Not started | [TODO](docs/todo/M04-documents.md) |
 | M05 Public Docs | Not started | [TODO](docs/todo/M05-public-docs.md) |
 | M06 Media Lifecycle | Not started | [TODO](docs/todo/M06-media-management.md) |

@@ -18,4 +18,15 @@ describe("document content validation", () => {
     expect(toYouTubeNoCookieUrl("https://youtu.be/dQw4w9WgXcQ")).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
     expect(toYouTubeNoCookieUrl("https://example.com/video")).toBeNull();
   });
+
+  it("rejects structurally invalid document trees", () => {
+    expect(validateDocumentContent({ type: "doc", content: [{ type: "text", text: "root text" }] }, "persisted").ok).toBe(false);
+    expect(validateDocumentContent({ type: "doc", content: [{ type: "image", attrs: { src: "https://example.test/image.webp", alt: "ภาพ", mediaId: "11111111-1111-4111-8111-111111111111" }, content: [] }] }, "persisted").ok).toBe(false);
+  });
+
+  it("rejects content that exceeds the maximum nesting depth", () => {
+    let nested: Record<string, unknown> = { type: "paragraph", content: [{ type: "text", text: "x" }] };
+    for (let index = 0; index < 65; index += 1) nested = { type: "blockquote", content: [nested] };
+    expect(validateDocumentContent({ type: "doc", content: [nested] }, "persisted").ok).toBe(false);
+  });
 });

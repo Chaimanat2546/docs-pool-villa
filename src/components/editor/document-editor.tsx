@@ -33,7 +33,7 @@ export function DocumentEditor({ content, onChange }: DocumentEditorProps) {
         return true;
       },
     },
-    onUpdate: ({ editor: updatedEditor }) => onChange(updatedEditor.getJSON(), pendingImages),
+    onUpdate: ({ editor: updatedEditor }) => reconcilePendingImages(updatedEditor.getJSON()),
   });
 
   const state = useEditorState({
@@ -54,15 +54,26 @@ export function DocumentEditor({ content, onChange }: DocumentEditorProps) {
       const pending = await preparePendingImage(file);
       const alt = window.prompt("คำอธิบายภาพสำหรับผู้อ่านหน้าจอ");
       if (!alt?.trim()) { URL.revokeObjectURL(pending.previewUrl); setMessage("กรุณาระบุคำอธิบายภาพ"); return; }
-      setPendingImages((images) => {
-        const next = [...images, pending];
-        onChange(editor.getJSON(), next);
-        return next;
-      });
+      const nextImages = [...pendingImagesRef.current, pending];
+      pendingImagesRef.current = nextImages;
+      setPendingImages(nextImages);
       editor.chain().focus().insertContent({ type: "image", attrs: { src: pending.previewUrl, alt: alt.trim(), pendingId: pending.id } }).run();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "เตรียมรูปไม่สำเร็จ");
     }
+  }
+
+  function reconcilePendingImages(nextContent: JSONContent) {
+    const pendingIds = new Set<string>();
+    collectPendingImageIds(nextContent, pendingIds);
+    const images = pendingImagesRef.current;
+    const next = images.filter((image) => pendingIds.has(image.id));
+    for (const removed of images) {
+      if (!pendingIds.has(removed.id)) URL.revokeObjectURL(removed.previewUrl);
+    }
+    pendingImagesRef.current = next;
+    if (next.length !== images.length) setPendingImages(next);
+    onChange(nextContent, next);
   }
 
   function addLink() {
@@ -115,4 +126,9 @@ export function DocumentEditor({ content, onChange }: DocumentEditorProps) {
 
 export function ToolbarButton({ label, active = false, onClick, children }: { label: string; active?: boolean; onClick: () => void; children: React.ReactNode }) {
   return <button type="button" aria-label={label} aria-pressed={active} onClick={onClick} className="inline-flex size-10 items-center justify-center rounded-md hover:bg-muted aria-pressed:bg-muted">{children}</button>;
+}
+
+function collectPendingImageIds(content: JSONContent, ids: Set<string>) {
+  if (content.type === "image" && typeof content.attrs?.pendingId === "string") ids.add(content.attrs.pendingId);
+  for (const child of content.content ?? []) collectPendingImageIds(child, ids);
 }

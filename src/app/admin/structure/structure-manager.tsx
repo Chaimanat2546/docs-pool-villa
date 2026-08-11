@@ -68,6 +68,7 @@ export function StructureManager({ sections }: { sections: Section[] }) {
 
   const selected = sections.find((section) => section.id === selectedId) ?? null;
   const rootSections = byParent.get(null) ?? [];
+  const mayBecomeChild = !selected || (byParent.get(selected.id)?.length ?? 0) === 0;
 
   useEffect(() => {
     if (deleteTarget) deleteInputRef.current?.focus();
@@ -187,7 +188,7 @@ export function StructureManager({ sections }: { sections: Section[] }) {
           <Field label="หมวดแม่" htmlFor="section-parent">
             <select id="section-parent" value={form.parentId} onChange={(event) => setForm({ ...form, parentId: event.target.value })} className="h-11 w-full rounded-md border bg-background px-3">
               <option value="">ไม่มี (หมวดหลัก)</option>
-              {rootSections.filter((root) => root.id !== selectedId).map((root) => <option key={root.id} value={root.id}>{root.title}</option>)}
+              {mayBecomeChild && rootSections.filter((root) => root.id !== selectedId).map((root) => <option key={root.id} value={root.id}>{root.title}</option>)}
             </select>
           </Field>
           <Field label="ลำดับ" htmlFor="section-order" hint="ตัวเลขน้อยจะแสดงก่อน">

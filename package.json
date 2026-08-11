@@ -10,10 +10,15 @@
     "test:db": "npx --yes supabase@latest test db --local supabase/tests",
     "test:worker": "vitest --config workers/docs-media/vitest.config.mts run",
     "test:content": "vitest --config vitest.config.mts run src/lib/docs/content.test.ts src/components/editor/document-editor.test.tsx",
-    "typecheck:worker": "wrangler types src/env.d.ts --cwd workers/docs-media && tsc -p workers/docs-media/tsconfig.json --noEmit"
+    "typecheck:worker": "wrangler types src/env.d.ts --cwd workers/docs-media && tsc -p workers/docs-media/tsconfig.json --noEmit",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
+    "@opennextjs/cloudflare": "^1.20.2",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.2",
     "@tiptap/extension-image": "^3.29.2",

@@ -25,6 +25,24 @@ const allowedNodes = new Set([
 const allowedMarks = new Set(["bold", "italic", "strike", "code", "link"]);
 const allowedCalloutKinds = new Set(["info", "tip", "warning"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const maxContentBytes = 2 * 1024 * 1024;
+const maxNodeCount = 20_000;
+const maxDepth = 64;
+
+const allowedChildren: Record<string, ReadonlySet<string>> = {
+  doc: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "table", "image", "youtube", "callout"]),
+  paragraph: new Set(["text", "hardBreak"]),
+  heading: new Set(["text", "hardBreak"]),
+  bulletList: new Set(["listItem"]),
+  orderedList: new Set(["listItem"]),
+  listItem: new Set(["paragraph", "bulletList", "orderedList", "blockquote", "codeBlock", "table", "image", "youtube", "callout"]),
+  blockquote: new Set(["paragraph", "heading", "bulletList", "orderedList", "codeBlock", "table", "image", "youtube", "callout"]),
+  codeBlock: new Set(["text", "hardBreak"]),
+  table: new Set(["tableRow"]),
+  tableRow: new Set(["tableHeader", "tableCell"]),
+  tableHeader: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
+  tableCell: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
+};
 
 export type ContentValidationResult =
   | { ok: true; content: JSONContent }
@@ -95,16 +113,25 @@ function validateAttributes(node: Record<string, unknown>, mode: ContentValidati
   }
 }
 
-function validateNode(node: unknown, mode: ContentValidationMode): string | null {
+function validateNode(
+  node: unknown,
+  mode: ContentValidationMode,
+  state: { depth: number; nodeCount: number },
+  parentType: string | null,
+): string | null {
   if (!isRecord(node) || typeof node.type !== "string" || !allowedNodes.has(node.type)) {
     return "พบชนิดเนื้อหาที่ไม่รองรับ";
   }
+  if (parentType && !allowedChildren[parentType]?.has(node.type)) return "โครงสร้างเนื้อหาไม่ถูกต้อง";
+  state.nodeCount += 1;
+  if (state.nodeCount > maxNodeCount || state.depth > maxDepth) return "เนื้อหามีขนาดหรือความลึกเกินกำหนด";
   if (node.type === "text" && typeof node.text !== "string") return "ข้อความไม่ถูกต้อง";
 
   const attributeError = validateAttributes(node, mode);
   if (attributeError) return attributeError;
 
   if (node.marks !== undefined) {
+    if (node.type !== "text") return "รูปแบบข้อความไม่ถูกต้อง";
     if (!Array.isArray(node.marks)) return "รูปแบบข้อความไม่ถูกต้อง";
     for (const mark of node.marks) {
       if (!isRecord(mark) || typeof mark.type !== "string" || !allowedMarks.has(mark.type)) {
@@ -118,16 +145,31 @@ function validateNode(node: unknown, mode: ContentValidationMode): string | null
 
   if (node.content !== undefined) {
     if (!Array.isArray(node.content)) return "โครงสร้างเนื้อหาไม่ถูกต้อง";
+    if (!allowedChildren[node.type]) return "โครงสร้างเนื้อหาไม่ถูกต้อง";
+    state.depth += 1;
     for (const child of node.content) {
-      const error = validateNode(child, mode);
-      if (error) return error;
+      const error = validateNode(child, mode, state, node.type);
+      if (error) {
+        state.depth -= 1;
+        return error;
+      }
     }
+    state.depth -= 1;
   }
   return null;
 }
 
 export function validateDocumentContent(value: unknown, mode: ContentValidationMode): ContentValidationResult {
-  const error = validateNode(value, mode);
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(value);
+  } catch {
+    return { ok: false, error: "เนื้อหาไม่ถูกต้อง" };
+  }
+  if (new TextEncoder().encode(serialized).byteLength > maxContentBytes) {
+    return { ok: false, error: "เนื้อหามีขนาดเกินกำหนด" };
+  }
+  const error = validateNode(value, mode, { depth: 0, nodeCount: 0 }, null);
   if (error) return { ok: false, error };
   if (!isRecord(value) || value.type !== "doc") return { ok: false, error: "เนื้อหาต้องเริ่มต้นด้วยเอกสาร" };
   return { ok: true, content: value as JSONContent };

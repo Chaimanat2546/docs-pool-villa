@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "account_id": "0df55f166fa309dcc904e992c43f86db",
+  "name": "docs-pool-villa-staging",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-08-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://sxvkhzhqtrpxgzumsswl.supabase.co",
+    "NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL": "https://docs-media-staging.chaymanus2003.workers.dev"
+  },
+  "observability": { "enabled": true, "head_sampling_rate": 1 }
+}

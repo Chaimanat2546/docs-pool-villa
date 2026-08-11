@@ -4,8 +4,12 @@ export type MediaUploadTicketPayload = {
   objectKey: string;
   contentType: "image/webp";
   byteSize: number;
+  width: number;
+  height: number;
   expiresAt: number;
 };
+
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const encoder = new TextEncoder();
 
@@ -50,16 +54,20 @@ export async function verifyMediaUploadTicket(ticket: string, secret: string): P
   if (!signature || !payloadBytes || !safeEqual(signature, await hmac(secret, encodedPayload))) return null;
   try {
     const value: unknown = JSON.parse(new TextDecoder().decode(payloadBytes));
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const payload = value as Partial<MediaUploadTicketPayload>;
     if (
-      !value || typeof value !== "object" ||
-      typeof (value as MediaUploadTicketPayload).documentId !== "string" ||
-      typeof (value as MediaUploadTicketPayload).mediaId !== "string" ||
-      typeof (value as MediaUploadTicketPayload).objectKey !== "string" ||
-      (value as MediaUploadTicketPayload).contentType !== "image/webp" ||
-      !Number.isInteger((value as MediaUploadTicketPayload).byteSize) ||
-      !Number.isFinite((value as MediaUploadTicketPayload).expiresAt)
+      typeof payload.documentId !== "string" || !uuidPattern.test(payload.documentId) ||
+      typeof payload.mediaId !== "string" || !uuidPattern.test(payload.mediaId) ||
+      typeof payload.objectKey !== "string" ||
+      payload.objectKey !== `docs/${payload.documentId}/${payload.mediaId}.webp` ||
+      payload.contentType !== "image/webp" ||
+      typeof payload.byteSize !== "number" || !Number.isInteger(payload.byteSize) || payload.byteSize <= 0 || payload.byteSize > 10 * 1024 * 1024 ||
+      typeof payload.width !== "number" || !Number.isInteger(payload.width) || payload.width <= 0 || payload.width > 1920 ||
+      typeof payload.height !== "number" || !Number.isInteger(payload.height) || payload.height <= 0 || payload.height > 1920 ||
+      typeof payload.expiresAt !== "number" || !Number.isFinite(payload.expiresAt) || payload.expiresAt <= 0
     ) return null;
-    return value as MediaUploadTicketPayload;
+    return payload as MediaUploadTicketPayload;
   } catch {
     return null;
   }

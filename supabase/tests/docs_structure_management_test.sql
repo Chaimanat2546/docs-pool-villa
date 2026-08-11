@@ -1,5 +1,5 @@
 begin;
-select plan(14);
+select plan(18);
 
 insert into public.roles (id, name) values
   (1, '{"th":"Administrator"}'::json),
@@ -54,6 +54,18 @@ select throws_ok(
 );
 
 select throws_ok(
+  $$update public.doc_sections set parent_id = '91000000-0000-0000-0000-000000000002' where id = '91000000-0000-0000-0000-000000000001'$$,
+  '23514', null,
+  'A root section with children cannot become a child section'
+);
+
+select is(
+  (select parent_id from public.doc_sections where id = '91000000-0000-0000-0000-000000000001'),
+  null::uuid,
+  'Rejected reparenting keeps the original tree depth'
+);
+
+select throws_ok(
   $$insert into public.doc_sections (title, slug) values ('Root duplicate', 'root-a')$$,
   '23505', null,
   'Root slugs remain unique'
@@ -95,9 +107,21 @@ select is(
 );
 
 select throws_ok(
-  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000005')$$,
+  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000005', 'หมวดมีรูป')$$,
   'P0001', null,
   'Category delete fails closed when media is present'
+);
+
+select throws_ok(
+  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000004', 'ชื่อไม่ตรง')$$,
+  '23514', null,
+  'Deletion rejects a confirmation name that does not match atomically'
+);
+
+select is(
+  (select count(*) from public.doc_sections where id = '91000000-0000-0000-0000-000000000004'),
+  1::bigint,
+  'A rejected confirmation keeps the category'
 );
 
 select is(
@@ -107,7 +131,7 @@ select is(
 );
 
 select lives_ok(
-  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000004')$$,
+  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000004', 'หมวดลบได้')$$,
   'Category without media can be deleted'
 );
 

@@ -2,6 +2,8 @@
 
 **Status:** Complete
 
+**Pre-M04 remediation:** Local complete; see [Remediation TODO](M01-M03-remediation.md) for the Staging gate.
+
 ## Scope
 
 - [x] CRUD หมวดหลักและหมวดย่อยสูงสุด 2 ระดับ

@@ -21,16 +21,23 @@ async function loadImage(file: File): Promise<{ bitmap: ImageBitmap; width: numb
   return { bitmap, width: bitmap.width, height: bitmap.height };
 }
 
-export type UploadedPendingImage = { mediaId: string; objectKey: string };
+export type UploadedPendingImage = {
+  mediaId: string;
+  objectKey: string;
+  mimeType: "image/webp";
+  sizeBytes: number;
+  width: number;
+  height: number;
+};
 export type MediaTicket = { uploadUrl: string; ticket: string; mediaId: string; objectKey: string };
 
 export async function uploadPendingImage(
   documentId: string,
   image: PendingImage,
   onProgress: (progress: number) => void,
-  createTicket: (input: { documentId: string; byteSize: number }) => Promise<MediaTicket | { error: string }>,
+  createTicket: (input: { documentId: string; byteSize: number; width: number; height: number }) => Promise<MediaTicket | { error: string }>,
 ): Promise<UploadedPendingImage> {
-  const ticket = await createTicket({ documentId, byteSize: image.blob.size });
+  const ticket = await createTicket({ documentId, byteSize: image.blob.size, width: image.width, height: image.height });
   if ("error" in ticket) throw new Error(ticket.error);
   return new Promise((resolve, reject) => {
     const request = new XMLHttpRequest();
@@ -41,7 +48,26 @@ export async function uploadPendingImage(
       if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
     });
     request.addEventListener("load", () => {
-      if (request.status === 201) { onProgress(100); resolve({ mediaId: ticket.mediaId, objectKey: ticket.objectKey }); return; }
+      if (request.status === 201) {
+        try {
+          const response: unknown = JSON.parse(request.responseText);
+          if (
+            !response || typeof response !== "object" ||
+            (response as UploadedPendingImage).mediaId !== ticket.mediaId ||
+            (response as UploadedPendingImage).objectKey !== ticket.objectKey ||
+            (response as UploadedPendingImage).mimeType !== "image/webp" ||
+            !Number.isInteger((response as UploadedPendingImage).sizeBytes) ||
+            !Number.isInteger((response as UploadedPendingImage).width) ||
+            !Number.isInteger((response as UploadedPendingImage).height)
+          ) throw new Error();
+          onProgress(100);
+          resolve(response as UploadedPendingImage);
+          return;
+        } catch {
+          reject(new Error("ผลลัพธ์จาก Docs Media Worker ไม่ถูกต้อง"));
+          return;
+        }
+      }
       reject(new Error("อัปโหลดรูปไม่สำเร็จ"));
     });
     request.addEventListener("error", () => reject(new Error("เชื่อมต่อ Docs Media Worker ไม่สำเร็จ")));

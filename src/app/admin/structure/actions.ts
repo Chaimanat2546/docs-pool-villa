@@ -24,6 +24,27 @@ type SectionInput = {
 };
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseSectionInput(value: unknown): SectionInput | null {
+  if (!isRecord(value)) return null;
+  const { id, title, slug, description, parentId, sortOrder, isPublished } = value;
+  if (
+    (id !== undefined && (typeof id !== "string" || !uuidPattern.test(id))) ||
+    typeof title !== "string" ||
+    typeof slug !== "string" ||
+    typeof description !== "string" ||
+    (parentId !== null && (typeof parentId !== "string" || !uuidPattern.test(parentId))) ||
+    typeof sortOrder !== "number" || !Number.isInteger(sortOrder) ||
+    typeof isPublished !== "boolean"
+  ) return null;
+
+  return { id, title, slug, description, parentId, sortOrder, isPublished };
+}
 
 function validateSection(input: SectionInput): string | null {
   if (!input.title.trim()) return "กรุณาระบุชื่อหมวด";
@@ -41,23 +62,26 @@ function userSafeError(code?: string): string {
   return "บันทึกหมวดไม่สำเร็จ กรุณาลองอีกครั้ง";
 }
 
-export async function saveSection(input: SectionInput): Promise<StructureActionResult> {
-  const validationError = validateSection(input);
+export async function saveSection(input: unknown): Promise<StructureActionResult> {
+  await requireAdmin();
+  const parsedInput = parseSectionInput(input);
+  if (!parsedInput) return { error: "ข้อมูลหมวดไม่ถูกต้อง" };
+
+  const validationError = validateSection(parsedInput);
   if (validationError) return { error: validationError };
 
-  await requireAdmin();
   const supabase = await createClient();
   const payload = {
-    title: input.title.trim(),
-    slug: input.slug,
-    description: input.description.trim() || null,
-    parent_id: input.parentId,
-    sort_order: input.sortOrder,
-    is_published: input.isPublished,
+    title: parsedInput.title.trim(),
+    slug: parsedInput.slug,
+    description: parsedInput.description.trim() || null,
+    parent_id: parsedInput.parentId,
+    sort_order: parsedInput.sortOrder,
+    is_published: parsedInput.isPublished,
   };
 
-  const result = input.id
-    ? await supabase.from("doc_sections").update(payload).eq("id", input.id)
+  const result = parsedInput.id
+    ? await supabase.from("doc_sections").update(payload).eq("id", parsedInput.id)
     : await supabase.from("doc_sections").insert(payload);
 
   if (result.error) return { error: userSafeError(result.error.code) };
@@ -67,25 +91,24 @@ export async function saveSection(input: SectionInput): Promise<StructureActionR
 }
 
 export async function deleteSection(
-  sectionId: string,
-  confirmedName: string,
+  sectionId: unknown,
+  confirmedName: unknown,
 ): Promise<StructureActionResult> {
   await requireAdmin();
+  if (typeof sectionId !== "string" || !uuidPattern.test(sectionId) || typeof confirmedName !== "string") {
+    return { error: "ข้อมูลการลบหมวดไม่ถูกต้อง" };
+  }
   const supabase = await createClient();
-  const { data: section, error: sectionError } = await supabase
-    .from("doc_sections")
-    .select("title")
-    .eq("id", sectionId)
-    .single();
-
-  if (sectionError || !section) return { error: "ไม่พบหมวดที่ต้องการลบ" };
-  if (confirmedName.trim() !== section.title) return { error: "ชื่อที่พิมพ์ไม่ตรงกับชื่อหมวด" };
-
-  const { error } = await supabase.rpc("doc_delete_section", { p_section_id: sectionId });
+  const { error } = await supabase.rpc("doc_delete_section", {
+    p_section_id: sectionId,
+    p_confirmed_title: confirmedName,
+  });
   if (error) {
     if (error.code === "P0001") {
       return { error: "ยังลบหมวดนี้ไม่ได้ เพราะมีรูปที่ต้องลบจาก R2 ให้สำเร็จก่อน" };
     }
+    if (error.code === "23514") return { error: "ชื่อที่พิมพ์ไม่ตรงกับชื่อหมวด" };
+    if (error.code === "P0002") return { error: "ไม่พบหมวดที่ต้องการลบ" };
     return { error: "ลบหมวดไม่สำเร็จ กรุณาลองอีกครั้ง" };
   }
 
@@ -93,8 +116,11 @@ export async function deleteSection(
   return { success: true };
 }
 
-export async function getDeletePreview(sectionId: string): Promise<DeletePreview | StructureActionResult> {
+export async function getDeletePreview(sectionId: unknown): Promise<DeletePreview | StructureActionResult> {
   await requireAdmin();
+  if (typeof sectionId !== "string" || !uuidPattern.test(sectionId)) {
+    return { error: "ข้อมูลหมวดไม่ถูกต้อง" };
+  }
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("doc_section_delete_preview", { p_section_id: sectionId });
   const preview = data?.[0];

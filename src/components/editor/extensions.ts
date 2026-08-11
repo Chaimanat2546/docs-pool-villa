@@ -1,6 +1,5 @@
 import { Extension, Node, type Editor, type JSONContent, type Range } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
-import Link from "@tiptap/extension-link";
 import { TableKit } from "@tiptap/extension-table";
 import Youtube from "@tiptap/extension-youtube";
 import StarterKit from "@tiptap/starter-kit";
@@ -68,6 +67,10 @@ const SlashCommand = Extension.create({
             button.setAttribute("role", "option");
             button.setAttribute("aria-selected", String(index === selectedIndex));
             button.textContent = `${item.title} — ${item.description}`;
+            button.addEventListener("mousedown", (event) => {
+              event.preventDefault();
+              selectItem?.(item);
+            });
             return button;
           }));
         };
@@ -89,8 +92,8 @@ const SlashCommand = Extension.create({
             update();
           },
           onKeyDown: (props) => {
-            if (props.event.key === "ArrowUp") { selectedIndex = (selectedIndex + currentItems.length - 1) % currentItems.length; update(); return true; }
-            if (props.event.key === "ArrowDown") { selectedIndex = (selectedIndex + 1) % currentItems.length; update(); return true; }
+            if (props.event.key === "ArrowUp" && currentItems.length > 0) { selectedIndex = (selectedIndex + currentItems.length - 1) % currentItems.length; update(); return true; }
+            if (props.event.key === "ArrowDown" && currentItems.length > 0) { selectedIndex = (selectedIndex + 1) % currentItems.length; update(); return true; }
             if (props.event.key === "Enter" && currentItems[selectedIndex] && selectItem) { selectItem(currentItems[selectedIndex]); return true; }
             return false;
           },
@@ -102,8 +105,15 @@ const SlashCommand = Extension.create({
 });
 
 export const docsExtensions = [
-  StarterKit.configure({ heading: { levels: [2, 3] } }),
-  Link.configure({ openOnClick: false, defaultProtocol: "https", protocols: ["mailto"], isAllowedUri: (url, context) => context.defaultValidate(url) && /^(https?:|mailto:)/i.test(url) }),
+  StarterKit.configure({
+    heading: { levels: [2, 3] },
+    link: {
+      openOnClick: false,
+      defaultProtocol: "https",
+      protocols: ["mailto"],
+      isAllowedUri: (url, context) => context.defaultValidate(url) && /^(https?:|mailto:)/i.test(url),
+    },
+  }),
   TableKit.configure({ table: { resizable: true, HTMLAttributes: { class: "doc-table" } } }),
   DocsImage.configure({ HTMLAttributes: { class: "doc-image" } }),
   Youtube.configure({ nocookie: true, allowFullscreen: true, HTMLAttributes: { class: "doc-youtube" } }),

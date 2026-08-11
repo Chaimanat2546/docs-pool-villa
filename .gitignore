@@ -41,5 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .wrangler/
+.open-next/
 workers/docs-media/.dev.vars*
 workers/docs-media/src/env.d.ts

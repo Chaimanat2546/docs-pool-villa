@@ -13,7 +13,7 @@
 | Environment | Supabase URL | Cloudflare Account ID | Docs domain status |
 |---|---|---|---|
 | Production | `https://rqizfiayvcbozlzuvbok.supabase.co` | `7c1d945e149fc6fad2124176124d8f33` | วางแผนใช้ `docs.poolvilla.co.th` แต่ยังไม่ตั้งค่าหรือใช้งานจริง |
-| Staging | `https://sxvkhzhqtrpxgzumsswl.supabase.co` | `0df55f166fa309dcc904e992c43f86db` | ต้องการชื่อ `docs-pool-villa`; ยังไม่ได้ระบุ FQDN และยังไม่ตั้งค่า |
+| Staging | `https://sxvkhzhqtrpxgzumsswl.supabase.co` | `0df55f166fa309dcc904e992c43f86db` | `https://docs-pool-villa-staging.chaymanus2003.workers.dev` |
 
 - Existing R2 bucket: `webook-media` (Production legacy bucket; Docs ต้องใช้ Worker แยก)
 - Docs object key: `docs/{document_id}/{image_name}`

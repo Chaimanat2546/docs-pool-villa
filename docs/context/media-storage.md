@@ -23,7 +23,9 @@
 - Browser เตรียมรูปเป็น WebP และเก็บ Blob/preview URL ชั่วคราวจนกด Save
 - Upload button และ Clipboard paste ใช้ pipeline เดียวกัน; รูปต้องมี alt text
 - Next.js Server Action ตรวจ Admin และออก HMAC upload ticket อายุ 5 นาที; secret ไม่ส่ง Client
-- Worker รับ `PUT /uploads` เฉพาะ ticket ที่ผูกกับ `docs/{document_id}/{media_id}.webp`, Origin ที่อนุญาต, `image/webp`, WebP bytes และขนาดไม่เกิน 10 MB
+- Ticket ระบุ byte size และ dimensions ที่ Browser แปลงแล้ว; Worker parse WebP container/dimensions เองและต้องตรงกับ ticket
+- Worker รับ `PUT /uploads` เฉพาะ ticket ที่ผูกกับ `docs/{document_id}/{media_id}.webp`, Origin ที่อนุญาต, `image/webp` และขนาดไม่เกิน 10 MB
+- R2 ใช้ conditional create (`etagDoesNotMatch: '*'`) เพื่อป้องกัน ticket replay เขียนทับ object เดิม; response คืน metadata ที่ตรวจจริงให้ M04 บันทึก
 - Worker Local config อยู่ที่ `workers/docs-media/wrangler.jsonc`; secret local อยู่ใน `.dev.vars` ที่ถูก ignore และห้าม deploy จนกว่าภูจะอนุมัติ
 - M04 เป็นผู้เรียก upload เมื่อ manual Save; M06 รับผิดชอบ DELETE/rollback/cleanup
 
