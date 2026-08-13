@@ -1,6 +1,6 @@
 # M06 — Media Lifecycle & Cleanup
 
-**Status:** Complete and verified on Staging; retained test artifacts awaiting user approval to cleanup
+**Status:** Remediation required — Staging lifecycle verified but repeated smoke found a UI retry race
 
 ชื่อไฟล์คง `media-management` เพื่อให้ลิงก์ที่ตกลงไว้ไม่เปลี่ยน แต่ Module นี้ไม่มี Media Library
 
@@ -27,6 +27,7 @@
 - สร้าง migration `20260813062523_docs_media_lifecycle_operations.sql` สำหรับ durable operation, cleanup lease และ trigger ที่ป้องกัน direct save ทำให้ media เดิมกลายเป็น orphan
 - ยังไม่ได้ apply migration หรือ deploy Worker ไป Staging/Production ตามขอบเขตที่ภูอนุมัติในรอบนี้
 - Staging smoke (13 สิงหาคม 2026): apply migrations, deploy Worker และ App แล้ว; UI แสดง pending operation, filename/retry, disabled save/delete และ Mobile keyboard focus ถูกต้อง. แก้ App-to-Worker call เป็น Cloudflare Service Binding และอ่าน secret จาก runtime binding; Retry end-to-end ลบตาม durable manifest แล้ว finalize DB สำเร็จ, UI กลับมา Save/Delete ได้. เก็บ section/document และ R2 object ทดสอบไว้ตามคำสั่งภู; ไม่มี cleanup เพิ่มเติม
+- Repeated Staging smoke (13 สิงหาคม 2026): fixture แยก `M06 Staging Repeat Keep` ยืนยัน object 200 → prepare operation → UI freeze/filename/disabled controls → Worker/DB finalize และ object 404, แล้ว Reload UI กลับมา Save/Delete ได้. พบ race: `DocumentForm` auto-retry ใน `useEffect` เริ่ม action พร้อมกับผู้ใช้คลิก Retry ที่ render แรก ทำให้ action ที่สองได้รับ “ไม่พบงานลบรูปที่ต้องลองอีกครั้ง” แม้ action แรกสำเร็จ. ต้องทำให้ Retry มี single-flight ก่อนปิด M06; fixture และเอกสารทดสอบยังคงไว้
 - คำสั่งและผลการตรวจ local ล่าสุดบันทึกใน [Testing and Commands](../context/testing-and-commands.md)
 
 ## Stop
