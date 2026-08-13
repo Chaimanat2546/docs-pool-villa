@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { BookOpen, FolderTree, Menu, PencilLine } from "lucide-react";
+import { BookOpen, FolderTree, Menu, PencilLine, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -22,7 +22,7 @@ type NavigationLinksProps = {
 
 function NavigationLinks({ pathname, onNavigate, firstLinkRef }: NavigationLinksProps) {
   return <>
-    {adminNavigation.map(({ title, href, icon: Icon }, index) => <Link key={href} href={href} aria-current={pathname === href ? "page" : undefined} onClick={onNavigate} ref={index === 0 ? firstLinkRef : undefined} className="flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"><Icon size={18} aria-hidden="true" />{title}</Link>)}
+    {adminNavigation.map(({ title, href, icon: Icon }, index) => <Link key={href} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined} onClick={onNavigate} ref={index === 0 ? firstLinkRef : undefined} className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"><Icon size={18} aria-hidden="true" />{title}</Link>)}
   </>;
 }
 
@@ -34,7 +34,7 @@ type NavigationContentProps = NavigationLinksProps & {
 function NavigationContent({ isSigningOut, onNavigate, onSignOut, pathname, firstLinkRef }: NavigationContentProps) {
   return <>
     <NavigationLinks pathname={pathname} onNavigate={onNavigate} firstLinkRef={firstLinkRef} />
-    <Link href="/" onClick={onNavigate} className="mt-auto flex min-h-10 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">กลับหน้าคู่มือ</Link>
+    <Link href="/" onClick={onNavigate} className="mt-auto flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">กลับหน้าคู่มือ</Link>
     <button type="button" disabled={isSigningOut} onClick={() => { onNavigate?.(); onSignOut(); }} className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60">{isSigningOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}</button>
   </>;
 }
@@ -81,11 +81,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
     <div className="min-w-0 flex-1">
       <Dialog.Root open={mobileNavigationOpen} onOpenChange={setMobileNavigationOpen}>
-        <div className="border-b bg-card px-4 py-3 lg:hidden"><Dialog.Trigger className="inline-flex min-h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium hover:bg-muted"><Menu size={18} aria-hidden="true" />เมนูผู้ดูแล</Dialog.Trigger></div>
+        <div className="border-b bg-card px-4 py-3 lg:hidden"><Dialog.Trigger className="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium hover:bg-muted"><Menu size={18} aria-hidden="true" />เมนูผู้ดูแล</Dialog.Trigger></div>
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 lg:hidden" />
           <Dialog.Popup initialFocus={firstMobileLinkRef} className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[calc(100vw-2rem)] flex-col bg-card p-4 shadow-xl outline-none lg:hidden">
-            <Dialog.Title className="px-3 py-2 text-lg font-semibold">เมนูผู้ดูแล</Dialog.Title>
+            <div className="flex items-center justify-between gap-3">
+              <Dialog.Title className="px-3 py-2 text-lg font-semibold">เมนูผู้ดูแล</Dialog.Title>
+              <Dialog.Close aria-label="ปิดเมนูผู้ดูแล" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"><X size={20} aria-hidden="true" /></Dialog.Close>
+            </div>
             <nav aria-label="เมนูผู้ดูแล" className="mt-3 flex flex-1 flex-col gap-1"><NavigationContent pathname={pathname} onNavigate={() => setMobileNavigationOpen(false)} firstLinkRef={firstMobileLinkRef} isSigningOut={isSigningOut} onSignOut={handleSignOut} /></nav>
           </Dialog.Popup>
         </Dialog.Portal>
@@ -93,7 +96,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       {logoutError ? <p role="alert" className="mx-4 mt-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{logoutError}</p> : null}
 
-      <main id="main-content" className="min-w-0">{children}</main>
+      <div id="main-content" className="min-w-0">{children}</div>
     </div>
   </div>;
 }

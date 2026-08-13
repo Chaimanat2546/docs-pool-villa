@@ -6,11 +6,12 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { AdminShell } from "./admin-shell";
 
-const { createClient, refresh, replace, signOut } = vi.hoisted(() => {
+const { createClient, pathname, refresh, replace, signOut } = vi.hoisted(() => {
   const signOut = vi.fn().mockResolvedValue({ error: null });
 
   return {
     createClient: vi.fn(() => ({ auth: { signOut } })),
+    pathname: { value: "/admin/documents" },
     refresh: vi.fn(),
     replace: vi.fn(),
     signOut,
@@ -20,13 +21,14 @@ const { createClient, refresh, replace, signOut } = vi.hoisted(() => {
 vi.mock("@/lib/client", () => ({ createClient }));
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/admin/documents",
+  usePathname: () => pathname.value,
   useRouter: () => ({ replace, refresh }),
 }));
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  pathname.value = "/admin/documents";
   signOut.mockReset();
   signOut.mockResolvedValue({ error: null });
 });
@@ -38,6 +40,31 @@ it("renders the admin navigation with the current page", () => {
   expect(screen.getByRole("link", { name: "เอกสาร" }).getAttribute("aria-current")).toBe("page");
   expect(screen.getByRole("link", { name: "Editor" }).getAttribute("href")).toBe("/admin/editor");
   expect(screen.getByRole("link", { name: "กลับหน้าคู่มือ" }).getAttribute("href")).toBe("/");
+});
+
+it.each([
+  "/admin/documents",
+  "/admin/documents/new",
+  "/admin/documents/11111111-1111-4111-8111-111111111111",
+])("marks Documents active at %s", (currentPathname) => {
+  pathname.value = currentPathname;
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  expect(screen.getByRole("link", { name: "เอกสาร" }).getAttribute("aria-current")).toBe("page");
+});
+
+it("does not mark a route that only shares the Documents prefix as active", () => {
+  pathname.value = "/admin/documents-archive";
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  expect(screen.getByRole("link", { name: "เอกสาร" }).getAttribute("aria-current")).toBeNull();
+});
+
+it("lets the child page own the single main landmark", () => {
+  const { container } = render(<AdminShell><main>เนื้อหาผู้ดูแล</main></AdminShell>);
+
+  expect(container.querySelectorAll("main")).toHaveLength(1);
+  expect(container.querySelector("#main-content")?.tagName).toBe("DIV");
 });
 
 it("moves focus into the mobile drawer and returns it to the trigger after Escape", async () => {
@@ -69,6 +96,36 @@ it("closes the mobile drawer when a navigation link is clicked", async () => {
   await user.click(editorLink);
 
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+it("provides an internal close control that closes the drawer and returns focus", async () => {
+  const user = userEvent.setup();
+  render(<AdminShell><main>เนื้อหาผู้ดูแล</main></AdminShell>);
+
+  const trigger = screen.getByRole("button", { name: "เมนูผู้ดูแล" });
+  await user.click(trigger);
+
+  const dialog = screen.getByRole("dialog");
+  await user.click(within(dialog).getByRole("button", { name: "ปิดเมนูผู้ดูแล" }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  await waitFor(() => expect(document.activeElement).toBe(trigger));
+});
+
+it("keeps every mobile drawer action at least 44 pixels high", async () => {
+  const user = userEvent.setup();
+  render(<AdminShell><main>เนื้อหาผู้ดูแล</main></AdminShell>);
+
+  const trigger = screen.getByRole("button", { name: "เมนูผู้ดูแล" });
+  expect(trigger.classList.contains("min-h-11")).toBe(true);
+  await user.click(trigger);
+
+  const dialog = screen.getByRole("dialog");
+  for (const link of within(dialog).getAllByRole("link")) {
+    expect(link.classList.contains("min-h-11")).toBe(true);
+  }
+  expect(within(dialog).getByRole("button", { name: "ปิดเมนูผู้ดูแล" }).classList.contains("size-11")).toBe(true);
+  expect(within(dialog).getByRole("button", { name: "ออกจากระบบ" }).classList.contains("min-h-11")).toBe(true);
 });
 
 it("signs out and returns to the login page", async () => {
