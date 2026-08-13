@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { MediaOperationView } from "@/lib/media/lifecycle-types";
-import { retryMediaCleanup } from "@/app/admin/documents/actions";
+import { retryMediaCleanup } from "@/app/admin/(content)/documents/actions";
 
 import { MediaOperationBanner } from "./media-operation-banner";
 

@@ -6,7 +6,7 @@ import { expect, it, vi } from "vitest";
 const { refresh, retryMediaCleanup } = vi.hoisted(() => ({ refresh: vi.fn(), retryMediaCleanup: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
-vi.mock("@/app/admin/documents/actions", () => ({ retryMediaCleanup }));
+vi.mock("@/app/admin/(content)/documents/actions", () => ({ retryMediaCleanup }));
 
 import { MediaCleanupBanner } from "./media-cleanup-banner";
 
