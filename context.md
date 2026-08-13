@@ -6,8 +6,8 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: historical close-out ของ M01–M06 มีหลักฐาน Local/Staging ครบ (รวม M01 Approved Staging App smoke และ M06 real lifecycle/cleanup) แต่ M06 ถูก reopen เป็น post-closeout safety remediation เพราะ migration `20260813150200_docs_section_delete_race_guard.sql` ยัง Local-only. ต้อง apply และ verify Staging หลังภูอนุมัติก่อนจึงปิด M06 ได้; M07 ยังไม่เริ่มและถูก block
-- Deployment: Docs App Staging `docs-pool-villa-staging` deploy version `c9c10b09-a383-4fbf-9bba-5609831c29cb` สำเร็จด้วย `--keep-vars`; รอบปิด M01 ไม่ได้ deploy Docs Media Worker, migrate/reset/truncate/delete ข้อมูล Staging และทุก Module จนถึง M06 ไม่มี Production action
+- Current work: M01–M06 ปิดงานแล้ว โดย historical Local/Staging close-out, M01 Admin smoke, M06 real lifecycle/cleanup และ post-closeout safety migration `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Staging ครบ. M07 ยังไม่เริ่มและต้องรอภูยืนยัน
+- Deployment: Docs App Staging `docs-pool-villa-staging` deploy version `2ce99e46-0fbd-4663-a9ab-f9c1fb94b765` สำเร็จด้วย `--keep-vars`; migration `20260813150200` apply Staging สำเร็จโดยไม่มี reset/truncate/delete ข้อมูล. ไม่มี Docs Media Worker หรือ Production action ในรอบนี้
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
 ## Context ตามหัวข้อ
