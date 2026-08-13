@@ -66,7 +66,7 @@
 - Source review ด้วย `rg -n "await requireAdmin\\(\\)" src/app/admin` ยืนยันว่า Server guard ยังคงอยู่ที่ `/admin`, `/admin/structure`, `/admin/documents`, `/admin/documents/new`, `/admin/documents/[id]` และ `/admin/editor` (รวม Server Actions ที่เกี่ยวข้อง).
 - `npm run test:admin-shell` ผ่าน 7/7 tests; `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run cf:build` และ `git diff --check` ผ่านใน Local.
 - OpenNext build จบสำเร็จโดยมีคำเตือนเดิมเรื่อง Next `middleware` deprecated และข้อจำกัด OpenNext บน Windows; ไม่มี error จากคำสั่ง.
-- Secret scan ของ tracked scope ไม่พบ secret หรือ connection string ที่ commit แล้ว: lexical matches 5 จุดมาจาก literal/ข้อความใน historical plan เท่านั้น และอีก 1 จุดเป็นคำอธิบาย policy ของ `service_role`; ไม่มีค่า secret ถูกบันทึกหรือแสดงในผลตรวจ.
+- Secret scan ของ tracked scope ไม่พบ secret หรือ connection string ที่ commit แล้ว: lexical matches 8 จุดประกอบด้วย 5 จุดจาก literal/ข้อความใน historical plan และ 3 จุดจาก documentation policy ที่อ้างถึง `service_role`; ไม่มี PostgreSQL connection-string match และไม่มีค่า secret ถูกบันทึกหรือแสดงในผลตรวจ.
 
 ## Staging deployment approval required
 
