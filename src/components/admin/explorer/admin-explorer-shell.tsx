@@ -2,9 +2,10 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { FolderTree as FolderTreeIcon, X } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { useUnsavedNavigation } from "@/components/admin/unsaved-navigation";
 import { resolveAdminSectionId, type AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
 import { FolderTree } from "./folder-tree";
@@ -17,19 +18,15 @@ type AdminExplorerShellProps = {
 const DEFAULT_TREE_WIDTH = 288;
 
 export function AdminExplorerShell({ sections, children }: AdminExplorerShellProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const { requestNavigation } = useUnsavedNavigation();
   const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
   const [treeWidth, setTreeWidth] = useState(DEFAULT_TREE_WIDTH);
   const selectedSectionId = resolveAdminSectionId(sections, searchParams.get("section") ?? undefined);
 
-  function navigate(href: string) {
-    router.push(href);
-  }
-
   function navigateFromDrawer(href: string) {
     setMobileTreeOpen(false);
-    router.push(href);
+    requestNavigation(href);
   }
 
   function handleResizeKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -78,7 +75,7 @@ export function AdminExplorerShell({ sections, children }: AdminExplorerShellPro
             <p className="mt-1 text-sm text-muted-foreground">เลือกหมวดจากโครงสร้างคู่มือ</p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
-            <FolderTree sections={sections} selectedSectionId={selectedSectionId} onNavigate={navigate} />
+            <FolderTree sections={sections} selectedSectionId={selectedSectionId} onNavigate={requestNavigation} />
           </div>
           <div className="border-t px-4 py-3">
             <input

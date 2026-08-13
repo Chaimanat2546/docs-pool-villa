@@ -6,12 +6,13 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { AdminShell } from "./admin-shell";
 
-const { createClient, pathname, refresh, replace, signOut } = vi.hoisted(() => {
+const { createClient, pathname, push, refresh, replace, signOut } = vi.hoisted(() => {
   const signOut = vi.fn().mockResolvedValue({ error: null });
 
   return {
     createClient: vi.fn(() => ({ auth: { signOut } })),
     pathname: { value: "/admin/documents" },
+    push: vi.fn(),
     refresh: vi.fn(),
     replace: vi.fn(),
     signOut,
@@ -22,7 +23,7 @@ vi.mock("@/lib/client", () => ({ createClient }));
 
 vi.mock("next/navigation", () => ({
   usePathname: () => pathname.value,
-  useRouter: () => ({ replace, refresh }),
+  useRouter: () => ({ push, replace, refresh }),
 }));
 
 afterEach(() => {
@@ -36,28 +37,32 @@ afterEach(() => {
 it("renders the admin navigation with the current page", () => {
   render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
 
-  expect(screen.getByRole("link", { name: "โครงสร้าง" }).getAttribute("href")).toBe("/admin/structure");
-  expect(screen.getByRole("link", { name: "เอกสาร" }).getAttribute("aria-current")).toBe("page");
-  expect(screen.getByRole("link", { name: "Editor" }).getAttribute("href")).toBe("/admin/editor");
+  const contentLink = screen.getByRole("link", { name: "จัดการเนื้อหา" });
+  expect(contentLink.getAttribute("href")).toBe("/admin/structure");
+  expect(contentLink.getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "Editor Sandbox" }).getAttribute("href")).toBe("/admin/editor");
+  expect(screen.queryByRole("link", { name: "โครงสร้าง" })).toBeNull();
+  expect(screen.queryByRole("link", { name: "เอกสาร" })).toBeNull();
   expect(screen.getByRole("link", { name: "กลับหน้าคู่มือ" }).getAttribute("href")).toBe("/");
 });
 
 it.each([
+  "/admin/structure",
   "/admin/documents",
   "/admin/documents/new",
   "/admin/documents/11111111-1111-4111-8111-111111111111",
-])("marks Documents active at %s", (currentPathname) => {
+])("marks unified content navigation active at %s", (currentPathname) => {
   pathname.value = currentPathname;
   render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
 
-  expect(screen.getByRole("link", { name: "เอกสาร" }).getAttribute("aria-current")).toBe("page");
+  expect(screen.getByRole("link", { name: "จัดการเนื้อหา" }).getAttribute("aria-current")).toBe("page");
 });
 
-it("does not mark a route that only shares the Documents prefix as active", () => {
+it("does not mark a route that only shares a content-route prefix as active", () => {
   pathname.value = "/admin/documents-archive";
   render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
 
-  expect(screen.getByRole("link", { name: "เอกสาร" }).getAttribute("aria-current")).toBeNull();
+  expect(screen.getByRole("link", { name: "จัดการเนื้อหา" }).getAttribute("aria-current")).toBeNull();
 });
 
 it("lets the child page own the single main landmark", () => {
@@ -76,7 +81,7 @@ it("moves focus into the mobile drawer and returns it to the trigger after Escap
 
   const dialog = screen.getByRole("dialog");
   expect(dialog).not.toBeNull();
-  await waitFor(() => expect(document.activeElement).toBe(within(dialog).getByRole("link", { name: "โครงสร้าง" })));
+  await waitFor(() => expect(document.activeElement).toBe(within(dialog).getByRole("link", { name: "จัดการเนื้อหา" })));
 
   await user.keyboard("{Escape}");
 
@@ -91,8 +96,7 @@ it("closes the mobile drawer when a navigation link is clicked", async () => {
   await user.click(screen.getByRole("button", { name: "เมนูผู้ดูแล" }));
 
   const dialog = screen.getByRole("dialog");
-  const editorLink = within(dialog).getByRole("link", { name: "Editor" });
-  editorLink.addEventListener("click", (event) => event.preventDefault(), { once: true });
+  const editorLink = within(dialog).getByRole("link", { name: "Editor Sandbox" });
   await user.click(editorLink);
 
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
