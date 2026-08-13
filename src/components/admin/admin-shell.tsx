@@ -1,17 +1,17 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { BookOpen, FolderTree, Menu, PencilLine, X } from "lucide-react";
-import Link from "next/link";
+import { FolderTree, Menu, PencilLine, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { createClient } from "@/lib/client";
 
+import { GuardedAdminLink, UnsavedNavigationProvider, useUnsavedNavigation } from "./unsaved-navigation";
+
 const adminNavigation = [
-  { title: "โครงสร้าง", href: "/admin/structure", icon: FolderTree },
-  { title: "เอกสาร", href: "/admin/documents", icon: BookOpen },
-  { title: "Editor", href: "/admin/editor", icon: PencilLine },
+  { title: "จัดการเนื้อหา", href: "/admin/structure", matches: ["/admin/structure", "/admin/documents"], icon: FolderTree },
+  { title: "Editor Sandbox", href: "/admin/editor", matches: ["/admin/editor"], icon: PencilLine },
 ] as const;
 
 type NavigationLinksProps = {
@@ -22,7 +22,7 @@ type NavigationLinksProps = {
 
 function NavigationLinks({ pathname, onNavigate, firstLinkRef }: NavigationLinksProps) {
   return <>
-    {adminNavigation.map(({ title, href, icon: Icon }, index) => <Link key={href} href={href} aria-current={pathname === href || pathname.startsWith(`${href}/`) ? "page" : undefined} onClick={onNavigate} ref={index === 0 ? firstLinkRef : undefined} className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-foreground hover:bg-muted aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground"><Icon size={18} aria-hidden="true" />{title}</Link>)}
+    {adminNavigation.map(({ title, href, matches, icon: Icon }, index) => <GuardedAdminLink key={href} href={href} aria-current={matches.some((match) => pathname === match || pathname.startsWith(`${match}/`)) ? "page" : undefined} onNavigate={onNavigate} ref={index === 0 ? firstLinkRef : undefined} className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground ${title === "Editor Sandbox" ? "font-normal text-muted-foreground" : "font-medium"}`}><Icon size={18} aria-hidden="true" />{title}</GuardedAdminLink>)}
   </>;
 }
 
@@ -32,10 +32,17 @@ type NavigationContentProps = NavigationLinksProps & {
 };
 
 function NavigationContent({ isSigningOut, onNavigate, onSignOut, pathname, firstLinkRef }: NavigationContentProps) {
+  const { requestAction } = useUnsavedNavigation();
+
   return <>
     <NavigationLinks pathname={pathname} onNavigate={onNavigate} firstLinkRef={firstLinkRef} />
-    <Link href="/" onClick={onNavigate} className="mt-auto flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">กลับหน้าคู่มือ</Link>
-    <button type="button" disabled={isSigningOut} onClick={() => { onNavigate?.(); onSignOut(); }} className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60">{isSigningOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}</button>
+    <GuardedAdminLink href="/" onNavigate={onNavigate} className="mt-auto flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">กลับหน้าคู่มือ</GuardedAdminLink>
+    <button
+      type="button"
+      disabled={isSigningOut}
+      onClick={(event) => requestAction(() => { onNavigate?.(); onSignOut(); }, event.currentTarget)}
+      className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+    >{isSigningOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}</button>
   </>;
 }
 
@@ -73,7 +80,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
   }
 
-  return <div className="min-h-screen lg:flex">
+  return <UnsavedNavigationProvider><div className="min-h-screen lg:flex">
     <aside className="hidden w-64 shrink-0 border-r bg-card lg:flex lg:flex-col">
       <div className="border-b px-5 py-5"><p className="font-semibold">ผู้ดูแลคู่มือ</p></div>
       <nav aria-label="เมนูผู้ดูแล" className="flex flex-1 flex-col gap-1 p-3"><NavigationContent pathname={pathname} isSigningOut={isSigningOut} onSignOut={handleSignOut} /></nav>
@@ -98,5 +105,5 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
       <div id="main-content" className="min-w-0">{children}</div>
     </div>
-  </div>;
+  </div></UnsavedNavigationProvider>;
 }

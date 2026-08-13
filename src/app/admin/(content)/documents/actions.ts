@@ -11,6 +11,13 @@ import type { LifecycleResult, UploadedMediaCommand } from "@/lib/media/lifecycl
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const statuses = new Set(["draft", "published", "archived"]);
+const initialContent = {
+  type: "doc",
+  content: [{
+    type: "paragraph",
+    content: [{ type: "text", text: "เริ่มเขียนคู่มือ หรือพิมพ์ / เพื่อเปิดคำสั่ง" }],
+  }],
+};
 
 type DocumentMediaInput = {
   mediaId: string;
@@ -111,6 +118,23 @@ export async function saveDocument(value: unknown): Promise<DocumentActionResult
   if (!("success" in result)) return result;
   revalidateAfterMediaFinalize(result);
   return { success: true, id: result.targetId, version: result.version ?? 1, path: result.path ?? "" };
+}
+
+export async function createDocumentDraft(value: unknown): Promise<DocumentActionResult> {
+  if (!isRecord(value)) return { error: "ข้อมูลเอกสารไม่ถูกต้อง" };
+
+  return saveDocument({
+    id: value.id,
+    sectionId: value.sectionId,
+    title: value.title,
+    slug: value.slug,
+    excerpt: "",
+    content: initialContent,
+    status: "draft",
+    sortOrder: 0,
+    expectedVersion: null,
+    media: [],
+  });
 }
 
 export async function deleteDocument(documentId: unknown, expectedVersion: unknown): Promise<DocumentActionResult> {

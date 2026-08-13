@@ -8,8 +8,10 @@ import { prepareAndDeleteSection, resumeMediaOperation } from "@/lib/media/lifec
 import type { LifecycleResult } from "@/lib/media/lifecycle-types";
 import { createClient } from "@/lib/server";
 
-export type StructureActionResult = { error?: string; success?: true };
-export type DeleteSectionResult = StructureActionResult | Extract<LifecycleResult, { pending: true }>;
+type SectionActionError = { error: string };
+
+export type StructureActionResult = SectionActionError | { success: true; id: string };
+export type DeleteSectionResult = SectionActionError | { success: true } | Extract<LifecycleResult, { pending: true }>;
 export type DeletePreview = {
   childSectionCount: number;
   documentCount: number;
@@ -84,15 +86,20 @@ export async function saveSection(input: unknown): Promise<StructureActionResult
     is_published: parsedInput.isPublished,
   };
 
-  const result = parsedInput.id
-    ? await supabase.from("doc_sections").update(payload).eq("id", parsedInput.id)
-    : await supabase.from("doc_sections").insert(payload);
-
-  if (result.error) return { error: userSafeError(result.error.code) };
+  let savedId: string;
+  if (parsedInput.id) {
+    const result = await supabase.from("doc_sections").update(payload).eq("id", parsedInput.id);
+    if (result.error) return { error: userSafeError(result.error.code) };
+    savedId = parsedInput.id;
+  } else {
+    const result = await supabase.from("doc_sections").insert(payload).select("id").single();
+    if (result.error || !result.data) return { error: userSafeError(result.error?.code) };
+    savedId = result.data.id;
+  }
 
   revalidatePath("/admin/structure");
   revalidatePublicDocs();
-  return { success: true };
+  return { success: true, id: savedId };
 }
 
 export async function deleteSection(
@@ -111,7 +118,7 @@ export async function deleteSection(
   return { success: true };
 }
 
-export async function getDeletePreview(sectionId: unknown): Promise<DeletePreview | StructureActionResult> {
+export async function getDeletePreview(sectionId: unknown): Promise<DeletePreview | SectionActionError> {
   await requireAdmin();
   if (typeof sectionId !== "string" || !uuidPattern.test(sectionId)) {
     return { error: "ข้อมูลหมวดไม่ถูกต้อง" };

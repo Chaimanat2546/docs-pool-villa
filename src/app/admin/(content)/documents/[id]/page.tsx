@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { collectPersistedMedia } from "@/lib/media/content-media";
@@ -7,9 +7,10 @@ import { createClient } from "@/lib/server";
 
 import { DocumentForm, type DocumentRecord, type SectionOption } from "../document-form";
 
-export default async function EditDocumentPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditDocumentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ section?: string | string[]; stage?: string | string[] }> }) {
   await requireAdmin();
   const { id } = await params;
+  const query = await searchParams;
   const supabase = await createClient();
   const [{ data: document, error: documentError }, { data: sectionRows, error: sectionsError }, { data: media, error: mediaError }, { data: freeze, error: freezeError }] = await Promise.all([
     supabase.from("doc_documents").select("id, section_id, title, slug, excerpt, content, status, sort_order, version").eq("id", id).maybeSingle(),
@@ -25,5 +26,8 @@ export default async function EditDocumentPage({ params }: { params: Promise<{ i
   const labels = new Map(references.ok ? references.references.map((reference) => [reference.mediaId, reference.displayLabel]) : []);
   const hardDeleteFiles = (media ?? []).map((item) => labels.get(item.id) ?? item.object_key.split("/").at(-1) ?? "unknown.webp");
   const pendingOperation = freeze?.operation_id ? await readMediaOperation(freeze.operation_id) : null;
-  return <DocumentForm key={`${record.id}:${record.version}`} document={record} sections={sections} pendingOperation={pendingOperation} hardDeleteFiles={hardDeleteFiles} />;
+  const stage = query.stage === "review" ? "review" : "content";
+  const canonical = `/admin/documents/${record.id}?section=${encodeURIComponent(record.sectionId)}&stage=${stage}`;
+  if (query.section !== record.sectionId || (query.stage !== "content" && query.stage !== "review")) redirect(canonical);
+  return <DocumentForm key={`${record.id}:${record.version}`} document={record} sections={sections} initialStage={stage} returnHref={`/admin/structure?section=${encodeURIComponent(record.sectionId)}`} pendingOperation={pendingOperation} hardDeleteFiles={hardDeleteFiles} />;
 }

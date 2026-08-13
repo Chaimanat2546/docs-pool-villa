@@ -14,7 +14,7 @@ vi.mock("@/lib/media/lifecycle", () => ({
   resumeMediaOperation: vi.fn(),
 }));
 
-import { saveDocument } from "./actions";
+import { createDocumentDraft, saveDocument } from "./actions";
 
 const documentId = "11111111-1111-4111-8111-111111111111";
 const sectionId = "22222222-2222-4222-8222-222222222222";
@@ -57,5 +57,53 @@ describe("saveDocument", () => {
         height: 1,
       })],
     }));
+  });
+});
+
+describe("createDocumentDraft", () => {
+  beforeEach(() => {
+    runDocumentSave.mockReset();
+  });
+
+  it("creates a draft through the validated save lifecycle", async () => {
+    runDocumentSave.mockResolvedValue({
+      success: true,
+      kind: "save",
+      targetId: documentId,
+      version: 1,
+      path: "/start/new-doc",
+    });
+
+    await expect(createDocumentDraft({
+      id: documentId,
+      sectionId,
+      title: "เอกสารใหม่",
+      slug: "new-doc",
+    })).resolves.toEqual({
+      success: true,
+      id: documentId,
+      version: 1,
+      path: "/start/new-doc",
+    });
+    expect(runDocumentSave).toHaveBeenCalledWith(expect.objectContaining({
+      id: documentId,
+      sectionId,
+      title: "เอกสารใหม่",
+      slug: "new-doc",
+      status: "draft",
+      sortOrder: 0,
+      expectedVersion: null,
+      media: [],
+    }));
+  });
+
+  it("rejects a missing or malformed section before the lifecycle call", async () => {
+    await expect(createDocumentDraft({
+      id: documentId,
+      sectionId: "",
+      title: "เอกสารใหม่",
+      slug: "new-doc",
+    })).resolves.toEqual({ error: "ข้อมูลเอกสารไม่ถูกต้อง" });
+    expect(runDocumentSave).not.toHaveBeenCalled();
   });
 });
