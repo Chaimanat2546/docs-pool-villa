@@ -54,3 +54,9 @@
 - Browser smoke ผ่านครบ: Guest ไป Login, non-admin ถูกส่งกลับหน้า Public และ Admin เข้า `/admin` ได้
 - Staging มี Test accounts ที่ภูสร้างและ mapping test roles 1/2 สำหรับการทดสอบครั้งนี้; ไม่มีข้อมูลผู้ใช้จริงจาก Production
 
+## M01–M06 close-out verification — 13 สิงหาคม 2026
+
+- Final local gate: pgTAP 140/140, focused suites, typecheck, lint, build/OpenNext build, audit และ local DB lint ผ่าน; Staging migration history ตรง Local ถึง `20260813062523`.
+- Staging Guest/non-admin/Admin matrix ยืนยันอีกครั้ง: Guest `/admin` ไป login, non-admin กลับ Public, Admin เข้า Admin routes; Guest เห็น fixture Published-only และไม่มีสิทธิ์ mutation RPC/operation table. ไม่มี Production action.
+- พบปุ่ม sign out ไม่ปรากฏใน Admin UI ระหว่าง smoke. บันทึกเป็น P2 UX follow-up แยกต่างหาก ไม่ใช่ข้ออ้างว่า requirement sign out ครบหรือเป็น authorization defect.
+

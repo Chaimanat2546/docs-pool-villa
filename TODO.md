@@ -11,14 +11,14 @@
 
 | Module | สถานะ | รายละเอียด |
 |---|---|---|
-| M01 Foundation/Auth/RLS | Remediation accepted on Staging | [TODO](docs/todo/M01-foundation.md) |
-| M02 Structure | Remediation accepted on Staging | [TODO](docs/todo/M02-structure.md) |
-| M03 Editor/Media | Remediation accepted on Staging | [TODO](docs/todo/M03-editor-media.md) |
+| M01 Foundation/Auth/RLS | Ready to close — final M01–M06 gate passed; sign-out control is a P2 follow-up | [TODO](docs/todo/M01-foundation.md) |
+| M02 Structure | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M02-structure.md) |
+| M03 Editor/Media | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M03-editor-media.md) |
 | Pre-M04 Remediation | Complete; M04 plan approved | [TODO](docs/todo/M01-M03-remediation.md) |
 | M01–M04 Full Test Remediation | Complete — image save state fixed; legacy Middleware warning is documented as an OpenNext adapter limitation | [PLAN](docs/todo/M01-M04-full-test-remediation.md) |
-| M04 Documents | Complete | [TODO](docs/todo/M04-documents.md) |
-| M05 Public Docs | Complete | [TODO](docs/todo/M05-public-docs.md) |
-| M06 Media Lifecycle | Complete — Staging lifecycle and retry/UI-refresh regression verified; test fixtures retained pending cleanup approval | [TODO](docs/todo/M06-media-management.md) |
+| M04 Documents | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M04-documents.md) |
+| M05 Public Docs | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M05-public-docs.md) |
+| M06 Media Lifecycle | Ready to close — real Staging lifecycle and exact-target cleanup passed | [TODO](docs/todo/M06-media-management.md) |
 | M07 Search/Hardening | Not started | [TODO](docs/todo/M07-search-hardening.md) |
 
 ## Stop condition

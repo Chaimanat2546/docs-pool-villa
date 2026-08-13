@@ -30,6 +30,11 @@
 - `npx supabase@latest migration list --linked` — Staging history ตรง Local รวม migration M02
 - Browser smoke (Staging Admin) — เปิด `/admin/structure`, สร้างหมวดหลัก, สร้างหมวดย่อย, ยืนยันชื่อลบ และลบข้อมูลทดสอบกลับสำเร็จ; ตรวจ Mobile 390px โดยไม่มี console error
 
+## M01–M06 close-out verification — 13 สิงหาคม 2026
+
+- Staging Admin สร้าง root/child exact test fixture, ปฏิเสธ depth 3, duplicate และ reserved slug, บันทึก sort order แล้วลบผ่าน confirmation กลับเป็นศูนย์. ไม่มี fixture/ข้อมูลนอก target คงค้าง.
+- Final local DB gate เป็น pgTAP 140/140 และ Staging migration history ตรง Local ถึง `20260813062523`; ไม่มี Production action.
+
 ## Constraint ที่ส่งต่อ M03/M06
 
 - Category ที่มี Media จะถูกปฏิเสธแบบ fail-closed จนกว่า M03/M06 จะมี Docs Media Worker และ R2 cleanup flow
