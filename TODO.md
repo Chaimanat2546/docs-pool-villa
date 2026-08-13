@@ -8,6 +8,8 @@
 - [x] ภูอนุมัติให้เริ่ม M01
 - [x] ยืนยัน historical Local/Staging close-out ของ M01–M06 ก่อน post-closeout safety remediation
 - [x] M06 post-closeout safety remediation: apply/verify Staging สำเร็จ
+- [x] Admin File Explorer cross-module follow-up: implementation และ Full Local gate เสร็จแล้ว ([รายละเอียด](docs/todo/admin-file-explorer.md))
+- [ ] Admin File Explorer: รออนุมัติแยกสำหรับ Staging App deploy/smoke; ไม่มี Migration หรือ Media Worker deploy
 - [ ] M07 ยังไม่เริ่ม; รอภูยืนยันให้เริ่ม Module ถัดไป
 
 ## Module progress
@@ -24,9 +26,15 @@
 | M06 Media Lifecycle | Complete — historical lifecycle และ post-closeout safety remediation verified on Staging | [TODO](docs/todo/M06-media-management.md) |
 | M07 Search/Hardening | Not started — รอภูยืนยันให้เริ่ม Module | [TODO](docs/todo/M07-search-hardening.md) |
 
+## Approved cross-module follow-up
+
+| งาน | สถานะ | รายละเอียด |
+|---|---|---|
+| Admin File Explorer | Local complete — รอ Staging App deploy/smoke approval | [TODO](docs/todo/admin-file-explorer.md) |
+
 Post-closeout safety migration `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Local gate, dry-run และ apply/verify บน Staging แล้วเมื่อ 13 สิงหาคม 2026; migration parity ตรง, DB lint ไม่มี schema error และ advisor พบ `doc_*` = 0. ไม่มี Production action
 
 ## Stop condition
 
-M01–M06 ปิดงานแล้ว; ห้ามเริ่ม M07 จนกว่าภูจะยืนยัน Module ถัดไป และห้าม Deploy หรือทำ Production action เอง
+M01–M06 ปิดงานแล้วและ Admin File Explorer เป็น follow-up ปัจจุบัน; ห้ามเริ่ม M07 จนกว่าภูจะยืนยัน Module ถัดไป การ Deploy Feature นี้ไป Staging ต้องได้รับอนุมัติแยก และห้ามทำ Production action เอง
 
