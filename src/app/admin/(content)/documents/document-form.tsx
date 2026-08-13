@@ -34,6 +34,9 @@ export type DocumentRecord = {
 
 type FormState = Omit<DocumentRecord, "id" | "version" | "content">;
 type DocumentStage = "content" | "review";
+type FieldErrors = Partial<Record<"title" | "slug" | "sectionId" | "sortOrder", string>>;
+
+const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 function permanentMediaUrl(objectKey: string): string {
   const base = process.env.NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL;
@@ -85,12 +88,17 @@ export function DocumentForm({
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
   const [operation, setOperation] = useState<MediaOperationView | null>(pendingOperation);
   const [savedSectionId, setSavedSectionId] = useState(document.sectionId);
   const [retrying, startRetry] = useTransition();
   const retriedOperationRef = useRef<string | null>(null);
   const retryInFlightRef = useRef<string | null>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const slugInputRef = useRef<HTMLInputElement>(null);
+  const sectionInputRef = useRef<HTMLSelectElement>(null);
+  const sortOrderInputRef = useRef<HTMLInputElement>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot({
     sectionId: document.sectionId, title: document.title, slug: document.slug,
     excerpt: document.excerpt ?? "", status: document.status, sortOrder: document.sortOrder,
@@ -133,8 +141,29 @@ export function DocumentForm({
     retryOperation(operation);
   }, [operation, retryOperation]);
 
+  function validateFields(): boolean {
+    const errors: FieldErrors = {};
+    if (!form.title.trim()) errors.title = "กรุณากรอกชื่อเอกสาร";
+    if (!slugPattern.test(form.slug)) errors.slug = "Slug ใช้ตัวพิมพ์เล็ก ตัวเลข และขีดกลางเท่านั้น";
+    if (!sections.some((section) => section.id === form.sectionId)) errors.sectionId = "กรุณาเลือกหมวดที่ถูกต้อง";
+    if (!Number.isInteger(form.sortOrder) || form.sortOrder < 0) errors.sortOrder = "ลำดับต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป";
+    setFieldErrors(errors);
+
+    const firstInvalid = errors.title
+      ? titleInputRef.current
+      : errors.slug
+        ? slugInputRef.current
+        : errors.sectionId
+          ? sectionInputRef.current
+          : errors.sortOrder
+            ? sortOrderInputRef.current
+            : null;
+    firstInvalid?.focus();
+    return Object.keys(errors).length === 0;
+  }
+
   async function persist(): Promise<boolean> {
-    if (saving || operation) return false;
+    if (saving || operation || !validateFields()) return false;
     setSaving(true);
     setMessage(null);
     const uploaded = new Map<string, UploadedPendingImage>();
@@ -177,7 +206,8 @@ export function DocumentForm({
     }
   }
 
-  async function saveAndReview() {
+  async function saveAndReview(event?: React.FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
     if (!(await persist())) return;
     setStage("review");
     router.replace(`/admin/documents/${document.id}?section=${encodeURIComponent(form.sectionId)}&stage=review`);
@@ -227,23 +257,37 @@ export function DocumentForm({
 
       {stage === "content" ? (
         <section aria-labelledby="content-stage-heading">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <h2 id="content-stage-heading" className="text-xl font-semibold">เขียนเนื้อหา</h2>
-            <button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium"><Eye size={16} aria-hidden="true" />ดูตัวอย่าง</button>
-          </div>
-          <div className="mb-6 grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
-            <label className="text-sm font-medium">ชื่อเอกสาร<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" /></label>
-            <label className="text-sm font-medium">Slug<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3 font-mono" /></label>
-            <label className="text-sm font-medium">หมวด<select value={form.sectionId} onChange={(event) => setForm({ ...form, sectionId: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3">{sections.map((section) => <option key={section.id} value={section.id}>{section.parentId ? "↳ " : ""}{section.title}</option>)}</select></label>
-            <label className="text-sm font-medium">ลำดับ<input type="number" min="0" step="1" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: Number(event.target.value) })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" /></label>
-            <label className="text-sm font-medium sm:col-span-2">คำเกริ่น<textarea value={form.excerpt ?? ""} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} rows={2} className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
-          </div>
-          <DocumentEditor content={content} contentRevision={contentRevision} onChange={(nextContent, nextPending) => { setContent(nextContent); setPendingImages(nextPending); }} />
-          <MediaProgressList images={pendingImages} />
-          <div className="mt-6 flex flex-wrap justify-end gap-2">
-            <button type="button" onClick={() => requestNavigation(savedReturnHref)} className="min-h-11 rounded-full border px-4 text-sm font-medium">ยกเลิก</button>
-            <button type="button" disabled={saving || Boolean(operation)} onClick={saveAndReview} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" />{saving ? "กำลังบันทึก" : "บันทึกและตรวจต่อ"}</button>
-          </div>
+          <form noValidate onSubmit={saveAndReview}>
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+              <h2 id="content-stage-heading" className="text-xl font-semibold">เขียนเนื้อหา</h2>
+              <button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium"><Eye size={16} aria-hidden="true" />ดูตัวอย่าง</button>
+            </div>
+            <div className="mb-6 grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
+              <label className="text-sm font-medium" htmlFor="document-title">ชื่อเอกสาร
+                <input ref={titleInputRef} id="document-title" required aria-invalid={fieldErrors.title ? "true" : undefined} aria-describedby={fieldErrors.title ? "document-title-error" : undefined} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" />
+                {fieldErrors.title && <span id="document-title-error" className="mt-1 block text-xs text-destructive">{fieldErrors.title}</span>}
+              </label>
+              <label className="text-sm font-medium" htmlFor="document-slug">Slug
+                <input ref={slugInputRef} id="document-slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" aria-invalid={fieldErrors.slug ? "true" : undefined} aria-describedby={fieldErrors.slug ? "document-slug-error" : undefined} value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3 font-mono" />
+                {fieldErrors.slug && <span id="document-slug-error" className="mt-1 block text-xs text-destructive">{fieldErrors.slug}</span>}
+              </label>
+              <label className="text-sm font-medium" htmlFor="document-section">หมวด
+                <select ref={sectionInputRef} id="document-section" aria-invalid={fieldErrors.sectionId ? "true" : undefined} aria-describedby={fieldErrors.sectionId ? "document-section-error" : undefined} value={form.sectionId} onChange={(event) => setForm({ ...form, sectionId: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3">{sections.map((section) => <option key={section.id} value={section.id}>{section.parentId ? "↳ " : ""}{section.title}</option>)}</select>
+                {fieldErrors.sectionId && <span id="document-section-error" className="mt-1 block text-xs text-destructive">{fieldErrors.sectionId}</span>}
+              </label>
+              <label className="text-sm font-medium" htmlFor="document-sort-order">ลำดับ
+                <input ref={sortOrderInputRef} id="document-sort-order" type="number" min="0" step="1" aria-invalid={fieldErrors.sortOrder ? "true" : undefined} aria-describedby={fieldErrors.sortOrder ? "document-sort-order-error" : undefined} value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: Number(event.target.value) })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" />
+                {fieldErrors.sortOrder && <span id="document-sort-order-error" className="mt-1 block text-xs text-destructive">{fieldErrors.sortOrder}</span>}
+              </label>
+              <label className="text-sm font-medium sm:col-span-2">คำเกริ่น<textarea value={form.excerpt ?? ""} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} rows={2} className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
+            </div>
+            <DocumentEditor content={content} contentRevision={contentRevision} onChange={(nextContent, nextPending) => { setContent(nextContent); setPendingImages(nextPending); }} />
+            <MediaProgressList images={pendingImages} />
+            <div className="mt-6 flex flex-wrap justify-end gap-2">
+              <button type="button" onClick={() => requestNavigation(savedReturnHref)} className="min-h-11 rounded-full border px-4 text-sm font-medium">ยกเลิก</button>
+              <button type="submit" disabled={saving || Boolean(operation)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" />{saving ? "กำลังบันทึก" : "บันทึกและตรวจต่อ"}</button>
+            </div>
+          </form>
         </section>
       ) : (
         <section aria-labelledby="review-stage-heading" className="rounded-xl border bg-card p-4 sm:p-6">

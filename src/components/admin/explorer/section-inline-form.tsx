@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
@@ -16,6 +15,7 @@ type SectionInlineFormProps = {
   section: AdminExplorerSection | null;
   parent: AdminExplorerSection | null;
   rootSections: AdminExplorerSection[];
+  onCancel: () => void;
 };
 
 type SectionFormState = {
@@ -55,17 +55,13 @@ function modeLabel(mode: EditableSectionMode): string {
   return "แก้ไขหมวด";
 }
 
-export function SectionInlineForm({ mode, section, parent, rootSections }: SectionInlineFormProps) {
+export function SectionInlineForm({ mode, section, parent, rootSections, onCancel }: SectionInlineFormProps) {
   const router = useRouter();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState(() => initialFormState(mode, section, parent));
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const label = modeLabel(mode);
-  const cancelHref = mode === "create-root"
-    ? "/admin/structure"
-    : `/admin/structure?section=${encodeURIComponent(section?.id ?? parent?.id ?? "")}`;
-
   useEffect(() => {
     titleInputRef.current?.focus();
   }, []);
@@ -177,7 +173,7 @@ export function SectionInlineForm({ mode, section, parent, rootSections }: Secti
         )}
       </div>
       <div className="mt-6 flex flex-wrap justify-end gap-3">
-        <Link href={cancelHref} className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium hover:bg-muted">ยกเลิก</Link>
+        <button type="button" onClick={onCancel} className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium hover:bg-muted">ยกเลิก</button>
         <button disabled={isPending} type="submit" className="min-h-11 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50">
           {isPending ? "กำลังบันทึก" : "บันทึกหมวด"}
         </button>

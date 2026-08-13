@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { createClient } from "@/lib/client";
 
-import { GuardedAdminLink, UnsavedNavigationProvider } from "./unsaved-navigation";
+import { GuardedAdminLink, UnsavedNavigationProvider, useUnsavedNavigation } from "./unsaved-navigation";
 
 const adminNavigation = [
   { title: "จัดการเนื้อหา", href: "/admin/structure", matches: ["/admin/structure", "/admin/documents"], icon: FolderTree },
@@ -32,10 +32,17 @@ type NavigationContentProps = NavigationLinksProps & {
 };
 
 function NavigationContent({ isSigningOut, onNavigate, onSignOut, pathname, firstLinkRef }: NavigationContentProps) {
+  const { requestAction } = useUnsavedNavigation();
+
   return <>
     <NavigationLinks pathname={pathname} onNavigate={onNavigate} firstLinkRef={firstLinkRef} />
     <GuardedAdminLink href="/" onNavigate={onNavigate} className="mt-auto flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">กลับหน้าคู่มือ</GuardedAdminLink>
-    <button type="button" disabled={isSigningOut} onClick={() => { onNavigate?.(); onSignOut(); }} className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60">{isSigningOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}</button>
+    <button
+      type="button"
+      disabled={isSigningOut}
+      onClick={(event) => requestAction(() => { onNavigate?.(); onSignOut(); }, event.currentTarget)}
+      className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
+    >{isSigningOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}</button>
   </>;
 }
 

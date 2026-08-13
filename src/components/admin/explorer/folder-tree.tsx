@@ -43,7 +43,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
   const [focusedKey, setFocusedKey] = useState(() => selectedSectionId ? sectionKey(selectedSectionId) : VIRTUAL_ROOT_KEY);
   const [previousSelectedSectionId, setPreviousSelectedSectionId] = useState(selectedSectionId);
   const [treeHasFocus, setTreeHasFocus] = useState(false);
-  const itemRefs = useRef(new Map<string, HTMLButtonElement>());
+  const itemRefs = useRef(new Map<string, HTMLDivElement>());
 
   const childSectionsByParent = useMemo(() => {
     const result = new Map<string | null, AdminExplorerSection[]>();
@@ -132,7 +132,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
     });
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLButtonElement>, node: VisibleTreeNode, index: number) {
+  function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>, node: VisibleTreeNode, index: number) {
     switch (event.key) {
       case "Enter":
         event.preventDefault();
@@ -186,13 +186,12 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
         const Icon = node.sectionId === null ? Library : Folder;
 
         return (
-          <button
+          <div
             key={node.key}
             ref={(element) => {
               if (element) itemRefs.current.set(node.key, element);
               else itemRefs.current.delete(node.key);
             }}
-            type="button"
             role="treeitem"
             aria-level={node.level}
             aria-selected={isSelected}
@@ -202,18 +201,29 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
             onFocus={() => setFocusedKey(node.key)}
             onClick={() => onNavigate(sectionHref(node.sectionId))}
             onKeyDown={(event) => handleKeyDown(event, node, index)}
-            className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-selected:bg-muted aria-selected:font-medium"
+            className="flex min-h-11 w-full cursor-pointer items-center gap-1 rounded-md pr-3 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-selected:bg-muted aria-selected:font-medium"
             style={{ paddingInlineStart: `${12 + (node.level - 1) * 16}px` }}
           >
             {hasChildren ? (
-              <ChevronRight className={`size-4 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden="true" />
+              <button
+                type="button"
+                aria-label={`${isExpanded ? "ยุบ" : "ขยาย"}หมวด ${node.title}`}
+                onKeyDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setExpanded(node.key, !isExpanded);
+                }}
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <ChevronRight className={`size-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden="true" />
+              </button>
             ) : (
-              <span className="w-4 shrink-0" aria-hidden="true" />
+              <span className="w-11 shrink-0" aria-hidden="true" />
             )}
             <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span className="min-w-0 flex-1 truncate">{node.title}</span>
             <span className="shrink-0 text-xs tabular-nums text-muted-foreground" aria-hidden="true">{node.count}</span>
-          </button>
+          </div>
         );
       })}
     </div>

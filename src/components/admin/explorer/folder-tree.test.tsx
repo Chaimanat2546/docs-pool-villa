@@ -89,6 +89,39 @@ it("navigates the virtual root without a section query", async () => {
   expect(navigate).toHaveBeenCalledWith("/admin/structure");
 });
 
+it("toggles a parent with an independent pointer control without selecting it", async () => {
+  const navigate = vi.fn();
+  const user = userEvent.setup();
+  render(<FolderTree sections={sections} selectedSectionId={null} onNavigate={navigate} />);
+
+  const root = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
+  const expand = screen.getByRole("button", { name: "ขยายหมวด เริ่มต้น" });
+  expect(expand.className).toContain("size-11");
+
+  await user.click(expand);
+
+  expect(root.getAttribute("aria-expanded")).toBe("true");
+  expect(screen.getByRole("treeitem", { name: /การจอง/ })).not.toBeNull();
+  expect(navigate).not.toHaveBeenCalled();
+
+  await user.click(screen.getByRole("button", { name: "ยุบหมวด เริ่มต้น" }));
+
+  expect(root.getAttribute("aria-expanded")).toBe("false");
+  expect(screen.queryByRole("treeitem", { name: /การจอง/ })).toBeNull();
+  expect(navigate).not.toHaveBeenCalled();
+
+  screen.getByRole("button", { name: "ขยายหมวด เริ่มต้น" }).focus();
+  await user.keyboard("{Enter}");
+
+  expect(root.getAttribute("aria-expanded")).toBe("true");
+  expect(navigate).not.toHaveBeenCalled();
+
+  await user.click(root);
+
+  expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root");
+  expect(root.getAttribute("aria-expanded")).toBe("true");
+});
+
 it("moves the tab stop and focus to a visible selected section when the focused section is removed", async () => {
   const navigate = vi.fn();
   const user = userEvent.setup();

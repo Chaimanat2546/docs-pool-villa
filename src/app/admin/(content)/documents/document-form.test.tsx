@@ -134,6 +134,41 @@ it("keeps content stage and values when save fails", async () => {
   expect(navigation.replace).not.toHaveBeenCalled();
 });
 
+it("shows inline field errors and focuses the first invalid field before saving", async () => {
+  const user = userEvent.setup();
+  renderForm();
+  const title = screen.getByRole("textbox", { name: "ชื่อเอกสาร" });
+  const slug = screen.getByRole("textbox", { name: "Slug" });
+
+  await user.clear(title);
+  await user.type(title, "   ");
+  await user.clear(slug);
+  await user.type(slug, "Invalid Slug");
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(screen.getByText("กรุณากรอกชื่อเอกสาร")).not.toBeNull();
+  expect(screen.getByText("Slug ใช้ตัวพิมพ์เล็ก ตัวเลข และขีดกลางเท่านั้น")).not.toBeNull();
+  expect(title.getAttribute("aria-invalid")).toBe("true");
+  expect(slug.getAttribute("aria-invalid")).toBe("true");
+  expect(globalThis.document.activeElement).toBe(title);
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+});
+
+it("submits valid staged fields through their semantic form", async () => {
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm();
+  const title = screen.getByRole("textbox", { name: "ชื่อเอกสาร" });
+  const submit = screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }) as HTMLButtonElement;
+
+  expect(title.closest("form")).toBe(submit.closest("form"));
+  expect(submit.type).toBe("submit");
+  title.focus();
+  await user.keyboard("{Enter}");
+
+  await waitFor(() => expect(actions.saveDocument).toHaveBeenCalledTimes(1));
+});
+
 it("chooses status in review and final save returns to the selected folder", async () => {
   actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
   const user = userEvent.setup();

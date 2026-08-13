@@ -134,6 +134,21 @@ describe("SectionPanel", () => {
     expect((screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement).value).toBe("การจอง");
   });
 
+  it.each([
+    { mode: "create-root" as const, selectedSectionId: null, triggerName: "เพิ่มหมวดหลัก", cancelHref: "/admin/structure" },
+    { mode: "create-child" as const, selectedSectionId: rootId, triggerName: "เพิ่มหมวดย่อย", cancelHref: `/admin/structure?section=${rootId}` },
+    { mode: "edit" as const, selectedSectionId: childId, triggerName: "เปลี่ยนชื่อและตั้งค่า", cancelHref: `/admin/structure?section=${childId}` },
+  ])("returns focus to the exact $triggerName trigger when cancel removes URL mode", async ({ mode, selectedSectionId, triggerName, cancelHref }) => {
+    const user = userEvent.setup();
+    render(<SectionPanel selectedSectionId={selectedSectionId} mode={mode} explorer={explorer} />);
+    const trigger = screen.getByRole("link", { name: triggerName });
+
+    await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+
+    expect(replace).toHaveBeenCalledWith(cancelHref);
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("previews deletion, requires the exact name, retains pending media work, and retries", async () => {
     const user = userEvent.setup();
     getDeletePreview.mockResolvedValue({

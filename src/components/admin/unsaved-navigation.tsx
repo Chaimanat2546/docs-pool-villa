@@ -17,11 +17,22 @@ type UnsavedNavigationContextValue = {
   dirty: boolean;
   registerDirty: (dirty: boolean) => void;
   requestNavigation: (href: string, trigger?: HTMLElement, onApproved?: () => void) => void;
+  requestAction: (action: () => void, trigger?: HTMLElement) => void;
 };
 
 type PendingNavigation = {
-  href: string;
-  onApproved?: () => void;
+  approve: () => void;
+  bypassNextTraversal?: boolean;
+};
+
+type BrowserNavigateEvent = Event & {
+  canIntercept: boolean;
+  destination: { key: string };
+  navigationType: string;
+};
+
+type BrowserNavigation = EventTarget & {
+  traverseTo: (key: string) => unknown;
 };
 
 const UnsavedNavigationContext = createContext<UnsavedNavigationContextValue | null>(null);
@@ -56,8 +67,23 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
 
     triggerRef.current = trigger
       ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-    setPendingNavigation({ href, onApproved });
+    setPendingNavigation({ approve: () => {
+      onApproved?.();
+      router.push(href);
+    } });
   }, [router]);
+
+  const requestAction = useCallback((action: () => void, trigger?: HTMLElement) => {
+    if (!dirtyRef.current || bypassRef.current) {
+      bypassRef.current = false;
+      action();
+      return;
+    }
+
+    triggerRef.current = trigger
+      ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setPendingNavigation({ approve: action });
+  }, []);
 
   useEffect(() => {
     if (!dirty) return;
@@ -71,19 +97,50 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [dirty]);
 
+  useEffect(() => {
+    const browserNavigation = (window as Window & { navigation?: BrowserNavigation }).navigation;
+    if (!browserNavigation) return;
+    const activeNavigation = browserNavigation;
+
+    function handleNavigate(untypedEvent: Event) {
+      const event = untypedEvent as BrowserNavigateEvent;
+      if (
+        !dirtyRef.current
+        || event.navigationType !== "traverse"
+        || !event.canIntercept
+        || !event.destination.key
+      ) return;
+      if (bypassRef.current) {
+        bypassRef.current = false;
+        return;
+      }
+
+      event.preventDefault();
+      triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      const destinationKey = event.destination.key;
+      setPendingNavigation({
+        approve: () => activeNavigation.traverseTo(destinationKey),
+        bypassNextTraversal: true,
+      });
+    }
+
+    activeNavigation.addEventListener("navigate", handleNavigate);
+    return () => activeNavigation.removeEventListener("navigate", handleNavigate);
+  }, []);
+
   function cancelNavigation() {
     setPendingNavigation(null);
   }
 
   function confirmNavigation() {
     if (!pendingNavigation) return;
-    const { href, onApproved } = pendingNavigation;
-    bypassRef.current = true;
+    const { approve, bypassNextTraversal = false } = pendingNavigation;
+    bypassRef.current = bypassNextTraversal;
     setPendingNavigation(null);
-    requestNavigation(href, undefined, onApproved);
+    approve();
   }
 
-  const value = useMemo(() => ({ dirty, registerDirty, requestNavigation }), [dirty, registerDirty, requestNavigation]);
+  const value = useMemo(() => ({ dirty, registerDirty, requestAction, requestNavigation }), [dirty, registerDirty, requestAction, requestNavigation]);
 
   return (
     <UnsavedNavigationContext.Provider value={value}>

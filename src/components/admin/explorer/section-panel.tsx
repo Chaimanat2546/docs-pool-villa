@@ -4,7 +4,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { FileWarning } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { forwardRef, useRef, useState, useTransition } from "react";
 
 import {
   deleteSection,
@@ -34,6 +34,9 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
   const [deletePreview, setDeletePreview] = useState<DeletePreview | null>(null);
   const [confirmedName, setConfirmedName] = useState("");
   const [isPending, startTransition] = useTransition();
+  const createRootTriggerRef = useRef<HTMLAnchorElement>(null);
+  const createChildTriggerRef = useRef<HTMLAnchorElement>(null);
+  const editTriggerRef = useRef<HTMLAnchorElement>(null);
 
   const selectedSection = explorer.sections.find((section) => section.id === selectedSectionId) ?? null;
   const sectionPath = selectedSection ? getAdminSectionPath(explorer.sections, selectedSection.id) : [];
@@ -52,6 +55,11 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
     : explorer.documents;
   const mutationsBlocked = operations.length > 0;
   const mayCreateChild = selectedSection?.parentId === null;
+
+  function cancelForm(href: string, trigger: React.RefObject<HTMLAnchorElement | null>) {
+    router.replace(href);
+    trigger.current?.focus();
+  }
 
   function closeDeleteDialog() {
     setDeleteTarget(null);
@@ -119,11 +127,11 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
   }
 
   const form = !mutationsBlocked && mode === "create-root"
-    ? <SectionInlineForm key="create-root" mode="create-root" section={null} parent={null} rootSections={rootSections} />
+    ? <SectionInlineForm key="create-root" mode="create-root" section={null} parent={null} rootSections={rootSections} onCancel={() => cancelForm("/admin/structure", createRootTriggerRef)} />
     : !mutationsBlocked && mode === "create-child" && mayCreateChild
-      ? <SectionInlineForm key={`create-child:${selectedSection.id}`} mode="create-child" section={null} parent={selectedSection} rootSections={rootSections} />
+      ? <SectionInlineForm key={`create-child:${selectedSection.id}`} mode="create-child" section={null} parent={selectedSection} rootSections={rootSections} onCancel={() => cancelForm(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`, createChildTriggerRef)} />
       : !mutationsBlocked && mode === "edit" && selectedSection
-        ? <SectionInlineForm key={`edit:${selectedSection.id}`} mode="edit" section={selectedSection} parent={parent} rootSections={availableEditParents} />
+        ? <SectionInlineForm key={`edit:${selectedSection.id}`} mode="edit" section={selectedSection} parent={parent} rootSections={availableEditParents} onCancel={() => cancelForm(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`, editTriggerRef)} />
         : null;
 
   return (
@@ -140,9 +148,10 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
           <p className="mt-2 text-sm text-muted-foreground">{directDocuments.length} เอกสารในมุมมองนี้</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <ActionLink href="/admin/structure?mode=create-root" disabled={mutationsBlocked}>เพิ่มหมวดหลัก</ActionLink>
+          <ActionLink ref={createRootTriggerRef} href="/admin/structure?mode=create-root" disabled={mutationsBlocked}>เพิ่มหมวดหลัก</ActionLink>
           {selectedSection && (mayCreateChild ? (
             <ActionLink
+              ref={createChildTriggerRef}
               href={`/admin/structure?section=${encodeURIComponent(selectedSection.id)}&mode=create-child`}
               disabled={mutationsBlocked}
             >
@@ -160,6 +169,7 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
           ))}
           {selectedSection && (
             <ActionLink
+              ref={editTriggerRef}
               href={`/admin/structure?section=${encodeURIComponent(selectedSection.id)}&mode=edit`}
               disabled={mutationsBlocked}
             >
@@ -262,9 +272,10 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
   );
 }
 
-function ActionLink({ href, disabled, children }: { href: string; disabled: boolean; children: React.ReactNode }) {
+const ActionLink = forwardRef<HTMLAnchorElement, { href: string; disabled: boolean; children: React.ReactNode }>(function ActionLink({ href, disabled, children }, ref) {
   return (
     <Link
+      ref={ref}
       href={href}
       aria-disabled={disabled ? "true" : undefined}
       tabIndex={disabled ? -1 : undefined}
@@ -274,4 +285,4 @@ function ActionLink({ href, disabled, children }: { href: string; disabled: bool
       {children}
     </Link>
   );
-}
+});

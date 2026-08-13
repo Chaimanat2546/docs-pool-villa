@@ -49,7 +49,7 @@ describe("SectionInlineForm", () => {
   it("focuses the title when root creation opens and keeps values beside a failed save message", async () => {
     const user = userEvent.setup();
     saveSection.mockResolvedValue({ error: "Slug หรือ Route นี้ถูกใช้งานแล้ว" });
-    render(<SectionInlineForm mode="create-root" section={null} parent={null} rootSections={[root]} />);
+    render(<SectionInlineForm mode="create-root" section={null} parent={null} rootSections={[root]} onCancel={vi.fn()} />);
 
     const title = screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement;
     expect(document.activeElement).toBe(title);
@@ -64,7 +64,7 @@ describe("SectionInlineForm", () => {
   });
 
   it("identifies and fixes the selected parent for child creation", () => {
-    render(<SectionInlineForm mode="create-child" section={null} parent={root} rootSections={[root]} />);
+    render(<SectionInlineForm mode="create-child" section={null} parent={root} rootSections={[root]} onCancel={vi.fn()} />);
 
     expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "ชื่อหมวด" }));
     expect(screen.getByText(/หมวดแม่:/).textContent).toContain(root.title);
@@ -74,7 +74,7 @@ describe("SectionInlineForm", () => {
   it("replaces the URL with the saved section id and refreshes", async () => {
     const user = userEvent.setup();
     saveSection.mockResolvedValue({ success: true, id: child.id });
-    render(<SectionInlineForm mode="create-child" section={null} parent={root} rootSections={[root]} />);
+    render(<SectionInlineForm mode="create-child" section={null} parent={root} rootSections={[root]} onCancel={vi.fn()} />);
 
     await user.type(screen.getByRole("textbox", { name: "ชื่อหมวด" }), child.title);
     await user.type(screen.getByRole("textbox", { name: "Slug" }), child.slug);
@@ -85,7 +85,7 @@ describe("SectionInlineForm", () => {
   });
 
   it("prefills every existing field for rename and editing", () => {
-    render(<SectionInlineForm mode="edit" section={child} parent={root} rootSections={[root]} />);
+    render(<SectionInlineForm mode="edit" section={child} parent={root} rootSections={[root]} onCancel={vi.fn()} />);
 
     expect((screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement).value).toBe(child.title);
     expect((screen.getByRole("textbox", { name: "Slug" }) as HTMLInputElement).value).toBe(child.slug);

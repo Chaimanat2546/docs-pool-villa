@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  Reflect.deleteProperty(window, "navigation");
 });
 
 function DirtyRegistration({ dirty }: { dirty: boolean }) {
@@ -128,6 +129,50 @@ it("registers beforeunload protection only while dirty", () => {
   rerender(<Harness dirty={false} />);
   const cleanEvent = new Event("beforeunload", { cancelable: true });
   expect(window.dispatchEvent(cleanEvent)).toBe(true);
+});
+
+it("guards browser Back traversal before popstate without mutating history", async () => {
+  const traverseTo = vi.fn(() => ({ committed: Promise.resolve(), finished: Promise.resolve() }));
+  const browserNavigation = new EventTarget();
+  Object.assign(browserNavigation, { traverseTo });
+  Object.defineProperty(window, "navigation", {
+    configurable: true,
+    value: browserNavigation,
+  });
+  const pushState = vi.spyOn(window.history, "pushState");
+  const replaceState = vi.spyOn(window.history, "replaceState");
+  const user = userEvent.setup();
+  render(<Harness dirty />);
+
+  const backEvent = new Event("navigate", { cancelable: true });
+  Object.assign(backEvent, {
+    canIntercept: true,
+    destination: { key: "previous-entry" },
+    navigationType: "traverse",
+  });
+  browserNavigation.dispatchEvent(backEvent);
+
+  expect(backEvent.defaultPrevented).toBe(true);
+  expect(await screen.findByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).not.toBeNull();
+  expect(pushState).not.toHaveBeenCalled();
+  expect(replaceState).not.toHaveBeenCalled();
+
+  await user.click(screen.getByRole("button", { name: "แก้ไขต่อ" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(traverseTo).not.toHaveBeenCalled();
+
+  const secondBackEvent = new Event("navigate", { cancelable: true });
+  Object.assign(secondBackEvent, {
+    canIntercept: true,
+    destination: { key: "previous-entry" },
+    navigationType: "traverse",
+  });
+  browserNavigation.dispatchEvent(secondBackEvent);
+  await user.click(await screen.findByRole("button", { name: "ออกโดยไม่บันทึก" }));
+
+  expect(traverseTo).toHaveBeenCalledWith("previous-entry");
+  expect(pushState).not.toHaveBeenCalled();
+  expect(replaceState).not.toHaveBeenCalled();
 });
 
 it("leaves new-tab clicks to native browser behavior", async () => {

@@ -190,6 +190,41 @@ it("signs out and returns to the login page", async () => {
   expect(refresh).toHaveBeenCalledTimes(1);
 });
 
+it("does not sign out with unsaved work until discard is confirmed", async () => {
+  const user = userEvent.setup();
+  render(<AdminShell><DirtyPage /></AdminShell>);
+  const logout = screen.getByRole("button", { name: "ออกจากระบบ" });
+
+  await user.click(logout);
+
+  expect(signOut).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "แก้ไขต่อ" }));
+  await waitFor(() => expect(document.activeElement).toBe(logout));
+  expect(signOut).not.toHaveBeenCalled();
+
+  await user.click(logout);
+  await user.click(screen.getByRole("button", { name: "ออกโดยไม่บันทึก" }));
+
+  await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(replace).toHaveBeenCalledWith("/auth/login"));
+});
+
+it("keeps guarding unsaved work when a confirmed logout fails", async () => {
+  const user = userEvent.setup();
+  signOut.mockResolvedValue({ error: new Error("network") });
+  render(<AdminShell><DirtyPage /></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "ออกจากระบบ" }));
+  await user.click(screen.getByRole("button", { name: "ออกโดยไม่บันทึก" }));
+  await screen.findByText("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+  push.mockClear();
+
+  await user.click(screen.getByRole("link", { name: "Editor Sandbox" }));
+
+  expect(screen.getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).not.toBeNull();
+  expect(push).not.toHaveBeenCalled();
+});
+
 it("disables logout until sign out completes", async () => {
   const user = userEvent.setup();
   let resolveSignOut: (value: { error: null }) => void;
