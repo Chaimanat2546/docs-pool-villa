@@ -11,7 +11,7 @@
 
 | Module | สถานะ | รายละเอียด |
 |---|---|---|
-| M01 Foundation/Auth/RLS | Ready to close — final M01–M06 gate passed; sign-out control is a P2 follow-up | [TODO](docs/todo/M01-foundation.md) |
+| M01 Foundation/Auth/RLS | Pending Staging verification — Admin navigation and sign-out are implemented locally; do not close M01 until the approved Staging App smoke | [TODO](docs/todo/M01-foundation.md) |
 | M02 Structure | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M02-structure.md) |
 | M03 Editor/Media | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M03-editor-media.md) |
 | Pre-M04 Remediation | Complete; M04 plan approved | [TODO](docs/todo/M01-M03-remediation.md) |

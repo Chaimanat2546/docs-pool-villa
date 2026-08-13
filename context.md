@@ -6,8 +6,8 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: M01–M06 ผ่าน final close-out gate และพร้อมปิดงาน; M06 real Staging lifecycle/cleanup ผ่านแล้ว. Exact close-out, retained M06 และ R2 targets ถูก cleanup จนเป็นศูนย์ โดย non-target fingerprints ไม่เปลี่ยน
-- Deployment: Staging database remediation is approved and complete; ห้าม Deploy หรือ migrate Production จนกว่าภูจะสั่งแยก
+- Current work: หลักฐาน close-out เดิมของ M01–M06 ยังคงเก็บไว้; แต่ M01 อยู่ระหว่างรอ Staging verification ของ Admin navigation และ sign-out ที่ implement ใน Local แล้ว จึงห้ามปิด M01 ในรอบนี้. M06 real Staging lifecycle/cleanup ผ่านแล้ว โดย exact close-out, retained M06 และ R2 targets ถูก cleanup จนเป็นศูนย์ และ non-target fingerprints ไม่เปลี่ยน
+- Deployment: Staging database remediation เดิมได้รับอนุมัติและเสร็จแล้ว; การ deploy Docs App เพื่อยืนยัน Admin navigation/sign-out ยังรอภูอนุมัติโดยตรง. ห้าม Deploy Docs Media Worker, migrate/reset/truncate/delete ข้อมูล Staging หรือแตะ Production
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
 ## Context ตามหัวข้อ

@@ -4,7 +4,7 @@
 
 ## Current state
 
-- M01 complete: `.env.local` และ CLI ใช้ Staging, Staging ถูก reset ถึง Production baseline `20260806173000`, Docs migrations ผ่าน Staging แล้ว และ Browser smoke ครบทุก role
+- M01 historical evidence: `.env.local` และ CLI ใช้ Staging, Staging ถูก reset ถึง Production baseline `20260806173000`, Docs migrations ผ่าน Staging แล้ว และ Browser smoke ครบทุก role. การเปลี่ยน Admin navigation/sign-out รอบล่าสุดยังเป็น **Pending Staging verification** และไม่ทำให้ M01 ปิดงาน
 - `npm run lint` — ผ่าน เมื่อ 11 สิงหาคม 2026
 - `npm run build` — ผ่าน เมื่อ 11 สิงหาคม 2026
 - `npm run test:db` — ผ่าน 41 pgTAP tests เมื่อ 11 สิงหาคม 2026: Guest, Authenticated non-admin และ Admin (`role_id = 1` แม้ UID ซ้ำ); ครอบคลุม Sections/Documents/Media/Redirects, CRUD และ direct `SELECT doc_sections`
@@ -52,6 +52,16 @@
 - M06 retry/UI-refresh remediation (13 สิงหาคม 2026): `DocumentForm` ใช้ lock ตาม `operationId` ร่วมกันระหว่าง auto-retry กับปุ่ม Retry, ปลด lock/แสดง error เมื่อ Server Action throw และ Server page key จาก `document.id:version` เพื่อให้ `router.refresh()` รับ state ใหม่โดยไม่เรียก setState ใน effect. `npm run test:media` ผ่าน 14 tests (รวม regression 3 cases), `npm run test:worker` ผ่าน 9, App/Worker typecheck ผ่าน, lint ไม่มี error (warning เฉพาะ `cloudflare-env.d.ts` ที่ generate เดิม) และ OpenNext build ผ่าน. Deploy App Staging `3ff31400-5211-4746-a13a-64a66b6b6406` ด้วย `--keep-vars`. Fixture `M06 Staging Key Refresh Keep` ยืนยัน UI freeze/image/Save+Delete disabled → auto-retry → title finalized บนหน้าเดิม, ไม่มีภาพ/error เดิม, Save/Delete enabled; DB version 2/media 0/pending operation 0 และ R2 object ที่สร้างเฉพาะ lifecycle 404 หลังถูกลบสำเร็จ. ไม่มี reset/truncate/cleanup section, document หรือ fixture/ข้อมูลทดสอบเดิม
 - M01–M06 final close-out (13 สิงหาคม 2026): Local gate ใหม่ผ่าน pgTAP **140/140**, Proxy 2/2, Content **12/12**, Public **7/7**, Media **14/14**, Worker **9/9**, App/Worker typecheck, lint, Next/OpenNext build, `npm audit --omit=dev` (0 vulnerabilities) และ Local DB lint. Next.js 16.3.0 ยังคงเตือน `middleware` deprecated เพราะ OpenNext 1.20.2 ปฏิเสธ Node Proxy; `src/middleware.ts` เป็น adapter fallback ที่ test/build ผ่าน และ OpenNext Windows warning เป็น environment limitation ที่รับทราบ.
 - M01–M06 final Staging close-out (13 สิงหาคม 2026): ใช้เฉพาะ Staging ref `sxvkhzhqtrpxgzumsswl`; history Local/Remote ตรงกันถึง `20260813062523`. Guest/non-admin/Admin RLS matrix, M02 structure flow, M04 lifecycle/conflict/redirect, M05 Published-only/SEO/cache (248 ms) และ M06 real lifecycle ผ่าน. User-approved WebP fixture สร้าง media `13810f48-9244-4561-902e-5f48f2f26a14`, Worker GET `200 image/webp`, remove/save แล้ว R2 exact key เป็น `404` ก่อน cleanup; cleanup แบบ exact ลบเพียง 1 document/1 section. Close-out/retained M06 target, media, redirect, operation และ cleanup records เป็น 0; five historical keys และ dynamic key เป็น 404; non-target fingerprints ทั้ง 8 ไม่เปลี่ยน. Docs DB lint/advisors ไม่มี warning; ไม่มี Production action, reset, truncate หรือ broad delete.
+- Admin navigation/sign-out local verification (13 สิงหาคม 2026): `rg -n "await requireAdmin\\(\\)" src/app/admin` ยืนยัน Server guard ที่ Admin pages ของ Structure, Documents (list/new/edit) และ Editor; `npm run test:admin-shell` ผ่าน 7/7, `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run cf:build` และ `git diff --check` ผ่าน. OpenNext build มีเฉพาะ warning เดิมเรื่อง `middleware` deprecated และ Windows compatibility. Secret scan ตาม tracked scope ไม่พบ secret/connection string: matches ที่เป็น historical plan literal 5 จุดเป็น benign documentation context และอีก 1 จุดเป็น policy prose ของ `service_role`; ไม่แสดงหรือบันทึกค่า secret. Staging verification ยังไม่ถูกรัน.
+
+## Pending Staging approval — Admin navigation/sign-out
+
+คำขอที่รอภูอนุมัติโดยตรง:
+
+> Deploy only Docs App to Staging with `npx wrangler deploy --config wrangler.jsonc --keep-vars`.
+> Do not deploy Docs Media Worker, do not migrate/reset/truncate/delete Staging data, and do not touch Production.
+
+ห้ามรันคำสั่ง deploy นี้จนกว่าภูอนุมัติโดยตรง และ M01 ต้องคงสถานะ Pending Staging verification.
 
 ## Required checks by the end of MVP
 
