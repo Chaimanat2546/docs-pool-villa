@@ -1,9 +1,11 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 
+import { UnsavedNavigationProvider, useUnsavedNavigation } from "@/components/admin/unsaved-navigation";
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
 import { AdminExplorerShell } from "./admin-explorer-shell";
@@ -47,9 +49,29 @@ afterEach(() => {
   sectionQuery.value = null;
 });
 
+function DirtyRegistration({ dirty }: { dirty: boolean }) {
+  const { registerDirty } = useUnsavedNavigation();
+
+  useEffect(() => {
+    registerDirty(dirty);
+    return () => registerDirty(false);
+  }, [dirty, registerDirty]);
+
+  return null;
+}
+
+function ExplorerHarness({ dirty = false }: { dirty?: boolean }) {
+  return (
+    <UnsavedNavigationProvider>
+      <DirtyRegistration dirty={dirty} />
+      <AdminExplorerShell sections={sections}><p>รายการเอกสาร</p></AdminExplorerShell>
+    </UnsavedNavigationProvider>
+  );
+}
+
 it("traps mobile drawer focus and returns it to เลือกหมวด", async () => {
   const user = userEvent.setup();
-  render(<AdminExplorerShell sections={sections}><p>รายการเอกสาร</p></AdminExplorerShell>);
+  render(<ExplorerHarness />);
 
   const trigger = screen.getByRole("button", { name: "เลือกหมวด" });
   await user.click(trigger);
@@ -61,7 +83,7 @@ it("traps mobile drawer focus and returns it to เลือกหมวด", as
 
 it("provides a bounded desktop-only keyboard resize control", async () => {
   const user = userEvent.setup();
-  render(<AdminExplorerShell sections={sections}><p>รายการเอกสาร</p></AdminExplorerShell>);
+  render(<ExplorerHarness />);
 
   const slider = screen.getByRole("slider", { name: "ปรับความกว้างรายการหมวด" }) as HTMLInputElement;
   expect(slider.min).toBe("224");
@@ -78,21 +100,52 @@ it("provides a bounded desktop-only keyboard resize control", async () => {
 
 it("validates the requested section before marking a tree item selected", () => {
   sectionQuery.value = "missing";
-  const { rerender } = render(<AdminExplorerShell sections={sections}><p>รายการเอกสาร</p></AdminExplorerShell>);
+  const { rerender } = render(<ExplorerHarness />);
 
   expect(screen.getByRole("treeitem", { name: /คู่มือทั้งหมด/ }).getAttribute("aria-selected")).toBe("true");
 
   sectionQuery.value = "child";
-  rerender(<AdminExplorerShell sections={sections}><p>รายการเอกสาร</p></AdminExplorerShell>);
+  rerender(<ExplorerHarness />);
 
   expect(screen.getByRole("treeitem", { name: /การจอง.*2/ }).getAttribute("aria-selected")).toBe("true");
 });
 
 it("routes tree navigation through the App Router", async () => {
   const user = userEvent.setup();
-  render(<AdminExplorerShell sections={sections}><p>รายการเอกสาร</p></AdminExplorerShell>);
+  render(<ExplorerHarness />);
 
   await user.click(screen.getByRole("treeitem", { name: /เริ่มต้น/ }));
 
+  expect(push).toHaveBeenCalledWith("/admin/structure?section=root");
+});
+
+it("keeps the mobile folder drawer and tree trigger mounted when dirty navigation is canceled with Escape", async () => {
+  const user = userEvent.setup();
+  render(<ExplorerHarness dirty />);
+
+  await user.click(screen.getByRole("button", { name: "เลือกหมวด" }));
+  const drawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
+  const sectionTrigger = within(drawer).getByRole("treeitem", { name: /เริ่มต้น/ });
+
+  await user.click(sectionTrigger);
+  expect(screen.getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).not.toBeNull();
+  await user.keyboard("{Escape}");
+
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).toBeNull());
+  expect(screen.getByRole("dialog", { name: "หมวดคู่มือ" })).toBe(drawer);
+  expect(sectionTrigger.isConnected).toBe(true);
+  await waitFor(() => expect(document.activeElement).toBe(sectionTrigger));
+  expect(push).not.toHaveBeenCalled();
+});
+
+it("closes the mobile folder drawer after clean navigation is approved", async () => {
+  const user = userEvent.setup();
+  render(<ExplorerHarness />);
+
+  await user.click(screen.getByRole("button", { name: "เลือกหมวด" }));
+  const drawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
+  await user.click(within(drawer).getByRole("treeitem", { name: /เริ่มต้น/ }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "หมวดคู่มือ" })).toBeNull());
   expect(push).toHaveBeenCalledWith("/admin/structure?section=root");
 });

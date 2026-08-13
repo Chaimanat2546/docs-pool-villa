@@ -2,9 +2,11 @@
 
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { AdminShell } from "./admin-shell";
+import { useUnsavedNavigation } from "./unsaved-navigation";
 
 const { createClient, pathname, push, refresh, replace, signOut } = vi.hoisted(() => {
   const signOut = vi.fn().mockResolvedValue({ error: null });
@@ -33,6 +35,17 @@ afterEach(() => {
   signOut.mockReset();
   signOut.mockResolvedValue({ error: null });
 });
+
+function DirtyPage() {
+  const { registerDirty } = useUnsavedNavigation();
+
+  useEffect(() => {
+    registerDirty(true);
+    return () => registerDirty(false);
+  }, [registerDirty]);
+
+  return <p>เนื้อหาที่ยังไม่บันทึก</p>;
+}
 
 it("renders the admin navigation with the current page", () => {
   render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
@@ -100,6 +113,40 @@ it("closes the mobile drawer when a navigation link is clicked", async () => {
   await user.click(editorLink);
 
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+it("keeps the mobile drawer and dirty navigation trigger mounted when canceling", async () => {
+  const user = userEvent.setup();
+  render(<AdminShell><DirtyPage /></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "เมนูผู้ดูแล" }));
+  const drawer = screen.getByRole("dialog", { name: "เมนูผู้ดูแล" });
+  const editorLink = within(drawer).getByRole("link", { name: "Editor Sandbox" });
+
+  await user.click(editorLink);
+  await user.click(screen.getByRole("button", { name: "แก้ไขต่อ" }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).toBeNull());
+  expect(screen.getByRole("dialog", { name: "เมนูผู้ดูแล" })).toBe(drawer);
+  expect(editorLink.isConnected).toBe(true);
+  await waitFor(() => expect(document.activeElement).toBe(editorLink));
+  expect(push).not.toHaveBeenCalled();
+});
+
+it("closes the mobile drawer only after dirty navigation is confirmed", async () => {
+  const user = userEvent.setup();
+  render(<AdminShell><DirtyPage /></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "เมนูผู้ดูแล" }));
+  const drawer = screen.getByRole("dialog", { name: "เมนูผู้ดูแล" });
+  await user.click(within(drawer).getByRole("link", { name: "Editor Sandbox" }));
+
+  expect(drawer.isConnected).toBe(true);
+  expect(push).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "ออกโดยไม่บันทึก" }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "เมนูผู้ดูแล" })).toBeNull());
+  expect(push).toHaveBeenCalledWith("/admin/editor");
 });
 
 it("provides an internal close control that closes the drawer and returns focus", async () => {

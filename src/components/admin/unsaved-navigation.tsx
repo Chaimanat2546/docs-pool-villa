@@ -16,7 +16,12 @@ import {
 type UnsavedNavigationContextValue = {
   dirty: boolean;
   registerDirty: (dirty: boolean) => void;
-  requestNavigation: (href: string, trigger?: HTMLElement) => void;
+  requestNavigation: (href: string, trigger?: HTMLElement, onApproved?: () => void) => void;
+};
+
+type PendingNavigation = {
+  href: string;
+  onApproved?: () => void;
 };
 
 const UnsavedNavigationContext = createContext<UnsavedNavigationContextValue | null>(null);
@@ -30,7 +35,7 @@ export function useUnsavedNavigation(): UnsavedNavigationContextValue {
 export function UnsavedNavigationProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [dirty, setDirty] = useState(false);
-  const [pendingHref, setPendingHref] = useState<string | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const bypassRef = useRef(false);
 
@@ -39,16 +44,17 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
     if (!nextDirty) bypassRef.current = false;
   }, []);
 
-  const requestNavigation = useCallback((href: string, trigger?: HTMLElement) => {
+  const requestNavigation = useCallback((href: string, trigger?: HTMLElement, onApproved?: () => void) => {
     if (!dirty || bypassRef.current) {
       bypassRef.current = false;
+      onApproved?.();
       router.push(href);
       return;
     }
 
     triggerRef.current = trigger
       ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-    setPendingHref(href);
+    setPendingNavigation({ href, onApproved });
   }, [dirty, router]);
 
   useEffect(() => {
@@ -64,15 +70,15 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
   }, [dirty]);
 
   function cancelNavigation() {
-    setPendingHref(null);
+    setPendingNavigation(null);
   }
 
   function confirmNavigation() {
-    if (!pendingHref) return;
-    const href = pendingHref;
+    if (!pendingNavigation) return;
+    const { href, onApproved } = pendingNavigation;
     bypassRef.current = true;
-    setPendingHref(null);
-    requestNavigation(href);
+    setPendingNavigation(null);
+    requestNavigation(href, undefined, onApproved);
   }
 
   const value = useMemo(() => ({ dirty, registerDirty, requestNavigation }), [dirty, registerDirty, requestNavigation]);
@@ -80,7 +86,7 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
   return (
     <UnsavedNavigationContext.Provider value={value}>
       {children}
-      <Dialog.Root open={pendingHref !== null} onOpenChange={(open) => { if (!open) cancelNavigation(); }}>
+      <Dialog.Root open={pendingNavigation !== null} onOpenChange={(open) => { if (!open) cancelNavigation(); }}>
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-[60] bg-black/40" />
           <Dialog.Popup
@@ -152,8 +158,7 @@ export function GuardedAdminLink({ children, href, onClick, onNavigate, ref, tar
         ) return;
 
         event.preventDefault();
-        onNavigate?.();
-        requestNavigation(href, linkRef.current ?? undefined);
+        requestNavigation(href, linkRef.current ?? undefined, onNavigate);
       }}
     >
       {children}

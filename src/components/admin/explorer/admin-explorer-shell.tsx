@@ -25,8 +25,7 @@ export function AdminExplorerShell({ sections, children }: AdminExplorerShellPro
   const selectedSectionId = resolveAdminSectionId(sections, searchParams.get("section") ?? undefined);
 
   function navigateFromDrawer(href: string) {
-    setMobileTreeOpen(false);
-    requestNavigation(href);
+    requestNavigation(href, undefined, () => setMobileTreeOpen(false));
   }
 
   function handleResizeKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
