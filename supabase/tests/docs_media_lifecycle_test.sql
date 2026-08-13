@@ -85,6 +85,331 @@ select throws_ok($$select * from public.doc_prepare_document_save('b2000000-0000
 select lives_ok($$select * from public.doc_finalize_document_save((select operation_id from prepared_save))$$, 'Finalized save applies the staged document');
 select is((select title from public.doc_documents where id = 'b2000000-0000-4000-8000-000000000001'), 'เอกสาร M06 ใหม่', 'Finalized save updates document once');
 select is((select count(*) from public.doc_media where document_id = 'b2000000-0000-4000-8000-000000000001'), 0::bigint, 'Finalized save removes old media metadata');
+
+insert into public.doc_sections (id, parent_id, title, slug) values
+  ('c1000000-0000-4000-8000-000000000001', null, 'M06 Pending Root', 'm06-pending-root'),
+  ('c1000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'M06 Pending Child', 'm06-pending-child'),
+  ('c1000000-0000-4000-8000-000000000003', null, 'M06 Outside Root', 'm06-outside-root');
+insert into public.doc_documents (id, section_id, title, slug) values
+  ('c2000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000003', 'M06 Move Candidate', 'm06-move-candidate');
+
+create temporary table prepared_empty_section_delete as
+select * from public.doc_prepare_section_delete(
+  'c1000000-0000-4000-8000-000000000001',
+  'M06 Pending Root'
+);
+select is((select document_count from prepared_empty_section_delete), 0::bigint, 'Empty section delete freezes an empty document set');
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      update public.doc_media_operations
+      set section_id = 'c1000000-0000-4000-8000-000000000003'
+      where id = (select operation_id from prepared_empty_section_delete);
+      raise exception 'Expected immutable media operation target.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete operation cannot be retargeted after its snapshot is frozen'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_prepare_document_save(
+        'c2000000-0000-4000-8000-000000000002',
+        'c1000000-0000-4000-8000-000000000002',
+        'M06 Blocked Create', 'm06-blocked-create', null,
+        '{"type":"doc","content":[]}'::jsonb, 'draft', 0, null, '[]'::jsonb
+      );
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks document creation through the prepare/save lifecycle'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_save_document(
+        'c2000000-0000-4000-8000-000000000003',
+        'c1000000-0000-4000-8000-000000000001',
+        'M06 Blocked Direct Save', 'm06-blocked-direct-save', null,
+        '{"type":"doc","content":[]}'::jsonb, 'draft', 0, null, '[]'::jsonb
+      );
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks direct document save into its root'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_prepare_document_save(
+        'c2000000-0000-4000-8000-000000000001',
+        'c1000000-0000-4000-8000-000000000002',
+        'M06 Blocked Move', 'm06-move-candidate', null,
+        '{"type":"doc","content":[]}'::jsonb, 'draft', 0, 1, '[]'::jsonb
+      );
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks moving an existing document into its child'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      insert into public.doc_sections (id, parent_id, title, slug)
+      values ('c1000000-0000-4000-8000-000000000007', 'c1000000-0000-4000-8000-000000000001', 'M06 Late Child', 'm06-late-child');
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks adding a section to its subtree'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      update public.doc_sections
+      set parent_id = 'c1000000-0000-4000-8000-000000000001'
+      where id = 'c1000000-0000-4000-8000-000000000003';
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks moving a section into its subtree'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      delete from public.doc_sections
+      where id = 'c1000000-0000-4000-8000-000000000002';
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks removing an empty child from its subtree'
+);
+
+reset role;
+do $block$
+begin
+  if exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.doc_documents'::regclass
+      and tgname = 'doc_documents_reject_pending_section_delete'
+  ) then
+    execute 'alter table public.doc_documents disable trigger doc_documents_reject_pending_section_delete';
+  end if;
+  if exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.doc_media'::regclass
+      and tgname = 'doc_media_reject_pending_section_delete'
+  ) then
+    execute 'alter table public.doc_media disable trigger doc_media_reject_pending_section_delete';
+  end if;
+end
+$block$;
+insert into public.doc_documents (id, section_id, title, slug) values
+  ('c2000000-0000-4000-8000-000000000004', 'c1000000-0000-4000-8000-000000000002', 'M06 Late Document', 'm06-late-document');
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('c3000000-0000-4000-8000-000000000004', 'c2000000-0000-4000-8000-000000000004', 'docs/c2000000-0000-4000-8000-000000000004/c3000000-0000-4000-8000-000000000004.webp', 'https://media.test/m06-late-document.webp', 'image/webp', 26, 1, 1);
+do $block$
+begin
+  if exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.doc_documents'::regclass
+      and tgname = 'doc_documents_reject_pending_section_delete'
+  ) then
+    execute 'alter table public.doc_documents enable trigger doc_documents_reject_pending_section_delete';
+  end if;
+  if exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.doc_media'::regclass
+      and tgname = 'doc_media_reject_pending_section_delete'
+  ) then
+    execute 'alter table public.doc_media enable trigger doc_media_reject_pending_section_delete';
+  end if;
+end
+$block$;
+set local role authenticated;
+set local request.jwt.claim.sub = 'a0000000-0000-4000-8000-000000000001';
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_finalize_section_delete((select operation_id from prepared_empty_section_delete));
+      raise exception 'Expected section delete snapshot guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0001', null, 'Section finalizer fails closed when the current document set differs from its snapshot'
+);
+select is(
+  (select count(*) from public.doc_media_operations where id = (select operation_id from prepared_empty_section_delete)),
+  1::bigint,
+  'Document-set mismatch keeps the durable section delete operation for retry'
+);
+
+insert into public.doc_sections (id, title, slug) values
+  ('c1000000-0000-4000-8000-000000000004', 'M06 Media Guard Root', 'm06-media-guard-root');
+insert into public.doc_documents (id, section_id, title, slug) values
+  ('c2000000-0000-4000-8000-000000000005', 'c1000000-0000-4000-8000-000000000004', 'M06 Media Guard Document', 'm06-media-guard-document');
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('c3000000-0000-4000-8000-000000000005', 'c2000000-0000-4000-8000-000000000005', 'docs/c2000000-0000-4000-8000-000000000005/c3000000-0000-4000-8000-000000000005.webp', 'https://media.test/m06-snapshot.webp', 'image/webp', 26, 1, 1);
+create temporary table prepared_media_guard_section_delete as
+select * from public.doc_prepare_section_delete(
+  'c1000000-0000-4000-8000-000000000004',
+  'M06 Media Guard Root'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      update public.doc_media_operation_items
+      set object_key = 'docs/c2000000-0000-4000-8000-000000000001/c3000000-0000-4000-8000-000000000005.webp'
+      where operation_id = (select operation_id from prepared_media_guard_section_delete);
+      raise exception 'Expected immutable operation manifest.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Prepared section delete media manifest cannot be retargeted'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      delete from public.doc_media_operation_documents
+      where operation_id = (select operation_id from prepared_media_guard_section_delete);
+      raise exception 'Expected immutable operation snapshot.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Prepared section delete document snapshot cannot be removed'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      update public.doc_media
+      set document_id = 'c2000000-0000-4000-8000-000000000001'
+      where id = 'c3000000-0000-4000-8000-000000000005';
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks moving manifested media out of its document set'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height)
+      values (
+        'c3000000-0000-4000-8000-000000000008',
+        'c2000000-0000-4000-8000-000000000005',
+        'docs/c2000000-0000-4000-8000-000000000005/c3000000-0000-4000-8000-000000000008.webp',
+        'https://media.test/m06-blocked-late-media.webp',
+        'image/webp', 26, 1, 1
+      );
+      raise exception 'Expected pending section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Pending section delete blocks adding media outside its exact manifest'
+);
+reset role;
+do $block$
+begin
+  if exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.doc_media'::regclass
+      and tgname = 'doc_media_reject_pending_section_delete'
+  ) then
+    execute 'alter table public.doc_media disable trigger doc_media_reject_pending_section_delete';
+  end if;
+end
+$block$;
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('c3000000-0000-4000-8000-000000000006', 'c2000000-0000-4000-8000-000000000005', 'docs/c2000000-0000-4000-8000-000000000005/c3000000-0000-4000-8000-000000000006.webp', 'https://media.test/m06-late-media.webp', 'image/webp', 26, 1, 1);
+do $block$
+begin
+  if exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.doc_media'::regclass
+      and tgname = 'doc_media_reject_pending_section_delete'
+  ) then
+    execute 'alter table public.doc_media enable trigger doc_media_reject_pending_section_delete';
+  end if;
+end
+$block$;
+set local role authenticated;
+set local request.jwt.claim.sub = 'a0000000-0000-4000-8000-000000000001';
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_finalize_section_delete((select operation_id from prepared_media_guard_section_delete));
+      raise exception 'Expected section delete manifest guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0001', null, 'Section finalizer fails closed when the current media set differs from its manifest'
+);
+select is(
+  (select count(*) from public.doc_media where document_id = 'c2000000-0000-4000-8000-000000000005'),
+  2::bigint,
+  'Media-set mismatch preserves every current media row'
+);
+
+insert into public.doc_sections (id, title, slug) values
+  ('c1000000-0000-4000-8000-000000000008', 'M06 Exact Finalize Root', 'm06-exact-finalize-root');
+insert into public.doc_documents (id, section_id, title, slug) values
+  ('c2000000-0000-4000-8000-000000000008', 'c1000000-0000-4000-8000-000000000008', 'M06 Exact Finalize Document', 'm06-exact-finalize-document');
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('c3000000-0000-4000-8000-000000000009', 'c2000000-0000-4000-8000-000000000008', 'docs/c2000000-0000-4000-8000-000000000008/c3000000-0000-4000-8000-000000000009.webp', 'https://media.test/m06-exact-finalize.webp', 'image/webp', 26, 1, 1);
+create temporary table prepared_exact_section_delete as
+select * from public.doc_prepare_section_delete(
+  'c1000000-0000-4000-8000-000000000008',
+  'M06 Exact Finalize Root'
+);
+select lives_ok(
+  $$select * from public.doc_finalize_section_delete((select operation_id from prepared_exact_section_delete))$$,
+  'Section finalizer deletes the exact unchanged document and media snapshot'
+);
+select is(
+  (select count(*) from public.doc_sections where id = 'c1000000-0000-4000-8000-000000000008'),
+  0::bigint,
+  'Exact section finalize removes the target section'
+);
+select is(
+  (select count(*) from public.doc_documents where id = 'c2000000-0000-4000-8000-000000000008'),
+  0::bigint,
+  'Exact section finalize removes the frozen document'
+);
+select is(
+  (select count(*) from public.doc_media where id = 'c3000000-0000-4000-8000-000000000009'),
+  0::bigint,
+  'Exact section finalize removes the manifested media row'
+);
+
+insert into public.doc_sections (id, title, slug) values
+  ('c1000000-0000-4000-8000-000000000005', 'M06 Staged Destination', 'm06-staged-destination'),
+  ('c1000000-0000-4000-8000-000000000006', 'M06 Staged Source', 'm06-staged-source');
+insert into public.doc_documents (id, section_id, title, slug, content) values
+  (
+    'c2000000-0000-4000-8000-000000000006',
+    'c1000000-0000-4000-8000-000000000006',
+    'M06 Staged Move',
+    'm06-staged-move',
+    '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"c3000000-0000-4000-8000-000000000007","alt":"staged move"}}]}'::jsonb
+  );
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('c3000000-0000-4000-8000-000000000007', 'c2000000-0000-4000-8000-000000000006', 'docs/c2000000-0000-4000-8000-000000000006/c3000000-0000-4000-8000-000000000007.webp', 'https://media.test/m06-staged-move.webp', 'image/webp', 26, 1, 1);
+create temporary table prepared_staged_move as
+select * from public.doc_prepare_document_save(
+  'c2000000-0000-4000-8000-000000000006',
+  'c1000000-0000-4000-8000-000000000005',
+  'M06 Staged Move', 'm06-staged-move', null,
+  '{"type":"doc","content":[]}'::jsonb, 'draft', 0, 1, '[]'::jsonb
+);
+select ok((select operation_id is not null and finalized is false from prepared_staged_move), 'Move with media removal persists its staged destination');
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_prepare_section_delete('c1000000-0000-4000-8000-000000000005', 'M06 Staged Destination');
+      raise exception 'Expected staged destination guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Section delete preparation rejects a pending save staged to move into its subtree'
+);
 reset role;
 
 select * from finish();
