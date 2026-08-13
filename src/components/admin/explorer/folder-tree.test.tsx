@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 
@@ -89,37 +89,62 @@ it("navigates the virtual root without a section query", async () => {
   expect(navigate).toHaveBeenCalledWith("/admin/structure");
 });
 
-it("toggles a parent with an independent pointer control without selecting it", async () => {
+it("toggles a parent from its pointer and touch disclosure target without selecting it", async () => {
   const navigate = vi.fn();
   const user = userEvent.setup();
   render(<FolderTree sections={sections} selectedSectionId={null} onNavigate={navigate} />);
 
   const root = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
-  const expand = screen.getByRole("button", { name: "ขยายหมวด เริ่มต้น" });
-  expect(expand.className).toContain("size-11");
+  const disclosure = root.querySelector<HTMLElement>("[data-tree-disclosure]");
+  expect(disclosure).not.toBeNull();
+  expect(disclosure!.className).toContain("size-11");
+  expect(within(root).queryByRole("button")).toBeNull();
 
-  await user.click(expand);
+  await user.pointer([
+    { keys: "[MouseLeft>]", target: disclosure! },
+    { keys: "[/MouseLeft]", target: disclosure! },
+  ]);
 
   expect(root.getAttribute("aria-expanded")).toBe("true");
   expect(screen.getByRole("treeitem", { name: /การจอง/ })).not.toBeNull();
   expect(navigate).not.toHaveBeenCalled();
 
-  await user.click(screen.getByRole("button", { name: "ยุบหมวด เริ่มต้น" }));
+  await user.pointer([
+    { keys: "[TouchA>]", target: disclosure! },
+    { keys: "[/TouchA]", target: disclosure! },
+  ]);
 
   expect(root.getAttribute("aria-expanded")).toBe("false");
   expect(screen.queryByRole("treeitem", { name: /การจอง/ })).toBeNull();
   expect(navigate).not.toHaveBeenCalled();
 
-  screen.getByRole("button", { name: "ขยายหมวด เริ่มต้น" }).focus();
-  await user.keyboard("{Enter}");
-
-  expect(root.getAttribute("aria-expanded")).toBe("true");
-  expect(navigate).not.toHaveBeenCalled();
-
   await user.click(root);
 
   expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root");
-  expect(root.getAttribute("aria-expanded")).toBe("true");
+  expect(root.getAttribute("aria-expanded")).toBe("false");
+});
+
+it("provides exactly one Tab entry into the tree and one Tab exit", async () => {
+  const navigate = vi.fn();
+  const user = userEvent.setup();
+  render(
+    <>
+      <button type="button">ก่อนต้นไม้</button>
+      <FolderTree sections={sections} selectedSectionId="root" onNavigate={navigate} />
+      <button type="button">หลังต้นไม้</button>
+    </>,
+  );
+  const before = screen.getByRole("button", { name: "ก่อนต้นไม้" });
+  const after = screen.getByRole("button", { name: "หลังต้นไม้" });
+  const selected = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
+
+  before.focus();
+  await user.tab();
+  expect(document.activeElement).toBe(selected);
+  expect(screen.getAllByRole("treeitem").filter((item) => item.tabIndex === 0)).toEqual([selected]);
+
+  await user.tab();
+  expect(document.activeElement).toBe(after);
 });
 
 it("moves the tab stop and focus to a visible selected section when the focused section is removed", async () => {

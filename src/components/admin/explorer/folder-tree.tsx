@@ -205,18 +205,21 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
             style={{ paddingInlineStart: `${12 + (node.level - 1) * 16}px` }}
           >
             {hasChildren ? (
-              <button
-                type="button"
-                aria-label={`${isExpanded ? "ยุบ" : "ขยาย"}หมวด ${node.title}`}
-                onKeyDown={(event) => event.stopPropagation()}
-                onClick={(event) => {
+              <span
+                data-tree-disclosure
+                aria-hidden="true"
+                title={`${isExpanded ? "ยุบ" : "ขยาย"}หมวด ${node.title}`}
+                onPointerUp={(event) => {
                   event.stopPropagation();
                   setExpanded(node.key, !isExpanded);
                 }}
-                className="inline-flex size-11 shrink-0 items-center justify-center rounded-md hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+                className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-muted"
               >
                 <ChevronRight className={`size-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden="true" />
-              </button>
+              </span>
             ) : (
               <span className="w-11 shrink-0" aria-hidden="true" />
             )}

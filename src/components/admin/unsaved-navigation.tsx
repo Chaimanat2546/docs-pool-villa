@@ -22,18 +22,16 @@ type UnsavedNavigationContextValue = {
 
 type PendingNavigation = {
   approve: () => void;
-  bypassNextTraversal?: boolean;
+  cancel?: () => void;
 };
 
 type BrowserNavigateEvent = Event & {
   canIntercept: boolean;
-  destination: { key: string };
+  intercept: (options: { precommitHandler: () => Promise<void> }) => void;
   navigationType: string;
 };
 
-type BrowserNavigation = EventTarget & {
-  traverseTo: (key: string) => unknown;
-};
+type BrowserNavigation = EventTarget;
 
 const UnsavedNavigationContext = createContext<UnsavedNavigationContextValue | null>(null);
 
@@ -48,18 +46,15 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
   const [dirty, setDirty] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
-  const bypassRef = useRef(false);
   const dirtyRef = useRef(false);
 
   const registerDirty = useCallback((nextDirty: boolean) => {
     dirtyRef.current = nextDirty;
     setDirty(nextDirty);
-    if (!nextDirty) bypassRef.current = false;
   }, []);
 
   const requestNavigation = useCallback((href: string, trigger?: HTMLElement, onApproved?: () => void) => {
-    if (!dirtyRef.current || bypassRef.current) {
-      bypassRef.current = false;
+    if (!dirtyRef.current) {
       onApproved?.();
       router.push(href);
       return;
@@ -74,8 +69,7 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
   }, [router]);
 
   const requestAction = useCallback((action: () => void, trigger?: HTMLElement) => {
-    if (!dirtyRef.current || bypassRef.current) {
-      bypassRef.current = false;
+    if (!dirtyRef.current) {
       action();
       return;
     }
@@ -108,20 +102,25 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
         !dirtyRef.current
         || event.navigationType !== "traverse"
         || !event.canIntercept
-        || !event.destination.key
+        || !event.cancelable
+        || typeof event.intercept !== "function"
       ) return;
-      if (bypassRef.current) {
-        bypassRef.current = false;
-        return;
-      }
 
-      event.preventDefault();
       triggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-      const destinationKey = event.destination.key;
-      setPendingNavigation({
-        approve: () => activeNavigation.traverseTo(destinationKey),
-        bypassNextTraversal: true,
+      let approveTraversal!: () => void;
+      let cancelTraversal!: (reason: DOMException) => void;
+      const decision = new Promise<void>((resolve, reject) => {
+        approveTraversal = resolve;
+        cancelTraversal = reject;
       });
+      setPendingNavigation({
+        approve: approveTraversal,
+        cancel: () => cancelTraversal(new DOMException(
+          "Navigation cancelled to preserve unsaved changes.",
+          "AbortError",
+        )),
+      });
+      event.intercept({ precommitHandler: () => decision });
     }
 
     activeNavigation.addEventListener("navigate", handleNavigate);
@@ -129,13 +128,13 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
   }, []);
 
   function cancelNavigation() {
+    pendingNavigation?.cancel?.();
     setPendingNavigation(null);
   }
 
   function confirmNavigation() {
     if (!pendingNavigation) return;
-    const { approve, bypassNextTraversal = false } = pendingNavigation;
-    bypassRef.current = bypassNextTraversal;
+    const { approve } = pendingNavigation;
     setPendingNavigation(null);
     approve();
   }

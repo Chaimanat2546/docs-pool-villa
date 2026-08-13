@@ -131,10 +131,8 @@ it("registers beforeunload protection only while dirty", () => {
   expect(window.dispatchEvent(cleanEvent)).toBe(true);
 });
 
-it("guards browser Back traversal before popstate without mutating history", async () => {
-  const traverseTo = vi.fn(() => ({ committed: Promise.resolve(), finished: Promise.resolve() }));
+it("delays a cancellable browser traversal until discard is confirmed", async () => {
   const browserNavigation = new EventTarget();
-  Object.assign(browserNavigation, { traverseTo });
   Object.defineProperty(window, "navigation", {
     configurable: true,
     value: browserNavigation,
@@ -144,33 +142,84 @@ it("guards browser Back traversal before popstate without mutating history", asy
   const user = userEvent.setup();
   render(<Harness dirty />);
 
+  let precommit: Promise<void> | undefined;
+  const intercept = vi.fn((options: { precommitHandler: () => Promise<void> }) => {
+    precommit = options.precommitHandler();
+  });
   const backEvent = new Event("navigate", { cancelable: true });
   Object.assign(backEvent, {
     canIntercept: true,
-    destination: { key: "previous-entry" },
+    intercept,
     navigationType: "traverse",
   });
   browserNavigation.dispatchEvent(backEvent);
 
-  expect(backEvent.defaultPrevented).toBe(true);
   expect(await screen.findByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).not.toBeNull();
+  expect(precommit).toBeDefined();
+  await expect(Promise.race([precommit!, Promise.resolve("pending")])).resolves.toBe("pending");
   expect(pushState).not.toHaveBeenCalled();
   expect(replaceState).not.toHaveBeenCalled();
 
-  await user.click(screen.getByRole("button", { name: "แก้ไขต่อ" }));
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect(traverseTo).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "ออกโดยไม่บันทึก" }));
 
-  const secondBackEvent = new Event("navigate", { cancelable: true });
-  Object.assign(secondBackEvent, {
+  await expect(precommit).resolves.toBeUndefined();
+  expect(pushState).not.toHaveBeenCalled();
+  expect(replaceState).not.toHaveBeenCalled();
+});
+
+it("cancels a supported browser traversal when the user keeps editing", async () => {
+  const browserNavigation = new EventTarget();
+  Object.defineProperty(window, "navigation", {
+    configurable: true,
+    value: browserNavigation,
+  });
+  let precommit: Promise<void> | undefined;
+  const intercept = vi.fn((options: { precommitHandler: () => Promise<void> }) => {
+    precommit = options.precommitHandler();
+  });
+  const user = userEvent.setup();
+  render(<Harness dirty />);
+
+  const backEvent = new Event("navigate", { cancelable: true });
+  Object.assign(backEvent, {
     canIntercept: true,
-    destination: { key: "previous-entry" },
+    intercept,
     navigationType: "traverse",
   });
-  browserNavigation.dispatchEvent(secondBackEvent);
-  await user.click(await screen.findByRole("button", { name: "ออกโดยไม่บันทึก" }));
+  browserNavigation.dispatchEvent(backEvent);
+  await screen.findByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" });
+  const cancelled = expect(precommit).rejects.toMatchObject({ name: "AbortError" });
 
-  expect(traverseTo).toHaveBeenCalledWith("previous-entry");
+  await user.click(screen.getByRole("button", { name: "แก้ไขต่อ" }));
+
+  await cancelled;
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+it.each([
+  { canIntercept: true, cancelable: false },
+  { canIntercept: false, cancelable: true },
+])("does not claim to guard an unsupported browser traversal: %o", async ({ canIntercept, cancelable }) => {
+  const browserNavigation = new EventTarget();
+  Object.defineProperty(window, "navigation", {
+    configurable: true,
+    value: browserNavigation,
+  });
+  const intercept = vi.fn();
+  const pushState = vi.spyOn(window.history, "pushState");
+  const replaceState = vi.spyOn(window.history, "replaceState");
+  render(<Harness dirty />);
+
+  const backEvent = new Event("navigate", { cancelable });
+  Object.assign(backEvent, {
+    canIntercept,
+    intercept,
+    navigationType: "traverse",
+  });
+  browserNavigation.dispatchEvent(backEvent);
+
+  expect(intercept).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).toBeNull();
   expect(pushState).not.toHaveBeenCalled();
   expect(replaceState).not.toHaveBeenCalled();
 });
