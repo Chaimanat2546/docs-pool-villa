@@ -2,8 +2,9 @@
 
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
+import { Dialog } from "@base-ui/react/dialog";
 import { Bold, Code2, ImagePlus, Italic, Link2, List, ListOrdered, Quote, Table2, Undo2, Redo2, Video } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { docsExtensions } from "./extensions";
 import { preparePendingImage, type PendingImage } from "./pending-images";
@@ -22,7 +23,8 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<PendingImage[]>([]);
   const dialogInputRef = useRef<HTMLInputElement>(null);
-  const dialogTriggerRef = useRef<HTMLElement | null>(null);
+  const imageTriggerRef = useRef<HTMLButtonElement>(null);
+  const imageDialogHandle = useMemo(() => Dialog.createHandle(), []);
   const appliedContentRevisionRef = useRef(contentRevision);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
     try {
       const pending = await preparePendingImage(file);
       setImageDraft(pending);
-      openDialog("image");
+      imageDialogHandle.open("editor-image-dialog-trigger");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "เตรียมรูปไม่สำเร็จ");
     }
@@ -96,29 +98,39 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
     onChange(nextContent, next);
   }
 
-  function addLink() {
-    openDialog("link");
-  }
-
-  function addYouTube() {
-    openDialog("youtube");
-  }
-
-  function openDialog(nextDialog: Exclude<EditorDialog, null>) {
-    dialogTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  function setDialogOpen(nextDialog: Exclude<EditorDialog, null>, open: boolean) {
+    if (!open) {
+      closeDialog();
+      return;
+    }
     setDialogError(null);
     setDialogValue("");
     setDialog(nextDialog);
   }
 
   function closeDialog() {
-    const trigger = dialogTriggerRef.current;
     if (dialog === "image" && imageDraft) URL.revokeObjectURL(imageDraft.previewUrl);
     setImageDraft(null);
     setDialog(null);
     setDialogError(null);
-    trigger?.focus();
-    dialogTriggerRef.current = null;
+  }
+
+  function renderDialog(nextDialog: Exclude<EditorDialog, null>) {
+    const isImage = nextDialog === "image";
+    return <Dialog.Portal>
+      <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40" />
+      <Dialog.Popup initialFocus={dialogInputRef} finalFocus={isImage ? imageTriggerRef : true} className="fixed left-1/2 top-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-card p-5 shadow-lg outline-none">
+        <Dialog.Title className="text-lg font-semibold">{isImage ? "คำอธิบายภาพ" : nextDialog === "link" ? "เพิ่มลิงก์" : "เพิ่มวิดีโอ YouTube"}</Dialog.Title>
+        <Dialog.Description className="mt-1 text-sm text-muted-foreground">{isImage ? "ระบุคำอธิบายภาพสำหรับผู้อ่านหน้าจอ" : nextDialog === "link" ? "รองรับ http, https หรือ mailto" : "รองรับ youtube.com หรือ youtu.be"}</Dialog.Description>
+        <label className="mt-4 block text-sm font-medium" htmlFor="editor-dialog-value">{isImage ? "Alt text" : "URL"}</label>
+        <input ref={dialogInputRef} id="editor-dialog-value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); submitDialog(); } }} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
+        {dialogError && <p role="alert" className="mt-2 text-sm text-destructive">{dialogError}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <Dialog.Close className="rounded-md border px-3 py-2 text-sm">ยกเลิก</Dialog.Close>
+          <button type="button" onClick={submitDialog} className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">ยืนยัน</button>
+        </div>
+      </Dialog.Popup>
+    </Dialog.Portal>;
   }
 
   function submitDialog() {
@@ -163,29 +175,25 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
         <ToolbarButton label="ตัวเอียง" active={toolbarState.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={16} /></ToolbarButton>
         <ToolbarButton label="รายการหัวข้อ" active={toolbarState.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={16} /></ToolbarButton>
         <ToolbarButton label="รายการตัวเลข" active={toolbarState.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={16} /></ToolbarButton>
-        <ToolbarButton label="ลิงก์" onClick={addLink}><Link2 size={16} /></ToolbarButton>
+        <Dialog.Root open={dialog === "link"} onOpenChange={(open) => setDialogOpen("link", open)}>
+          <Dialog.Trigger aria-label="ลิงก์" className="inline-flex size-10 items-center justify-center rounded-md hover:bg-muted"><Link2 size={16} /></Dialog.Trigger>
+          {renderDialog("link")}
+        </Dialog.Root>
         <ToolbarButton label="Quote" onClick={() => editor.chain().focus().toggleBlockquote().run()}><Quote size={16} /></ToolbarButton>
         <ToolbarButton label="Code block" active={toolbarState.codeBlock} onClick={() => editor.chain().focus().toggleCodeBlock().run()}><Code2 size={16} /></ToolbarButton>
         <ToolbarButton label="ตาราง" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></ToolbarButton>
-        <ToolbarButton label="YouTube" onClick={addYouTube}><Video size={16} /></ToolbarButton>
-        <ToolbarButton label="เพิ่มรูป" onClick={() => fileInputRef.current?.click()}><ImagePlus size={16} /></ToolbarButton>
+        <Dialog.Root open={dialog === "youtube"} onOpenChange={(open) => setDialogOpen("youtube", open)}>
+          <Dialog.Trigger aria-label="YouTube" className="inline-flex size-10 items-center justify-center rounded-md hover:bg-muted"><Video size={16} /></Dialog.Trigger>
+          {renderDialog("youtube")}
+        </Dialog.Root>
+        <Dialog.Root open={dialog === "image"} onOpenChange={(open) => setDialogOpen("image", open)} handle={imageDialogHandle}>
+          <Dialog.Trigger handle={imageDialogHandle} id="editor-image-dialog-trigger" ref={imageTriggerRef} aria-label="เพิ่มรูป" onClick={(event) => { event.preventBaseUIHandler(); imageTriggerRef.current = event.currentTarget; fileInputRef.current?.click(); }} className="inline-flex size-10 items-center justify-center rounded-md hover:bg-muted"><ImagePlus size={16} /></Dialog.Trigger>
+          {renderDialog("image")}
+        </Dialog.Root>
         <ToolbarButton label="ย้อนกลับ" onClick={() => editor.chain().focus().undo().run()}><Undo2 size={16} /></ToolbarButton>
         <ToolbarButton label="ทำซ้ำ" onClick={() => editor.chain().focus().redo().run()}><Redo2 size={16} /></ToolbarButton>
       </div>
       <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addImage(file); event.currentTarget.value = ""; }} />
-      {dialog && <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" role="presentation">
-        <div role="dialog" aria-modal="true" aria-labelledby="editor-dialog-title" aria-describedby="editor-dialog-description" className="w-full max-w-md rounded-xl border bg-card p-5 shadow-lg" onKeyDown={(event) => { if (event.key === "Escape") closeDialog(); }}>
-          <h2 id="editor-dialog-title" className="text-lg font-semibold">{dialog === "image" ? "คำอธิบายภาพ" : dialog === "link" ? "เพิ่มลิงก์" : "เพิ่มวิดีโอ YouTube"}</h2>
-          <p id="editor-dialog-description" className="mt-1 text-sm text-muted-foreground">{dialog === "image" ? "ระบุคำอธิบายภาพสำหรับผู้อ่านหน้าจอ" : dialog === "link" ? "รองรับ http, https หรือ mailto" : "รองรับ youtube.com หรือ youtu.be"}</p>
-          <label className="mt-4 block text-sm font-medium" htmlFor="editor-dialog-value">{dialog === "image" ? "Alt text" : "URL"}</label>
-          <input ref={dialogInputRef} id="editor-dialog-value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); submitDialog(); } }} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
-          {dialogError && <p role="alert" className="mt-2 text-sm text-destructive">{dialogError}</p>}
-          <div className="mt-5 flex justify-end gap-2">
-            <button type="button" onClick={closeDialog} className="rounded-md border px-3 py-2 text-sm">ยกเลิก</button>
-            <button type="button" onClick={submitDialog} className="rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground">ยืนยัน</button>
-          </div>
-        </div>
-      </div>}
       {message && <p role="alert" className="m-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
       <EditorContent editor={editor} />
       {pendingImages.length > 0 && <p className="border-t px-4 py-3 text-sm text-muted-foreground">รูป {pendingImages.length} รูปเก็บชั่วคราวในเบราว์เซอร์ และจะยังไม่อัปโหลดจนกดบันทึก</p>}
