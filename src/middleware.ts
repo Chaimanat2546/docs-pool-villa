@@ -2,9 +2,10 @@ import type { NextRequest } from "next/server";
 
 import { updateSession } from "@/lib/middleware";
 
-// Session refresh only. Authorization remains in Page guards, Server Actions
-// and Supabase RLS.
-export async function proxy(request: NextRequest) {
+// Legacy Middleware is retained only because the installed OpenNext adapter
+// rejected Next.js Node Proxy in the recorded build. Authorization remains in
+// Page guards, Server Actions and Supabase RLS.
+export async function middleware(request: NextRequest) {
   return updateSession(request);
 }
 
