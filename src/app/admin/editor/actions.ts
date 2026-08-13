@@ -1,6 +1,7 @@
 "use server";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { getDocsMediaRuntimeConfig } from "@/lib/media/runtime-config";
 import { signMediaUploadTicket } from "@/lib/media/upload-ticket";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -25,8 +26,7 @@ export async function createMediaUploadTicket(input: unknown): Promise<MediaUplo
   ) {
     return { error: "ข้อมูลรูปไม่ถูกต้อง" };
   }
-  const workerUrl = process.env.NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL;
-  const secret = process.env.DOCS_MEDIA_UPLOAD_SECRET;
+  const { workerUrl, secret } = await getDocsMediaRuntimeConfig();
   if (!workerUrl || !secret) return { error: "ยังไม่ได้ตั้งค่า Docs Media Worker" };
 
   const mediaId = crypto.randomUUID();

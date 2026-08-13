@@ -27,7 +27,7 @@
 - Worker รับ `PUT /uploads` เฉพาะ ticket ที่ผูกกับ `docs/{document_id}/{media_id}.webp`, Origin ที่อนุญาต, `image/webp` และขนาดไม่เกิน 10 MB
 - R2 ใช้ conditional create (`etagDoesNotMatch: '*'`) เพื่อป้องกัน ticket replay เขียนทับ object เดิม; response คืน metadata ที่ตรวจจริงให้ M04 บันทึก
 - Worker Local config อยู่ที่ `workers/docs-media/wrangler.jsonc`; secret local อยู่ใน `.dev.vars` ที่ถูก ignore และห้าม deploy จนกว่าภูจะอนุมัติ
-- M06 ใช้ durable `doc_media_operations`: prepare จะ freeze เอกสารและ persist exact-key manifest, Server Action ส่ง HMAC ticket ที่ผูก operation ID/type, document และ exact object keys ไป Worker แล้ว finalize DB เฉพาะเมื่อ R2 สำเร็จ
+- M06 ใช้ durable `doc_media_operations`: prepare จะ freeze เอกสารและ persist exact-key manifest, Server Action อ่าน secret จาก runtime binding แล้วส่ง HMAC ticket ที่ผูก operation ID/type, document และ exact object keys ไป Worker ผ่าน Cloudflare Service Binding `DOCS_MEDIA`; finalize DB เฉพาะเมื่อ R2 สำเร็จ
 - Worker DELETE ไม่รับ ticket จาก Browser และการลบ key เดิมซ้ำเป็น success เพื่อให้ Retry ของ operation เดิมปลอดภัย
 - Worker อ่านรูปด้วย `GET /objects/docs/{document_id}/{media_id}.webp` เท่านั้น; ส่งผ่าน R2 stream, `image/webp` และ immutable cache header โดยไม่เปิด bucket listing หรือ arbitrary key access
 

@@ -22,7 +22,7 @@ const mediaId = "33333333-3333-4333-8333-333333333333";
 
 describe("saveDocument", () => {
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL = "https://media.example.test";
+    Reflect.set(process.env, "NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL", "https://media.example.test");
     runDocumentSave.mockReset();
     runDocumentSave.mockResolvedValue({ success: true, kind: "save_remove", targetId: documentId, version: 1, path: "/guides/start" });
   });

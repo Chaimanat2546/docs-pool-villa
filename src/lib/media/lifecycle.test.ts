@@ -17,7 +17,7 @@ describe("media lifecycle", () => {
     rpc.mockReset();
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
-    process.env.NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL = "https://media.example.test";
+    Reflect.set(process.env, "NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL", "https://media.example.test");
     process.env.DOCS_MEDIA_UPLOAD_SECRET = "test-secret";
   });
 

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { groupDeleteBatches, type MediaDeleteItem } from "@/lib/media/content-media";
+import { getDocsMediaRuntimeConfig } from "@/lib/media/runtime-config";
 import { signMediaDeleteTicket } from "@/lib/media/upload-ticket";
 import { createClient } from "@/lib/server";
 
@@ -52,13 +53,15 @@ async function loadOperation(operationId: string): Promise<{ row: OperationRow; 
 }
 
 async function deleteWorkerBatch(input: { operationId: string; operationType: MediaOperationKind | "cleanup"; documentId: string; objectKeys: string[]; displayLabels: string[] }): Promise<{ message: string; files: string[] } | null> {
-  const workerUrl = process.env.NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL;
-  const secret = process.env.DOCS_MEDIA_UPLOAD_SECRET;
+  const { workerUrl, secret, workerService } = await getDocsMediaRuntimeConfig();
   if (!workerUrl || !secret) return { message: "ยังไม่ได้ตั้งค่า Docs Media Worker", files: input.displayLabels };
   const ticket = await signMediaDeleteTicket({ operation: "delete", operationId: input.operationId, operationType: input.operationType, documentId: input.documentId, objectKeys: input.objectKeys, expiresAt: Date.now() + 5 * 60_000 }, secret);
   try {
-    const response = await fetch(new URL("/objects", workerUrl), { method: "DELETE", headers: { "X-Docs-Media-Ticket": ticket }, cache: "no-store" });
+    const endpoint = new URL("/objects", workerUrl);
+    const request = new Request(endpoint, { method: "DELETE", headers: { "X-Docs-Media-Ticket": ticket }, cache: "no-store" });
+    const response = workerService ? await workerService.fetch(request) : await fetch(request);
     if (response.ok) return null;
+    console.warn(JSON.stringify({ message: "docs media delete rejected", operationId: input.operationId, operationType: input.operationType, transport: workerService ? "service_binding" : "public_url", endpoint: endpoint.origin, status: response.status }));
     return { message: "ลบรูปจาก R2 ไม่สำเร็จ", files: input.displayLabels };
   } catch {
     return { message: "เชื่อมต่อ Docs Media Worker ไม่สำเร็จ", files: input.displayLabels };

@@ -14,5 +14,14 @@
     "NEXT_PUBLIC_DOCS_SITE_URL": "https://docs-pool-villa-staging.chaymanus2003.workers.dev",
     "NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL": "https://docs-media-staging.chaymanus2003.workers.dev"
   },
+  "secrets": {
+    "required": ["DOCS_MEDIA_UPLOAD_SECRET"]
+  },
+  "services": [
+    {
+      "binding": "DOCS_MEDIA",
+      "service": "docs-media-staging"
+    }
+  ],
   "observability": { "enabled": true, "head_sampling_rate": 1 }
 }

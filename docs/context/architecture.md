@@ -25,6 +25,7 @@
 
 - Docs Worker/Secret แยกจาก `webook-media` Worker เดิม
 - Worker จำกัดสิทธิ์เฉพาะ prefix `docs/`
+- Server operations ของ Docs App เรียก Docs Media Worker ผ่าน Cloudflare Service Binding `DOCS_MEDIA`; Browser ใช้ public Worker URL เฉพาะ upload/read ที่จำเป็น และ secret อ่านจาก runtime binding เท่านั้น
 - Staging และ Production แยก Cloudflare Account, Supabase Project, Auth, DB, R2, Worker, Domain และ Secrets
 - Staging ใช้ Test users และห้าม Copy ข้อมูลผู้ใช้จริง
 - ห้าม Deploy, ตั้งค่า Domain หรือ Migration จนกว่าภูจะสั่ง
