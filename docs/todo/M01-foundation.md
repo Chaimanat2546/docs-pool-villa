@@ -1,6 +1,6 @@
 # M01 — Foundation, Supabase Auth & Docs-only RLS
 
-**Status:** Pending Staging verification
+**Status:** Complete — Approved Staging App smoke passed
 
 **Pre-M04 remediation:** Local complete; see [Remediation TODO](M01-M03-remediation.md) for the Staging gate.
 
@@ -73,5 +73,5 @@
 - Build โดยกำหนดเฉพาะ public Staging values และ `npx wrangler deploy --dry-run --config wrangler.jsonc` ผ่าน: target คือ `docs-pool-villa-staging`, binding `DOCS_MEDIA` อยู่ครบ และไม่แสดง secret.
 - Deploy เฉพาะ Docs App ด้วย `npx wrangler deploy --config wrangler.jsonc --keep-vars` สำเร็จเป็น version `c9c10b09-a383-4fbf-9bba-5609831c29cb`; ไม่ได้ deploy Docs Media Worker, migration, reset, truncate หรือลบข้อมูล Staging และไม่ได้แตะ Production.
 - Guest HTTP request ไป `/admin` ตอบ `307 Location: /auth/login`. Admin session ที่มีอยู่เห็น Sidebar และ active state ของ Structure/Documents/Editor; ที่ viewport 390px ปุ่ม `เมนูผู้ดูแล` เปิด drawer ที่ focus ถูกกักใน dialog, Escape คืน focus ให้ปุ่มเดิม, ไม่มี horizontal overflow หรือ console error. คลิก `ออกจากระบบ` ไป `/auth/login` และเรียก `/admin` หลัง logout ยังไป `/auth/login`.
-- **Blocker ที่เหลือ:** ไม่มี existing Staging non-admin session ใน browser ที่เชื่อมอยู่ จึงยังไม่ได้ยืนยันว่า `/admin` กลับ Public โดยไม่มี Admin shell สำหรับ round นี้. ไม่สร้าง user หรือแก้ข้อมูลเพื่อทดแทน. M01 ต้องคงสถานะ **Pending Staging verification** จนกว่าจะมี human handoff ของ session นี้; ห้ามปิด M01 จากผล Guest/Admin เพียงอย่างเดียว.
+- Non-admin session handoff สำเร็จแล้ว: เรียก Staging `/admin` ถูกส่งไป Public homepage `/` และไม่ render Admin shell/sidebar; console error เป็นศูนย์. ไม่ inspect cookie/storage และไม่มีการสร้าง user หรือแก้ข้อมูล. ครบ Guest/non-admin/Admin navigation และ sign-out acceptance จึงปิด M01 ได้.
 

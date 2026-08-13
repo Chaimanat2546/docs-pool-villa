@@ -11,7 +11,7 @@
 
 | Module | สถานะ | รายละเอียด |
 |---|---|---|
-| M01 Foundation/Auth/RLS | Pending Staging verification — Guest/Admin navigation and sign-out passed on the approved App deploy; a human handoff with an existing non-admin Staging session is still required before M01 can close | [TODO](docs/todo/M01-foundation.md) |
+| M01 Foundation/Auth/RLS | Complete — Approved Staging App smoke passed for Guest/non-admin/Admin navigation and sign-out; wait for ภู before starting M02 | [TODO](docs/todo/M01-foundation.md) |
 | M02 Structure | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M02-structure.md) |
 | M03 Editor/Media | Ready to close — final M01–M06 gate passed | [TODO](docs/todo/M03-editor-media.md) |
 | Pre-M04 Remediation | Complete; M04 plan approved | [TODO](docs/todo/M01-M03-remediation.md) |

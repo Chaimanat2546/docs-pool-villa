@@ -4,7 +4,7 @@
 
 ## Current state
 
-- M01 historical evidence: `.env.local` และ CLI ใช้ Staging, Staging ถูก reset ถึง Production baseline `20260806173000`, Docs migrations ผ่าน Staging แล้ว และ Browser smoke ครบทุก role. รอบ Approved Staging App deploy ล่าสุดยืนยัน Guest และ Admin navigation/sign-out แล้ว แต่ยังเป็น **Pending Staging verification** เพราะไม่มี existing non-admin session สำหรับ smoke ซ้ำในรอบนี้ จึงไม่ทำให้ M01 ปิดงาน
+- M01 historical evidence: `.env.local` และ CLI ใช้ Staging, Staging ถูก reset ถึง Production baseline `20260806173000`, Docs migrations ผ่าน Staging แล้ว และ Browser smoke ครบทุก role. รอบ Approved Staging App deploy ล่าสุดยืนยัน Guest/non-admin/Admin navigation และ sign-out ครบ จึงปิด M01 ได้
 - `npm run lint` — ผ่าน เมื่อ 11 สิงหาคม 2026
 - `npm run build` — ผ่าน เมื่อ 11 สิงหาคม 2026
 - `npm run test:db` — ผ่าน 41 pgTAP tests เมื่อ 11 สิงหาคม 2026: Guest, Authenticated non-admin และ Admin (`role_id = 1` แม้ UID ซ้ำ); ครอบคลุม Sections/Documents/Media/Redirects, CRUD และ direct `SELECT doc_sections`
@@ -55,7 +55,7 @@
 - Admin navigation/sign-out local verification (13 สิงหาคม 2026): `rg -n "await requireAdmin\\(\\)" src/app/admin` ยืนยัน Server guard ที่ Admin pages ของ Structure, Documents (list/new/edit) และ Editor; `npm run test:admin-shell` ผ่าน 7/7, `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run cf:build` และ `git diff --check` ผ่าน. OpenNext build มีเฉพาะ warning เดิมเรื่อง `middleware` deprecated และ Windows compatibility. Secret scan ตาม tracked scope ไม่พบ secret/connection string: lexical matches 8 จุดประกอบด้วย historical plan literal 5 จุดที่เป็น benign documentation context และ policy prose ของ `service_role` 3 จุด; ไม่มี PostgreSQL connection-string match และไม่แสดงหรือบันทึกค่า secret.
 - Approved Staging App smoke — 13 สิงหาคม 2026: Build ด้วย `NEXT_PUBLIC_DOCS_SITE_URL=https://docs-pool-villa-staging.chaymanus2003.workers.dev` และ `NEXT_PUBLIC_SUPABASE_URL=https://sxvkhzhqtrpxgzumsswl.supabase.co`, จากนั้น `npx wrangler deploy --dry-run --config wrangler.jsonc` ผ่านโดยมี target `docs-pool-villa-staging` และ binding `DOCS_MEDIA`. Deploy เฉพาะ Docs App ด้วย `npx wrangler deploy --config wrangler.jsonc --keep-vars` สำเร็จเป็น version `c9c10b09-a383-4fbf-9bba-5609831c29cb`; deployment list ชี้ version นี้ 100%. ไม่ deploy Docs Media Worker และไม่มี migration/reset/truncate/delete/Production action.
 - Staging Guest/Admin navigation and logout smoke — 13 สิงหาคม 2026: Guest `curl` ไป `/admin` ตอบ `307 Location: /auth/login`; Admin มี Sidebar และ active state ถูกต้องบน Structure/Documents/Editor. ที่ 390px drawer `เมนูผู้ดูแล` เปิดได้, focus ถูกกักใน dialog, Escape คืน focus, viewport ไม่มี horizontal overflow และ console error เป็นศูนย์. Admin logout ไป `/auth/login` และ `/admin` หลัง logout ยังไป login. `npm run test:admin-shell` ผ่าน 7/7 หลัง deploy.
-- **Pending blocker:** ไม่มี existing Staging non-admin session ใน Codex In-app Browser หรือ Chrome ที่เชื่อมอยู่ จึงยังไม่ได้ตรวจ `/admin` กลับ Public โดยไม่มี Admin shell ใน round นี้. ไม่สร้าง user หรือแก้ fixture/legacy data. M01 คง Pending Staging verification จนกว่าจะมี human handoff ของ non-admin session.
+- Staging non-admin handoff smoke — 13 สิงหาคม 2026: session non-admin ที่เชื่อมอยู่ถูกเรียก `/admin` แล้วไป Public homepage `/`; DOM ไม่มี Admin shell/sidebar และ console error เป็นศูนย์. ไม่ inspect cookie/storage และไม่มีการแก้ข้อมูล. ด้วยผลนี้ครบ Guest/non-admin/Admin navigation และ sign-out acceptance; M01 ปิดงานแล้ว.
 
 ## Required checks by the end of MVP
 
