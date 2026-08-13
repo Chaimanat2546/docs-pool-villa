@@ -1,5 +1,5 @@
--- Staging-only M06 repeat smoke setup. This keeps a second isolated fixture
--- and must not be run locally. Do not delete this test data without approval.
+-- Staging-only historical setup. Cleanup is now approved, but may run only
+-- through the exact-target manifest after R2 and database preflight checks.
 begin;
 
 insert into public.doc_sections (id, title, slug, description, is_published, sort_order)

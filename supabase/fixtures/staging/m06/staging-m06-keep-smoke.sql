@@ -1,6 +1,5 @@
--- Staging-only M06 smoke setup. This intentionally commits the isolated
--- M06 Staging Keep records; do not run it locally or delete these records
--- until the user explicitly approves cleanup.
+-- Staging-only historical setup. Cleanup is now approved, but may run only
+-- through the exact-target manifest after R2 and database preflight checks.
 begin;
 
 insert into auth.users (id, email)
