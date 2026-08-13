@@ -103,8 +103,27 @@ describe("SectionPanel", () => {
   it("disables third-level creation with a visible explanation", () => {
     render(<SectionPanel selectedSectionId={childId} mode="view" explorer={explorer} />);
 
-    expect((screen.getByRole("button", { name: "เพิ่มหมวดย่อย" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("รองรับหมวดไม่เกิน 2 ระดับ")).not.toBeNull();
+    const createChild = screen.getByRole("button", { name: "เพิ่มหมวดย่อย" }) as HTMLButtonElement;
+    expect(createChild.disabled).toBe(true);
+    const explanationId = createChild.getAttribute("aria-describedby");
+    expect(explanationId).not.toBeNull();
+    expect(document.getElementById(explanationId ?? "")?.textContent).toBe("รองรับหมวดไม่เกิน 2 ระดับ");
+  });
+
+  it("allows long Thai section titles to shrink and wrap without widening the workspace", () => {
+    const longTitle = "การตั้งค่าการรับชำระเงินและการแจ้งเตือนสำหรับผู้ดูแลพูลวิลล่าที่มีชื่อหมวดยาวมาก";
+    render(<SectionPanel
+      selectedSectionId={childId}
+      mode="view"
+      explorer={{
+        ...explorer,
+        sections: explorer.sections.map((section) => section.id === childId ? { ...section, title: longTitle } : section),
+      }}
+    />);
+
+    const heading = screen.getByRole("heading", { name: longTitle });
+    expect(heading.className).toContain("break-words");
+    expect(heading.parentElement?.className).toContain("min-w-0");
   });
 
   it("links rename to edit mode and prefills the selected child", () => {
@@ -140,7 +159,7 @@ describe("SectionPanel", () => {
     await user.click(screen.getByRole("button", { name: "ลบหมวด" }));
     const dialog = await screen.findByRole("dialog", { name: "ยืนยันการลบหมวด" });
     expect(within(dialog).getByText("วิธีจองพูลวิลล่า")).not.toBeNull();
-    const permanentDelete = within(dialog).getByRole("button", { name: "ลบถาวร" });
+    const permanentDelete = await within(dialog).findByRole("button", { name: "ลบถาวร" });
     expect((permanentDelete as HTMLButtonElement).disabled).toBe(true);
     await user.type(within(dialog).getByRole("textbox", { name: /พิมพ์.*การจอง.*เพื่อยืนยัน/ }), "การจอง");
     expect((permanentDelete as HTMLButtonElement).disabled).toBe(false);

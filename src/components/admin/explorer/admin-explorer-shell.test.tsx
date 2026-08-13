@@ -8,6 +8,9 @@ import { afterEach, expect, it, vi } from "vitest";
 import { UnsavedNavigationProvider, useUnsavedNavigation } from "@/components/admin/unsaved-navigation";
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
+import ContentError from "@/app/admin/(content)/error";
+import ContentLoading from "@/app/admin/(content)/loading";
+
 import { AdminExplorerShell } from "./admin-explorer-shell";
 
 const { push, sectionQuery } = vi.hoisted(() => ({
@@ -81,6 +84,22 @@ it("traps mobile drawer focus and returns it to เลือกหมวด", as
   await waitFor(() => expect(document.activeElement).toBe(trigger));
 });
 
+it("renders one mobile section trigger and constrains its modal drawer to the viewport", async () => {
+  const user = userEvent.setup();
+  render(<ExplorerHarness />);
+
+  const triggers = screen.getAllByRole("button", { name: "เลือกหมวด" });
+  expect(triggers).toHaveLength(1);
+  expect(triggers[0].className).toContain("min-h-11");
+  expect(triggers[0].parentElement?.className).toContain("lg:hidden");
+
+  await user.click(triggers[0]);
+  const drawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
+  expect(drawer.getAttribute("aria-modal")).toBe("true");
+  expect(drawer.className).toContain("max-w-[calc(100vw-2rem)]");
+  expect(within(drawer).getByRole("button", { name: "ปิดรายการหมวด" }).className).toContain("size-11");
+});
+
 it("provides a bounded desktop-only keyboard resize control", async () => {
   const user = userEvent.setup();
   render(<ExplorerHarness />);
@@ -92,10 +111,35 @@ it("provides a bounded desktop-only keyboard resize control", async () => {
   expect(slider.value).toBe("288");
   expect(slider.classList.contains("hidden")).toBe(true);
   expect(slider.classList.contains("lg:block")).toBe(true);
+  expect(screen.getByRole("main").parentElement?.style.gridTemplateColumns).toBe("288px minmax(0,1fr)");
+  expect(screen.getByRole("main").className).toContain("min-w-0");
 
   slider.focus();
   await user.keyboard("{ArrowRight}");
   expect(slider.value).toBe("304");
+});
+
+it("renders a stable right-pane loading state without duplicating the folder tree", () => {
+  render(<ContentLoading />);
+
+  const loading = screen.getByLabelText("กำลังโหลดพื้นที่จัดการเนื้อหา");
+  expect(loading.getAttribute("aria-busy")).toBe("true");
+  expect(screen.queryByRole("tree")).toBeNull();
+  expect(loading.className).toContain("min-w-0");
+});
+
+it("renders a safe recoverable route error and resets exactly once", async () => {
+  const user = userEvent.setup();
+  const reset = vi.fn();
+  render(<ContentError error={new Error("database-password-leak")} reset={reset} />);
+
+  const alert = screen.getByRole("alert");
+  expect(alert.textContent).toContain("โหลดพื้นที่จัดการเนื้อหาไม่สำเร็จ");
+  expect(alert.textContent).not.toContain("database-password-leak");
+  const retry = screen.getByRole("button", { name: "ลองใหม่" });
+  expect(retry.className).toContain("min-h-11");
+  await user.click(retry);
+  expect(reset).toHaveBeenCalledOnce();
 });
 
 it("validates the requested section before marking a tree item selected", () => {

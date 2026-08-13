@@ -118,4 +118,21 @@ describe("DocumentSetupForm", () => {
     expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "หมวดเอกสาร" }).value).toBe(sectionId);
     expect(replace).not.toHaveBeenCalled();
   });
+
+  it("keeps long selected paths inside the responsive setup pane and preserves 44px actions", () => {
+    const longTitle = "การตั้งค่าการจองและการรับชำระเงินสำหรับผู้ดูแลที่มีชื่อหมวดยาวมาก";
+    render(
+      <DocumentSetupForm
+        sections={sections.map((section) => section.id === sectionId ? { ...section, title: longTitle } : section)}
+        selectedSectionId={sectionId}
+      />,
+    );
+
+    const formPane = screen.getByRole("heading", { name: "สร้างเอกสาร" }).closest("section");
+    expect(formPane?.className).toContain("min-w-0");
+    expect(formPane?.className).toContain("w-full");
+    expect(screen.getByText(`เริ่มต้น › ${longTitle}`, { selector: "span" }).className).toContain("break-words");
+    expect(screen.getByRole("link", { name: "ยกเลิก" }).className).toContain("min-h-11");
+    expect(screen.getByRole("button", { name: "สร้างฉบับร่างและเขียนต่อ" }).className).toContain("min-h-11");
+  });
 });

@@ -62,9 +62,9 @@ export function DocumentSetupForm({ sections, selectedSectionId }: DocumentSetup
   }
 
   return (
-    <section aria-labelledby="document-setup-title" className="mx-auto max-w-3xl rounded-xl border bg-card p-5 shadow-sm">
+    <section aria-labelledby="document-setup-title" className="mx-auto min-w-0 w-full max-w-3xl rounded-xl border bg-card p-5 shadow-sm">
       <p className="text-sm font-medium text-muted-foreground">ขั้นที่ 1 จาก 3 · ข้อมูลเอกสาร</p>
-      <h1 id="document-setup-title" className="mt-1 text-2xl font-semibold">สร้างเอกสาร</h1>
+      <h1 id="document-setup-title" className="mt-1 break-words text-2xl font-semibold">สร้างเอกสาร</h1>
       <p className="mt-2 text-sm text-muted-foreground">กำหนดข้อมูลเริ่มต้นก่อนเปิดหน้าเขียนเนื้อหา</p>
 
       {message && (
@@ -109,8 +109,8 @@ export function DocumentSetupForm({ sections, selectedSectionId }: DocumentSetup
               </option>
             ))}
           </select>
-          <p aria-live="polite" className="mt-2 text-sm text-muted-foreground">
-            ตำแหน่ง: <span className="font-medium text-foreground">{selectedPath.map((section) => section.title).join(" › ")}</span>
+          <p aria-live="polite" className="mt-2 min-w-0 break-words text-sm text-muted-foreground">
+            ตำแหน่ง: <span className="break-words font-medium text-foreground">{selectedPath.map((section) => section.title).join(" › ")}</span>
           </p>
         </Field>
 

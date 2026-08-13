@@ -40,7 +40,7 @@ export function AdminExplorerShell({ sections, children }: AdminExplorerShellPro
   }
 
   return (
-    <section aria-label="พื้นที่จัดการเนื้อหา" className="min-w-0">
+    <section aria-label="พื้นที่จัดการเนื้อหา" className="min-w-0 max-w-full">
       <Dialog.Root open={mobileTreeOpen} onOpenChange={setMobileTreeOpen}>
         <div className="border-b bg-card px-4 py-3 lg:hidden">
           <Dialog.Trigger className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium">
@@ -50,7 +50,10 @@ export function AdminExplorerShell({ sections, children }: AdminExplorerShellPro
         </div>
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50 lg:hidden" />
-          <Dialog.Popup className="fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col bg-card p-4 shadow-xl outline-none lg:hidden">
+          <Dialog.Popup
+            aria-modal="true"
+            className="fixed inset-y-0 left-0 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col bg-card p-4 shadow-xl outline-none lg:hidden"
+          >
             <div className="flex items-center justify-between gap-3 border-b pb-3">
               <Dialog.Title className="text-lg font-semibold">หมวดคู่มือ</Dialog.Title>
               <Dialog.Close aria-label="ปิดรายการหมวด" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full">
@@ -90,7 +93,7 @@ export function AdminExplorerShell({ sections, children }: AdminExplorerShellPro
             />
           </div>
         </aside>
-        <main className="min-w-0">{children}</main>
+        <main className="min-w-0 max-w-full">{children}</main>
       </div>
     </section>
   );

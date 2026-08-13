@@ -40,7 +40,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
   const hasStatusFilter = status !== "all";
 
   return (
-    <section aria-labelledby="document-list-title" className="rounded-xl border bg-card shadow-sm">
+    <section aria-labelledby="document-list-title" className="min-w-0 w-full rounded-xl border bg-card shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b p-5">
         <div>
           <h2 id="document-list-title" className="text-lg font-semibold">เอกสารในหมวด</h2>
@@ -111,12 +111,12 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
                     </span>
                   </div>
                   {selectedSectionId === null && sectionPath.length > 0 && (
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 break-words text-sm text-muted-foreground">
                       {sectionPath.map((section) => section.title).join(" › ")}
                     </p>
                   )}
                   <p className="mt-1 text-xs text-muted-foreground">
-                    อัปเดตล่าสุด {dateFormatter.format(new Date(document.updatedAt))} · <span className="font-mono">{document.slug}</span>
+                    อัปเดตล่าสุด {dateFormatter.format(new Date(document.updatedAt))} · <span className="break-all font-mono">{document.slug}</span>
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">

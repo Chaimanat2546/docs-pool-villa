@@ -210,7 +210,7 @@ export function DocumentForm({
     : `/admin/structure?section=${encodeURIComponent(savedSectionId)}`;
 
   return (
-    <main className="mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6">
+    <main className="mx-auto min-w-0 w-full max-w-6xl px-4 py-8 sm:px-6">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold">แก้ไขเอกสาร</h1>
         <p className="mt-1 text-sm text-muted-foreground">บันทึกด้วยตนเองเท่านั้น {dirty ? "• มีการแก้ไขที่ยังไม่บันทึก" : ""}</p>
@@ -247,7 +247,7 @@ export function DocumentForm({
         </section>
       ) : (
         <section aria-labelledby="review-stage-heading" className="rounded-xl border bg-card p-4 sm:p-6">
-          <p className="text-sm text-muted-foreground">{sectionPath(sections, savedSectionId)}</p>
+          <p className="min-w-0 break-words text-sm text-muted-foreground">{sectionPath(sections, savedSectionId)}</p>
           <h2 id="review-stage-heading" className="mt-2 text-xl font-semibold">ตรวจและเผยแพร่</h2>
           <p className="mt-2 text-sm text-muted-foreground">ตรวจตัวอย่างและเลือกสถานะก่อนบันทึกขั้นสุดท้าย</p>
           <label className="mt-6 block text-sm font-medium">สถานะ<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as FormState["status"] })} className="mt-1 h-11 w-full rounded-md border bg-background px-3 sm:max-w-sm"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>

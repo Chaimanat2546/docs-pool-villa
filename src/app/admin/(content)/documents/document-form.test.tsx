@@ -157,6 +157,28 @@ it("opens Preview from review before final save", async () => {
   expect(actions.saveDocument).not.toHaveBeenCalled();
 });
 
+it("keeps long Thai section paths inside the responsive review pane with 44px actions", () => {
+  const longSectionTitle = "การตั้งค่าการจองและการรับชำระเงินสำหรับผู้ดูแลที่มีชื่อหมวดยาวมาก";
+  const view = render(
+    <DocumentForm
+      document={{ ...document, sectionId: childSectionId }}
+      sections={[
+        sections[0],
+        { ...sections[1], title: longSectionTitle },
+      ]}
+      initialStage="review"
+      returnHref={`/admin/structure?section=${childSectionId}`}
+    />,
+  );
+
+  const main = view.container.querySelector("main");
+  expect(main?.className).toContain("w-full");
+  expect(screen.getByText(`เริ่มต้น › ${longSectionTitle}`).className).toContain("break-words");
+  for (const name of ["ดูตัวอย่าง", "กลับไปแก้เนื้อหา", "ยกเลิก", "บันทึกและกลับรายการ"]) {
+    expect(screen.getByRole("button", { name }).className).toContain("min-h-11");
+  }
+});
+
 it("cancel keeps the saved draft and uses the unsaved guard", async () => {
   const user = userEvent.setup();
   renderForm();

@@ -133,6 +133,16 @@ describe("DocumentList", () => {
     expect(screen.getByText("ไม่พบเอกสารที่ตรงกับการค้นหา")).not.toBeNull();
   });
 
+  it("distinguishes an empty status filter from an empty section", async () => {
+    const user = userEvent.setup();
+    renderList("child", documents.filter((document) => document.status === "draft"));
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "กรองตามสถานะ" }), "published");
+
+    expect(screen.getByText("ไม่พบเอกสารที่ตรงกับสถานะที่เลือก")).not.toBeNull();
+    expect(screen.queryByText("หมวดนี้ยังไม่มีเอกสาร")).toBeNull();
+  });
+
   it("filters by status and keeps Thai text labels visible", async () => {
     const user = userEvent.setup();
     renderList("child");
@@ -168,5 +178,34 @@ describe("DocumentList", () => {
 
     expect(screen.queryByRole("link", { name: "สร้างเอกสารในหมวดนี้" })).toBeNull();
     expect(screen.getByText("เลือกหมวดจากรายการด้านซ้ายก่อนสร้างเอกสาร")).not.toBeNull();
+  });
+
+  it("contains long titles, section paths, and slugs inside the responsive pane", () => {
+    const longTitle = "วิธีจัดการการจองพูลวิลล่าสำหรับคำขอพิเศษที่มีรายละเอียดภาษาไทยยาวมาก";
+    const longSlug = "create-a-booking-with-a-very-long-descriptive-slug-that-must-not-overflow-the-page";
+    const longSectionTitle = "การจัดการคำขอพิเศษและการชำระเงินที่มีชื่อหมวดยาวมาก";
+    renderList(null, [{
+      ...documents[0],
+      sectionId: "child",
+      title: longTitle,
+      slug: longSlug,
+    }]);
+
+    const list = screen.getByRole("list", { name: "รายการเอกสาร" });
+    const title = within(list).getByRole("heading", { name: longTitle });
+    expect(title.className).toContain("truncate");
+    expect(title.closest("div.min-w-0")).not.toBeNull();
+    expect(within(list).getByText(longSlug).className).toContain("break-all");
+
+    const view = render(
+      <UnsavedNavigationProvider>
+        <DocumentList
+          documents={[{ ...documents[0], sectionId: "empty" }]}
+          sections={sections.map((section) => section.id === "empty" ? { ...section, title: longSectionTitle } : section)}
+          selectedSectionId={null}
+        />
+      </UnsavedNavigationProvider>,
+    );
+    expect(within(view.container).getByText(`เริ่มต้น › ${longSectionTitle}`).className).toContain("break-words");
   });
 });

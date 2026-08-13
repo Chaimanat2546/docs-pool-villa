@@ -127,16 +127,16 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
         : null;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-      <nav aria-label="ตำแหน่งหมวด" className="mb-3 text-sm text-muted-foreground">
+    <div className="mx-auto min-w-0 w-full max-w-6xl px-4 py-6 sm:px-6">
+      <nav aria-label="ตำแหน่งหมวด" className="mb-3 min-w-0 break-words text-sm text-muted-foreground">
         <span>คู่มือทั้งหมด</span>
         {sectionPath.map((section) => <span key={section.id}> / {section.title}</span>)}
       </nav>
 
       <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-muted-foreground">จัดการโครงสร้างและเอกสาร</p>
-          <h1 className="mt-1 text-3xl font-semibold">{selectedSection?.title ?? "คู่มือทั้งหมด"}</h1>
+          <h1 className="mt-1 min-w-0 break-words text-3xl font-semibold">{selectedSection?.title ?? "คู่มือทั้งหมด"}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{directDocuments.length} เอกสารในมุมมองนี้</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -149,7 +149,14 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
               เพิ่มหมวดย่อย
             </ActionLink>
           ) : (
-            <button type="button" disabled className="min-h-11 rounded-full border px-4 text-sm font-medium disabled:opacity-50">เพิ่มหมวดย่อย</button>
+            <button
+              type="button"
+              disabled
+              aria-describedby="section-depth-limit"
+              className="min-h-11 rounded-full border px-4 text-sm font-medium disabled:opacity-50"
+            >
+              เพิ่มหมวดย่อย
+            </button>
           ))}
           {selectedSection && (
             <ActionLink
@@ -173,7 +180,7 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
       </header>
 
       {selectedSection && !mayCreateChild && (
-        <p className="mt-2 text-right text-xs text-muted-foreground">รองรับหมวดไม่เกิน 2 ระดับ</p>
+        <p id="section-depth-limit" className="mt-2 text-right text-xs text-muted-foreground">รองรับหมวดไม่เกิน 2 ระดับ</p>
       )}
       {mutationsBlocked && (
         <p className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
