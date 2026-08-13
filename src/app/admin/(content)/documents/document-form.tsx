@@ -12,6 +12,7 @@ import { uploadPendingImage } from "@/components/editor/pending-images";
 import { HardDeleteDialog } from "@/components/admin/hard-delete-dialog";
 import { MediaOperationBanner } from "@/components/admin/media-operation-banner";
 import { MediaProgressList } from "@/components/admin/media-progress-list";
+import { useUnsavedNavigation } from "@/components/admin/unsaved-navigation";
 import { createMediaUploadTicket } from "@/app/admin/editor/actions";
 import { replacePendingImages } from "@/lib/media/content-media";
 import type { MediaOperationView } from "@/lib/media/lifecycle-types";
@@ -32,8 +33,7 @@ export type DocumentRecord = {
 };
 
 type FormState = Omit<DocumentRecord, "id" | "version" | "content">;
-
-const emptyContent: JSONContent = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "เริ่มเขียนคู่มือ หรือพิมพ์ / เพื่อเปิดคำสั่ง" }] }] };
+type DocumentStage = "content" | "review";
 
 function permanentMediaUrl(objectKey: string): string {
   const base = process.env.NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL;
@@ -45,43 +45,62 @@ function snapshot(form: FormState, content: JSONContent): string {
   return JSON.stringify({ form, content });
 }
 
-export function DocumentForm({ document, sections, pendingOperation = null, hardDeleteFiles = [] }: { document: DocumentRecord | null; sections: SectionOption[]; pendingOperation?: MediaOperationView | null; hardDeleteFiles?: string[] }) {
+function sectionPath(sections: SectionOption[], sectionId: string): string {
+  const section = sections.find((candidate) => candidate.id === sectionId);
+  if (!section) return "ไม่พบหมวด";
+  const parent = section.parentId ? sections.find((candidate) => candidate.id === section.parentId) : null;
+  return parent ? `${parent.title} › ${section.title}` : section.title;
+}
+
+export function DocumentForm({
+  document,
+  sections,
+  initialStage,
+  returnHref,
+  pendingOperation = null,
+  hardDeleteFiles = [],
+}: {
+  document: DocumentRecord;
+  sections: SectionOption[];
+  initialStage: DocumentStage;
+  returnHref: string;
+  pendingOperation?: MediaOperationView | null;
+  hardDeleteFiles?: string[];
+}) {
   const router = useRouter();
-  const idRef = useRef(document?.id ?? crypto.randomUUID());
+  const { registerDirty, requestNavigation } = useUnsavedNavigation();
+  const idRef = useRef(document.id);
+  const [stage, setStage] = useState<DocumentStage>(initialStage);
   const [form, setForm] = useState<FormState>({
-    sectionId: document?.sectionId ?? sections[0]?.id ?? "",
-    title: document?.title ?? "",
-    slug: document?.slug ?? "",
-    excerpt: document?.excerpt ?? "",
-    status: document?.status ?? "draft",
-    sortOrder: document?.sortOrder ?? 0,
+    sectionId: document.sectionId,
+    title: document.title,
+    slug: document.slug,
+    excerpt: document.excerpt ?? "",
+    status: document.status,
+    sortOrder: document.sortOrder,
   });
-  const [content, setContent] = useState<JSONContent>(document?.content ?? emptyContent);
+  const [content, setContent] = useState<JSONContent>(document.content);
   const [contentRevision, setContentRevision] = useState(0);
-  const [version, setVersion] = useState<number | null>(document?.version ?? null);
+  const [version, setVersion] = useState<number>(document.version);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [operation, setOperation] = useState<MediaOperationView | null>(pendingOperation);
+  const [savedSectionId, setSavedSectionId] = useState(document.sectionId);
   const [retrying, startRetry] = useTransition();
   const retriedOperationRef = useRef<string | null>(null);
   const retryInFlightRef = useRef<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot({
-    sectionId: document?.sectionId ?? sections[0]?.id ?? "", title: document?.title ?? "", slug: document?.slug ?? "",
-    excerpt: document?.excerpt ?? "", status: document?.status ?? "draft", sortOrder: document?.sortOrder ?? 0,
-  }, document?.content ?? emptyContent));
+    sectionId: document.sectionId, title: document.title, slug: document.slug,
+    excerpt: document.excerpt ?? "", status: document.status, sortOrder: document.sortOrder,
+  }, document.content));
   const dirty = useMemo(() => snapshot(form, content) !== savedSnapshot || pendingImages.length > 0, [form, content, pendingImages.length, savedSnapshot]);
 
   useEffect(() => {
-    const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (!dirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [dirty]);
+    registerDirty(dirty);
+    return () => registerDirty(false);
+  }, [dirty, registerDirty]);
 
   const retryOperation = useCallback((currentOperation: MediaOperationView) => {
     if (retryInFlightRef.current === currentOperation.operationId) return;
@@ -109,8 +128,8 @@ export function DocumentForm({ document, sections, pendingOperation = null, hard
     retryOperation(operation);
   }, [operation, retryOperation]);
 
-  async function save() {
-    if (saving) return;
+  async function persist(): Promise<boolean> {
+    if (saving || operation) return false;
     setSaving(true);
     setMessage(null);
     const uploaded = new Map<string, UploadedPendingImage>();
@@ -132,53 +151,111 @@ export function DocumentForm({ document, sections, pendingOperation = null, hard
       });
       if ("error" in result) {
         setMessage(result.error);
-        return;
+        return false;
       }
-      if ("pending" in result) { setOperation(result.operation); return; }
+      if ("pending" in result) { setOperation(result.operation); return false; }
       setContent(persistedContent);
       setContentRevision((current) => current + 1);
       setVersion(result.version);
       setPendingImages([]);
       setSavedSnapshot(snapshot(form, persistedContent));
+      setSavedSectionId(form.sectionId);
+      registerDirty(false);
       setMessage("บันทึกเอกสารสำเร็จ");
-      if (!document) router.replace(`/admin/documents/${result.id}`);
+      return true;
     } catch (error) {
       if (!saveSubmitted && uploaded.size > 0) await rollbackUploadedMedia(idRef.current, [...uploaded.values()].map((item) => ({ ...item, displayLabel: `${item.mediaId}.webp` })));
       setMessage(error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ");
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
+  async function saveAndReview() {
+    if (!(await persist())) return;
+    setStage("review");
+    router.replace(`/admin/documents/${document.id}?section=${encodeURIComponent(form.sectionId)}&stage=review`);
+  }
+
+  async function finalSave() {
+    if (!(await persist())) return;
+    requestNavigation(`/admin/structure?section=${encodeURIComponent(form.sectionId)}`);
+  }
+
+  function returnToContent() {
+    setStage("content");
+    router.replace(`/admin/documents/${document.id}?section=${encodeURIComponent(savedSectionId)}&stage=content`);
+  }
+
   async function remove() {
-    if (!document || saving || operation) return;
+    if (saving || operation) return;
     setSaving(true);
     setMessage(null);
     const result = await deleteDocument(document.id, version);
     setSaving(false);
     if ("error" in result) { setMessage(result.error); return; }
     if ("pending" in result) { setOperation(result.operation); return; }
-    router.push("/admin/documents");
+    registerDirty(false);
+    requestNavigation(`/admin/structure?section=${encodeURIComponent(savedSectionId)}`);
   }
 
-  if (sections.length === 0) return <main className="mx-auto max-w-3xl px-4 py-8"><p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">กรุณาสร้างหมวดก่อนสร้างเอกสาร</p></main>;
+  const savedReturnHref = savedSectionId === document.sectionId
+    ? returnHref
+    : `/admin/structure?section=${encodeURIComponent(savedSectionId)}`;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-semibold">{document ? "แก้ไขเอกสาร" : "สร้างเอกสาร"}</h1><p className="mt-1 text-sm text-muted-foreground">บันทึกด้วยตนเองเท่านั้น {dirty ? "• มีการแก้ไขที่ยังไม่บันทึก" : ""}</p></div><div className="flex gap-2"><button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium"><Eye size={16} aria-hidden="true" />ดูตัวอย่าง</button><button type="button" disabled={saving || Boolean(operation)} onClick={save} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" />{saving ? "กำลังบันทึก" : "บันทึก"}</button></div></div>
+    <main className="mx-auto min-w-0 max-w-6xl px-4 py-8 sm:px-6">
+      <header className="mb-6">
+        <h1 className="text-2xl font-semibold">แก้ไขเอกสาร</h1>
+        <p className="mt-1 text-sm text-muted-foreground">บันทึกด้วยตนเองเท่านั้น {dirty ? "• มีการแก้ไขที่ยังไม่บันทึก" : ""}</p>
+      </header>
+
+      <ol aria-label="ขั้นตอนจัดทำเอกสาร" className="mb-6 grid gap-2 text-sm sm:grid-cols-3">
+        <li className="rounded-lg border px-3 py-2"><span className="font-medium">1. ข้อมูลเอกสาร</span><span className="ml-2 text-muted-foreground">เสร็จแล้ว</span></li>
+        <li aria-current={stage === "content" ? "step" : undefined} className="rounded-lg border px-3 py-2"><span className="font-medium">2. เขียนเนื้อหา</span>{stage === "review" && <span className="ml-2 text-muted-foreground">เสร็จแล้ว</span>}</li>
+        <li aria-current={stage === "review" ? "step" : undefined} className="rounded-lg border px-3 py-2"><span className="font-medium">3. ตรวจและเผยแพร่</span></li>
+      </ol>
+
       {message && <p role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
       {operation && <MediaOperationBanner operation={operation} pending={retrying} onRetry={() => retryOperation(operation)} />}
-      <div className="mb-6 grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
-        <label className="text-sm font-medium">ชื่อเอกสาร<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" /></label>
-        <label className="text-sm font-medium">Slug<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3 font-mono" /></label>
-        <label className="text-sm font-medium">หมวด<select value={form.sectionId} onChange={(event) => setForm({ ...form, sectionId: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3">{sections.map((section) => <option key={section.id} value={section.id}>{section.parentId ? "↳ " : ""}{section.title}</option>)}</select></label>
-        <label className="text-sm font-medium">สถานะ<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as FormState["status"] })} className="mt-1 h-11 w-full rounded-md border bg-background px-3"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
-        <label className="text-sm font-medium">ลำดับ<input type="number" min="0" step="1" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: Number(event.target.value) })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" /></label>
-        <label className="text-sm font-medium sm:col-span-2">คำเกริ่น<textarea value={form.excerpt ?? ""} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} rows={2} className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
-      </div>
-      <DocumentEditor content={content} contentRevision={contentRevision} onChange={(nextContent, nextPending) => { setContent(nextContent); setPendingImages(nextPending); }} />
-      <MediaProgressList images={pendingImages} />
-      {document && <div className="mt-6"><HardDeleteDialog title="ลบเอกสารถาวร" targetName={document.title} files={hardDeleteFiles} pending={saving} disabled={Boolean(operation)} onConfirm={remove} /></div>}
+
+      {stage === "content" ? (
+        <section aria-labelledby="content-stage-heading">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h2 id="content-stage-heading" className="text-xl font-semibold">เขียนเนื้อหา</h2>
+            <button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium"><Eye size={16} aria-hidden="true" />ดูตัวอย่าง</button>
+          </div>
+          <div className="mb-6 grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
+            <label className="text-sm font-medium">ชื่อเอกสาร<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" /></label>
+            <label className="text-sm font-medium">Slug<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3 font-mono" /></label>
+            <label className="text-sm font-medium">หมวด<select value={form.sectionId} onChange={(event) => setForm({ ...form, sectionId: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3">{sections.map((section) => <option key={section.id} value={section.id}>{section.parentId ? "↳ " : ""}{section.title}</option>)}</select></label>
+            <label className="text-sm font-medium">ลำดับ<input type="number" min="0" step="1" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: Number(event.target.value) })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" /></label>
+            <label className="text-sm font-medium sm:col-span-2">คำเกริ่น<textarea value={form.excerpt ?? ""} onChange={(event) => setForm({ ...form, excerpt: event.target.value })} rows={2} className="mt-1 w-full rounded-md border bg-background px-3 py-2" /></label>
+          </div>
+          <DocumentEditor content={content} contentRevision={contentRevision} onChange={(nextContent, nextPending) => { setContent(nextContent); setPendingImages(nextPending); }} />
+          <MediaProgressList images={pendingImages} />
+          <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={() => requestNavigation(savedReturnHref)} className="min-h-11 rounded-full border px-4 text-sm font-medium">ยกเลิก</button>
+            <button type="button" disabled={saving || Boolean(operation)} onClick={saveAndReview} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" />{saving ? "กำลังบันทึก" : "บันทึกและตรวจต่อ"}</button>
+          </div>
+        </section>
+      ) : (
+        <section aria-labelledby="review-stage-heading" className="rounded-xl border bg-card p-4 sm:p-6">
+          <p className="text-sm text-muted-foreground">{sectionPath(sections, savedSectionId)}</p>
+          <h2 id="review-stage-heading" className="mt-2 text-xl font-semibold">ตรวจและเผยแพร่</h2>
+          <p className="mt-2 text-sm text-muted-foreground">ตรวจตัวอย่างและเลือกสถานะก่อนบันทึกขั้นสุดท้าย</p>
+          <label className="mt-6 block text-sm font-medium">สถานะ<select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value as FormState["status"] })} className="mt-1 h-11 w-full rounded-md border bg-background px-3 sm:max-w-sm"><option value="draft">Draft</option><option value="published">Published</option><option value="archived">Archived</option></select></label>
+          <div className="mt-6 flex flex-wrap gap-2">
+            <button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium"><Eye size={16} aria-hidden="true" />ดูตัวอย่าง</button>
+            <button type="button" onClick={returnToContent} className="min-h-11 rounded-full border px-4 text-sm font-medium">กลับไปแก้เนื้อหา</button>
+            <button type="button" onClick={() => requestNavigation(savedReturnHref)} className="min-h-11 rounded-full border px-4 text-sm font-medium">ยกเลิก</button>
+            <button type="button" disabled={saving || Boolean(operation)} onClick={finalSave} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" />{saving ? "กำลังบันทึก" : "บันทึกและกลับรายการ"}</button>
+          </div>
+        </section>
+      )}
+
+      <div className="mt-6 border-t pt-4"><HardDeleteDialog title="ลบเอกสารถาวร" targetName={document.title} files={hardDeleteFiles} pending={saving} disabled={Boolean(operation)} onConfirm={remove} /></div>
       <EditorPreview content={content} open={previewOpen} onClose={() => setPreviewOpen(false)} />
     </main>
   );

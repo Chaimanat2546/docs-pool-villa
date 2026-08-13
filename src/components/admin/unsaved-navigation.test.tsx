@@ -42,6 +42,21 @@ function Harness({ dirty }: { dirty: boolean }) {
   );
 }
 
+function ClearAndNavigate() {
+  const { registerDirty, requestNavigation } = useUnsavedNavigation();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        registerDirty(false);
+        requestNavigation("/admin/structure?section=saved");
+      }}
+    >
+      บันทึกแล้วกลับรายการ
+    </button>
+  );
+}
+
 it("asks before same-tab Admin navigation when dirty and returns focus on cancel", async () => {
   const user = userEvent.setup();
   render(<Harness dirty />);
@@ -87,6 +102,21 @@ it("navigates immediately when there are no unsaved changes", async () => {
 
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(push).toHaveBeenCalledWith("/admin/editor");
+});
+
+it("navigates immediately when save clears dirty state in the same event", async () => {
+  const user = userEvent.setup();
+  render(
+    <UnsavedNavigationProvider>
+      <DirtyRegistration dirty />
+      <ClearAndNavigate />
+    </UnsavedNavigationProvider>,
+  );
+
+  await user.click(screen.getByRole("button", { name: "บันทึกแล้วกลับรายการ" }));
+
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(push).toHaveBeenCalledWith("/admin/structure?section=saved");
 });
 
 it("registers beforeunload protection only while dirty", () => {

@@ -1,6 +1,7 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 
 const actions = vi.hoisted(() => ({
@@ -9,17 +10,39 @@ const actions = vi.hoisted(() => ({
   rollbackUploadedMedia: vi.fn(),
   saveDocument: vi.fn(),
 }));
-const refresh = vi.hoisted(() => vi.fn());
+const navigation = vi.hoisted(() => ({
+  refresh: vi.fn(),
+  push: vi.fn(),
+  replace: vi.fn(),
+}));
+const unsavedNavigation = vi.hoisted(() => ({
+  registerDirty: vi.fn(),
+  requestNavigation: vi.fn(),
+}));
 const bannerBehavior = vi.hoisted(() => ({ triggerRetryBeforeEffect: true }));
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, push: vi.fn(), replace: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 vi.mock("./actions", () => actions);
 vi.mock("@/app/admin/editor/actions", () => ({ createMediaUploadTicket: vi.fn() }));
-vi.mock("@/components/editor/document-editor", () => ({
-  DocumentEditor: ({ content }: { content: unknown }) => <output data-testid="editor-content">{JSON.stringify(content)}</output>,
+vi.mock("@/components/admin/unsaved-navigation", () => ({
+  useUnsavedNavigation: () => ({ dirty: false, ...unsavedNavigation }),
 }));
-vi.mock("@/components/editor/editor-preview", () => ({ EditorPreview: () => null }));
-vi.mock("@/components/admin/hard-delete-dialog", () => ({ HardDeleteDialog: () => null }));
+vi.mock("@/components/editor/document-editor", () => ({
+  DocumentEditor: ({ content, onChange }: { content: unknown; onChange: (content: unknown, pendingImages: unknown[]) => void }) => (
+    <>
+      <output data-testid="editor-content">{JSON.stringify(content)}</output>
+      <button type="button" onClick={() => onChange({ type: "doc", content: [{ type: "paragraph" }] }, [])}>แก้ไขเนื้อหา</button>
+    </>
+  ),
+}));
+vi.mock("@/components/editor/editor-preview", () => ({
+  EditorPreview: ({ open }: { open: boolean }) => open ? <div role="dialog" aria-label="ตัวอย่างก่อนบันทึก" /> : null,
+}));
+vi.mock("@/components/admin/hard-delete-dialog", () => ({
+  HardDeleteDialog: ({ title, onConfirm, disabled }: { title: string; onConfirm: () => void; disabled?: boolean }) => (
+    <button type="button" disabled={disabled} onClick={onConfirm}>{title}</button>
+  ),
+}));
 vi.mock("@/components/admin/media-progress-list", () => ({ MediaProgressList: () => null }));
 vi.mock("@/components/admin/media-operation-banner", async () => {
   const { useLayoutEffect } = await import("react");
@@ -33,7 +56,49 @@ vi.mock("@/components/admin/media-operation-banner", async () => {
   };
 });
 
-import { DocumentForm } from "./document-form";
+import { DocumentForm, type DocumentRecord, type SectionOption } from "./document-form";
+
+const rootSectionId = "22222222-2222-4222-8222-222222222222";
+const childSectionId = "55555555-5555-4555-8555-555555555555";
+const document: DocumentRecord = {
+  id: "11111111-1111-4111-8111-111111111111",
+  sectionId: rootSectionId,
+  title: "Pending document",
+  slug: "pending-document",
+  excerpt: null,
+  content: { type: "doc", content: [] },
+  status: "draft",
+  sortOrder: 0,
+  version: 1,
+};
+const sections: SectionOption[] = [
+  { id: rootSectionId, title: "เริ่มต้น", parentId: null, sortOrder: 0 },
+  { id: childSectionId, title: "การจอง", parentId: rootSectionId, sortOrder: 0 },
+];
+const returnHref = `/admin/structure?section=${rootSectionId}`;
+
+function renderForm(options: {
+  stage?: "content" | "review";
+  pendingOperation?: {
+    operationId: string;
+    kind: "save_remove";
+    targetId: string;
+    files: string[];
+    attemptCount: number;
+    message: string;
+  } | null;
+  record?: DocumentRecord;
+} = {}) {
+  return render(
+    <DocumentForm
+      document={options.record ?? document}
+      sections={sections}
+      initialStage={options.stage ?? "content"}
+      returnHref={returnHref}
+      pendingOperation={options.pendingOperation}
+    />,
+  );
+}
 
 afterEach(() => {
   cleanup();
@@ -41,31 +106,164 @@ afterEach(() => {
   bannerBehavior.triggerRetryBeforeEffect = true;
 });
 
+it("saves content before advancing to review", async () => {
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  await waitFor(() => expect(actions.saveDocument).toHaveBeenCalledTimes(1));
+  expect(screen.getByRole("heading", { name: "ตรวจและเผยแพร่" })).not.toBeNull();
+  expect(navigation.replace).toHaveBeenCalledWith(`/admin/documents/${document.id}?section=${rootSectionId}&stage=review`);
+});
+
+it("keeps content stage and values when save fails", async () => {
+  actions.saveDocument.mockResolvedValue({ error: "Version conflict กรุณา Reload" });
+  const user = userEvent.setup();
+  renderForm();
+  const title = screen.getByRole("textbox", { name: "ชื่อเอกสาร" });
+
+  await user.clear(title);
+  await user.type(title, "ชื่อที่ยังไม่บันทึก");
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect((await screen.findByRole("alert")).textContent).toContain("Version conflict กรุณา Reload");
+  expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
+  expect((title as HTMLInputElement).value).toBe("ชื่อที่ยังไม่บันทึก");
+  expect(navigation.replace).not.toHaveBeenCalled();
+});
+
+it("chooses status in review and final save returns to the selected folder", async () => {
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm({ stage: "review" });
+
+  expect(screen.getByText("เริ่มต้น")).not.toBeNull();
+  await user.selectOptions(screen.getByRole("combobox", { name: "สถานะ" }), "published");
+  await user.click(screen.getByRole("button", { name: "บันทึกและกลับรายการ" }));
+
+  await waitFor(() => expect(unsavedNavigation.requestNavigation).toHaveBeenCalledWith(returnHref));
+  expect(actions.saveDocument).toHaveBeenCalledWith(expect.objectContaining({ status: "published" }));
+});
+
+it("opens Preview from review before final save", async () => {
+  const user = userEvent.setup();
+  renderForm({ stage: "review" });
+
+  await user.click(screen.getByRole("button", { name: "ดูตัวอย่าง" }));
+
+  expect(screen.getByRole("dialog", { name: "ตัวอย่างก่อนบันทึก" })).not.toBeNull();
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+});
+
+it("cancel keeps the saved draft and uses the unsaved guard", async () => {
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+
+  expect(actions.deleteDocument).not.toHaveBeenCalled();
+  expect(unsavedNavigation.requestNavigation).toHaveBeenCalledWith(returnHref);
+});
+
+it("moves the selected folder only after a successful content save", async () => {
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.selectOptions(screen.getByRole("combobox", { name: "หมวด" }), childSectionId);
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+  await screen.findByRole("heading", { name: "ตรวจและเผยแพร่" });
+  await user.click(screen.getByRole("button", { name: "บันทึกและกลับรายการ" }));
+
+  expect(navigation.replace).toHaveBeenCalledWith(`/admin/documents/${document.id}?section=${childSectionId}&stage=review`);
+  expect(unsavedNavigation.requestNavigation).toHaveBeenCalledWith(`/admin/structure?section=${childSectionId}`);
+});
+
+it("keeps the original route context when a section move fails", async () => {
+  actions.saveDocument.mockResolvedValue({ error: "ย้ายหมวดไม่สำเร็จ" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.selectOptions(screen.getByRole("combobox", { name: "หมวด" }), childSectionId);
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect((await screen.findByRole("alert")).textContent).toContain("ย้ายหมวดไม่สำเร็จ");
+  expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
+  expect(navigation.replace).not.toHaveBeenCalled();
+  expect(unsavedNavigation.requestNavigation).not.toHaveBeenCalled();
+});
+
+it("blocks content and final transitions while a media operation is pending", async () => {
+  bannerBehavior.triggerRetryBeforeEffect = false;
+  const pendingOperation = {
+    operationId: "33333333-3333-4333-8333-333333333333",
+    kind: "save_remove" as const,
+    targetId: document.id,
+    files: ["old.webp"],
+    attemptCount: 0,
+    message: "กำลังรอลบรูปจาก R2",
+  };
+  const contentView = renderForm({ pendingOperation });
+
+  expect((screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }) as HTMLButtonElement).disabled).toBe(true);
+  contentView.unmount();
+  renderForm({ stage: "review", pendingOperation });
+  expect((screen.getByRole("button", { name: "บันทึกและกลับรายการ" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+});
+
+it("registers dirty state and clears it after a successful save and unmount", async () => {
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  const view = renderForm();
+
+  await user.clear(screen.getByRole("textbox", { name: "ชื่อเอกสาร" }));
+  await user.type(screen.getByRole("textbox", { name: "ชื่อเอกสาร" }), "แก้ไขแล้ว");
+  await waitFor(() => expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(true));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+  await waitFor(() => expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(false));
+
+  view.unmount();
+  expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(false);
+});
+
+it("returns to content without losing a review status choice", async () => {
+  const user = userEvent.setup();
+  renderForm({ stage: "review" });
+
+  await user.selectOptions(screen.getByRole("combobox", { name: "สถานะ" }), "archived");
+  await user.click(screen.getByRole("button", { name: "กลับไปแก้เนื้อหา" }));
+
+  expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
+  expect(navigation.replace).toHaveBeenCalledWith(`/admin/documents/${document.id}?section=${rootSectionId}&stage=content`);
+});
+
+it("keeps hard delete distinct and returns through the guarded destination", async () => {
+  actions.deleteDocument.mockResolvedValue({ success: true, id: document.id, version: 1, path: "" });
+  const user = userEvent.setup();
+  renderForm({ stage: "review" });
+
+  await user.click(screen.getByRole("button", { name: "ลบเอกสารถาวร" }));
+
+  await waitFor(() => expect(actions.deleteDocument).toHaveBeenCalledWith(document.id, 1));
+  expect(unsavedNavigation.requestNavigation).toHaveBeenCalledWith(returnHref);
+});
+
 it("does not dispatch a duplicate retry when a click precedes the automatic effect", async () => {
   actions.retryMediaOperation.mockReturnValue(new Promise(() => undefined));
 
-  render(<DocumentForm
-    document={{
-      id: "11111111-1111-4111-8111-111111111111",
-      sectionId: "22222222-2222-4222-8222-222222222222",
-      title: "Pending document",
-      slug: "pending-document",
-      excerpt: null,
-      content: { type: "doc", content: [] },
-      status: "draft",
-      sortOrder: 0,
-      version: 1,
-    }}
-    sections={[{ id: "22222222-2222-4222-8222-222222222222", title: "Section", parentId: null, sortOrder: 0 }]}
-    pendingOperation={{
+  renderForm({
+    pendingOperation: {
       operationId: "33333333-3333-4333-8333-333333333333",
       kind: "save_remove",
-      targetId: "11111111-1111-4111-8111-111111111111",
+      targetId: document.id,
       files: ["old.webp"],
       attemptCount: 0,
       message: "กำลังรอลบรูปจาก R2",
-    }}
-  />);
+    },
+  });
 
   await waitFor(() => expect(actions.retryMediaOperation).toHaveBeenCalledTimes(1));
 });
@@ -76,54 +274,40 @@ it("releases the retry lock when the server action throws", async () => {
     .mockRejectedValueOnce(new Error("media worker unavailable"))
     .mockResolvedValueOnce({ error: "retry failed" });
 
-  const { getByRole } = render(<DocumentForm
-    document={{
-      id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      sectionId: "22222222-2222-4222-8222-222222222222",
-      title: "Pending document",
-      slug: "pending-document",
-      excerpt: null,
-      content: { type: "doc", content: [] },
-      status: "draft",
-      sortOrder: 0,
-      version: 1,
-    }}
-    sections={[{ id: "22222222-2222-4222-8222-222222222222", title: "Section", parentId: null, sortOrder: 0 }]}
-    pendingOperation={{
+  renderForm({
+    pendingOperation: {
       operationId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
       kind: "save_remove",
-      targetId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      targetId: document.id,
       files: ["old.webp"],
       attemptCount: 0,
       message: "กำลังรอลบรูปจาก R2",
-    }}
-  />);
+    },
+  });
 
+  fireEvent.click(screen.getByRole("button", { name: "Retry media operation" }));
   await waitFor(() => expect(actions.retryMediaOperation).toHaveBeenCalledTimes(1));
-  fireEvent.click(getByRole("button", { name: "Retry media operation" }));
+  fireEvent.click(screen.getByRole("button", { name: "Retry media operation" }));
   await waitFor(() => expect(actions.retryMediaOperation).toHaveBeenCalledTimes(2));
 });
 
 it("uses server-refreshed document fields and content after its version advances", async () => {
-  const document = {
-    id: "44444444-4444-4444-8444-444444444444",
-    sectionId: "22222222-2222-4222-8222-222222222222",
-    title: "Pending document",
-    slug: "pending-document",
-    excerpt: null,
-    content: { type: "doc", content: [] },
-    status: "draft" as const,
-    sortOrder: 0,
-    version: 1,
+  const view = render(
+    <DocumentForm key={`${document.id}:${document.version}`} document={document} sections={sections} initialStage="content" returnHref={returnHref} />,
+  );
+  const refreshedDocument = {
+    ...document,
+    title: "Finalized document",
+    content: { type: "doc", content: [{ type: "paragraph" }] },
+    version: 2,
   };
-  const sections = [{ id: "22222222-2222-4222-8222-222222222222", title: "Section", parentId: null, sortOrder: 0 }];
-  const { container, rerender } = render(<DocumentForm key={`${document.id}:${document.version}`} document={document} sections={sections} />);
 
-  const refreshedDocument = { ...document, title: "Finalized document", content: { type: "doc", content: [{ type: "paragraph" }] }, version: 2 };
-  rerender(<DocumentForm key={`${refreshedDocument.id}:${refreshedDocument.version}`} document={refreshedDocument} sections={sections} />);
+  view.rerender(
+    <DocumentForm key={`${refreshedDocument.id}:${refreshedDocument.version}`} document={refreshedDocument} sections={sections} initialStage="content" returnHref={returnHref} />,
+  );
 
   await waitFor(() => {
-    expect((within(container).getByRole("textbox", { name: "ชื่อเอกสาร" }) as HTMLInputElement).value).toBe("Finalized document");
-    expect(within(container).getByTestId("editor-content").textContent).toContain('"paragraph"');
+    expect((within(view.container).getByRole("textbox", { name: "ชื่อเอกสาร" }) as HTMLInputElement).value).toBe("Finalized document");
+    expect(within(view.container).getByTestId("editor-content").textContent).toContain('"paragraph"');
   });
 });

@@ -38,14 +38,16 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
   const [pendingNavigation, setPendingNavigation] = useState<PendingNavigation | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const bypassRef = useRef(false);
+  const dirtyRef = useRef(false);
 
   const registerDirty = useCallback((nextDirty: boolean) => {
+    dirtyRef.current = nextDirty;
     setDirty(nextDirty);
     if (!nextDirty) bypassRef.current = false;
   }, []);
 
   const requestNavigation = useCallback((href: string, trigger?: HTMLElement, onApproved?: () => void) => {
-    if (!dirty || bypassRef.current) {
+    if (!dirtyRef.current || bypassRef.current) {
       bypassRef.current = false;
       onApproved?.();
       router.push(href);
@@ -55,7 +57,7 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
     triggerRef.current = trigger
       ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setPendingNavigation({ href, onApproved });
-  }, [dirty, router]);
+  }, [router]);
 
   useEffect(() => {
     if (!dirty) return;
