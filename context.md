@@ -6,8 +6,8 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: หลักฐาน close-out เดิมของ M01–M06 ยังคงเก็บไว้; แต่ M01 อยู่ระหว่างรอ Staging verification ของ Admin navigation และ sign-out ที่ implement ใน Local แล้ว จึงห้ามปิด M01 ในรอบนี้. M06 real Staging lifecycle/cleanup ผ่านแล้ว โดย exact close-out, retained M06 และ R2 targets ถูก cleanup จนเป็นศูนย์ และ non-target fingerprints ไม่เปลี่ยน
-- Deployment: Staging database remediation เดิมได้รับอนุมัติและเสร็จแล้ว; การ deploy Docs App เพื่อยืนยัน Admin navigation/sign-out ยังรอภูอนุมัติโดยตรง. ห้าม Deploy Docs Media Worker, migrate/reset/truncate/delete ข้อมูล Staging หรือแตะ Production
+- Current work: หลักฐาน close-out เดิมของ M01–M06 ยังคงเก็บไว้; Docs App Staging deploy และ Guest/Admin navigation/sign-out smoke ผ่านแล้วในวันที่ 13 สิงหาคม 2026 แต่ M01 ยังปิดไม่ได้ เพราะไม่มี existing Staging non-admin session สำหรับตรวจผล route guard รอบนี้. M06 real Staging lifecycle/cleanup ผ่านแล้ว โดย exact close-out, retained M06 และ R2 targets ถูก cleanup จนเป็นศูนย์ และ non-target fingerprints ไม่เปลี่ยน
+- Deployment: Docs App Staging `docs-pool-villa-staging` deploy version `c9c10b09-a383-4fbf-9bba-5609831c29cb` สำเร็จด้วย `--keep-vars`; ไม่ได้ deploy Docs Media Worker, migrate/reset/truncate/delete ข้อมูล Staging หรือแตะ Production
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
 ## Context ตามหัวข้อ
