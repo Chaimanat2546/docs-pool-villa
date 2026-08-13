@@ -11,7 +11,7 @@ import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 import ContentError from "@/app/admin/(content)/error";
 import ContentLoading from "@/app/admin/(content)/loading";
 
-import { AdminExplorerShell } from "./admin-explorer-shell";
+import { AdminExplorerShell, AdminExplorerTree } from "./admin-explorer-shell";
 
 const { push, sectionQuery } = vi.hoisted(() => ({
   push: vi.fn(),
@@ -67,7 +67,12 @@ function ExplorerHarness({ dirty = false }: { dirty?: boolean }) {
   return (
     <UnsavedNavigationProvider>
       <DirtyRegistration dirty={dirty} />
-      <AdminExplorerShell sections={sections}><p>รายการเอกสาร</p></AdminExplorerShell>
+      <AdminExplorerShell
+        mobileTree={<AdminExplorerTree sections={sections} closeDrawer />}
+        desktopTree={<AdminExplorerTree sections={sections} />}
+      >
+        <p>รายการเอกสาร</p>
+      </AdminExplorerShell>
     </UnsavedNavigationProvider>
   );
 }
