@@ -1,6 +1,6 @@
 # Admin File Explorer — Cross-module UX follow-up
 
-**สถานะ:** Approved; Local implementation และ automated verification เสร็จแล้ว, รออนุมัติแยกสำหรับ Staging App deploy/smoke
+**สถานะ:** Complete — Local gate, Staging App deploy และ Admin browser smoke เสร็จแล้ว
 
 งานนี้เป็น UX follow-up ที่ภูอนุมัติให้ปรับประสบการณ์ Admin ต่อจาก M01–M06 ไม่ใช่ M07 และไม่เปิด Module ที่ปิดแล้วอีกครั้ง
 
@@ -63,10 +63,18 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 - ดังนั้น Browser smoke รอบ Local นี้ยัง **ไม่ยืนยัน** non-admin redirect, Admin Explorer, virtual/root/child selection, fixture create/save/review/delete, dirty dialog/focus containment/Escape/focus return และ responsive Admin workspace; พฤติกรรมเหล่านี้มี automated coverage ใน App sweep 155/155 แต่ยังต้องยืนยันบน Staging หลัง deploy
 - ไม่มี file chooser/upload ในรอบนี้ และไม่ได้ลดเกณฑ์ Media acceptance; `npm run test:media` 35/35 และ `npm run test:worker` 9/9 ยังเป็นหลักฐานบังคับ
 
-## ขอบเขตและขั้นถัดไป
+## Staging App deploy and smoke — 14 สิงหาคม 2026
+
+- Deploy เฉพาะ Docs App `docs-pool-villa-staging` ด้วย `wrangler deploy --keep-vars`; version `a222ad20-d7f7-41e6-b158-ff3945fd9092` รับ traffic โดยไม่ deploy Docs Media Worker, Migration, R2 cleanup, Auth หรือ Production
+- Guest `/admin` redirect ไป `/auth/login`; Admin session เห็นเมนู **จัดการเนื้อหา** และ Explorer โดย console ไม่มี error/warning
+- สร้าง fixture ชั่วคราว root → child → Draft จาก child, บันทึก Content → Review → กลับ folder เดิม แล้ว hard-delete Draft และลบ child/root ผ่าน typed confirmation จนเหลือเฉพาะข้อมูล Staging เดิม
+- Child action แสดงคำอธิบายจำกัดสองระดับ; ตรวจ responsive Admin ที่ 390px ไม่ได้ใน browser session นี้เพราะไม่มี viewport override จึงคง automated responsive coverage เป็นหลักฐานของส่วนนั้น
+
+## ขอบเขตและสถานะ
 
 - ไม่มี Schema, Migration, RLS, Auth, Legacy table, Docs Media Worker, R2 protocol หรือ Production change ใน follow-up นี้
 - การสร้าง/แก้/ลบหมวดและเอกสารยังผ่าน Admin Server Actions, RLS และ lifecycle functions เดิม
 - Unsaved guard ใช้ dialog ของระบบกับลิงก์/การกระทำ/Logout ภายใน Admin และใช้ `beforeunload` สำหรับ refresh, ปิดแท็บ หรือออกจาก document. Browser Back/Forward แบบ same-document จะถูกหน่วงก่อน commit เฉพาะเมื่อ Browser เปิดเผย `NavigationPrecommitController` และ Navigation API ระบุว่า traversal นั้น `canIntercept` และ `cancelable`; Browser ที่ไม่มี precommit support (รวม implementation รุ่นเก่าที่มี `navigation.intercept` เพียงบางส่วน) จะไม่ติดตั้ง traversal handler และใช้พฤติกรรม native โดยไม่ทำ history-bounce หรืออ้างว่ายกเลิก traversal ได้ ส่วน guarded links/actions/Logout และ `beforeunload` ยังทำงานตามเดิม
 - M01–M06 ยังคง Complete; M07 ยังคง Not started จนกว่าภูจะอนุมัติแยก
-- [ ] **Pending approval:** Deploy เฉพาะ Docs App ไป Staging แล้วทำ Guest/non-admin/Admin Browser smoke ของ File Explorer; ไม่ต้องมี Database migration หรือ Docs Media Worker deploy สำหรับ Feature นี้
+- [x] Deploy เฉพาะ Docs App และทำ Guest/Admin Staging smoke แล้ว; ไม่มี Database migration หรือ Docs Media Worker deploy สำหรับ Feature นี้
+- [ ] Non-admin Browser smoke ของ File Explorer ใช้ session ที่มีอยู่ยังไม่ได้ทดสอบในรอบ deploy นี้ (ไม่มี session แยกที่เชื่อมต่ออยู่); M01 authorization boundary ยังคงมีหลักฐาน Staging เดิม

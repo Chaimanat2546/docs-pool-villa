@@ -6,8 +6,8 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: M01–M06 ปิดงานแล้ว; [Admin File Explorer](docs/todo/admin-file-explorer.md) เป็น approved cross-module UX follow-up ปัจจุบันและผ่าน Full Local gate แล้ว. M07 ยังไม่เริ่มและต้องรอภูยืนยัน
-- Deployment: Staging ล่าสุดยังเป็น Docs App version `2ce99e46-0fbd-4663-a9ab-f9c1fb94b765`; Admin File Explorer ยังไม่ได้ Deploy และรออนุมัติ Staging App deploy/smoke แยก. Feature นี้ไม่มี Migration หรือ Docs Media Worker change และไม่มี Production action
+- Current work: M01–M06 ปิดงานแล้ว; [Admin File Explorer](docs/todo/admin-file-explorer.md) เป็น approved cross-module UX follow-up ที่ผ่าน Local gate และ Staging App/Admin smoke แล้ว. M07 ยังไม่เริ่มและต้องรอภูยืนยัน
+- Deployment: Staging Docs App version `a222ad20-d7f7-41e6-b158-ff3945fd9092` มี Admin File Explorer แล้ว; deploy เฉพาะ App ด้วย `--keep-vars`, ไม่มี Migration หรือ Docs Media Worker change และไม่มี Production action. Non-admin browser smoke ยังรอ session ที่มีอยู่
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
 ## Context ตามหัวข้อ
