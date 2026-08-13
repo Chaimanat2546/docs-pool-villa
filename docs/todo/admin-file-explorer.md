@@ -49,7 +49,7 @@
 | `npm audit --omit=dev` | 0 vulnerabilities |
 | `git diff --check` | ผ่าน |
 
-เพิ่ม regression sweep ด้วย `npx vitest --config vitest.config.mts run src` ผ่าน 30 files, 155/155 tests เพื่อรวม Explorer tests ของ Tasks 1–8 และ final review remediations ที่ไม่ได้อยู่ใน script รายกลุ่มทั้งหมด ส่วน `npx vitest --config vitest.config.mts run` แบบไม่จำกัด path ถูกใช้เป็น diagnostic แล้วหยุดที่ Worker test เพราะ App Vitest config resolve `cloudflare:workers` ไม่ได้; Worker suite ที่ถูกต้องผ่านแยกด้วย `npm run test:worker` 9/9 ตาม Gate ด้านบน
+เพิ่ม regression sweep ด้วย `npx vitest --config vitest.config.mts run src` ผ่าน 30 files, 156/156 tests เพื่อรวม Explorer tests ของ Tasks 1–8 และ final review remediations ที่ไม่ได้อยู่ใน script รายกลุ่มทั้งหมด ส่วน `npx vitest --config vitest.config.mts run` แบบไม่จำกัด path ถูกใช้เป็น diagnostic แล้วหยุดที่ Worker test เพราะ App Vitest config resolve `cloudflare:workers` ไม่ได้; Worker suite ที่ถูกต้องผ่านแยกด้วย `npm run test:worker` 9/9 ตาม Gate ด้านบน
 
 Build ใน worktree โหลดค่า Local development ที่มีอยู่แล้วจาก repository `.env.local` เข้า child process ผ่าน `@next/env` โดยไม่ copy/แก้ไฟล์หรือแสดงค่า Secret. Warning ที่เหลือมีเฉพาะ Next.js `middleware` deprecation และ OpenNext Windows compatibility ซึ่งเป็น baseline ที่บันทึกไว้แล้ว
 
@@ -67,6 +67,6 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 
 - ไม่มี Schema, Migration, RLS, Auth, Legacy table, Docs Media Worker, R2 protocol หรือ Production change ใน follow-up นี้
 - การสร้าง/แก้/ลบหมวดและเอกสารยังผ่าน Admin Server Actions, RLS และ lifecycle functions เดิม
-- Unsaved guard ใช้ dialog ของระบบกับลิงก์/การกระทำ/Logout ภายใน Admin และใช้ `beforeunload` สำหรับ refresh, ปิดแท็บ หรือออกจาก document. Browser Back/Forward แบบ same-document จะถูกหน่วงก่อน commit เฉพาะเมื่อ Navigation API ระบุว่า traversal นั้น `canIntercept` และ `cancelable`; Browser ที่ไม่รองรับขอบเขตนี้จะใช้พฤติกรรม native โดยไม่ทำ history-bounce หรืออ้างว่ายกเลิก traversal ได้
+- Unsaved guard ใช้ dialog ของระบบกับลิงก์/การกระทำ/Logout ภายใน Admin และใช้ `beforeunload` สำหรับ refresh, ปิดแท็บ หรือออกจาก document. Browser Back/Forward แบบ same-document จะถูกหน่วงก่อน commit เฉพาะเมื่อ Browser เปิดเผย `NavigationPrecommitController` และ Navigation API ระบุว่า traversal นั้น `canIntercept` และ `cancelable`; Browser ที่ไม่มี precommit support (รวม implementation รุ่นเก่าที่มี `navigation.intercept` เพียงบางส่วน) จะไม่ติดตั้ง traversal handler และใช้พฤติกรรม native โดยไม่ทำ history-bounce หรืออ้างว่ายกเลิก traversal ได้ ส่วน guarded links/actions/Logout และ `beforeunload` ยังทำงานตามเดิม
 - M01–M06 ยังคง Complete; M07 ยังคง Not started จนกว่าภูจะอนุมัติแยก
 - [ ] **Pending approval:** Deploy เฉพาะ Docs App ไป Staging แล้วทำ Guest/non-admin/Admin Browser smoke ของ File Explorer; ไม่ต้องมี Database migration หรือ Docs Media Worker deploy สำหรับ Feature นี้

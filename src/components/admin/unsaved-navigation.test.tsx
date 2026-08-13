@@ -21,7 +21,15 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   Reflect.deleteProperty(window, "navigation");
+  Reflect.deleteProperty(window, "NavigationPrecommitController");
 });
+
+function enableNavigationPrecommitSupport() {
+  Object.defineProperty(window, "NavigationPrecommitController", {
+    configurable: true,
+    value: class NavigationPrecommitController {},
+  });
+}
 
 function DirtyRegistration({ dirty }: { dirty: boolean }) {
   const { registerDirty } = useUnsavedNavigation();
@@ -133,6 +141,7 @@ it("registers beforeunload protection only while dirty", () => {
 
 it("delays a cancellable browser traversal until discard is confirmed", async () => {
   const browserNavigation = new EventTarget();
+  enableNavigationPrecommitSupport();
   Object.defineProperty(window, "navigation", {
     configurable: true,
     value: browserNavigation,
@@ -169,6 +178,7 @@ it("delays a cancellable browser traversal until discard is confirmed", async ()
 
 it("cancels a supported browser traversal when the user keeps editing", async () => {
   const browserNavigation = new EventTarget();
+  enableNavigationPrecommitSupport();
   Object.defineProperty(window, "navigation", {
     configurable: true,
     value: browserNavigation,
@@ -218,6 +228,33 @@ it.each([
   });
   browserNavigation.dispatchEvent(backEvent);
 
+  expect(intercept).not.toHaveBeenCalled();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(pushState).not.toHaveBeenCalled();
+  expect(replaceState).not.toHaveBeenCalled();
+});
+
+it("does not install a traversal guard when precommit support is unavailable", () => {
+  const browserNavigation = new EventTarget();
+  const addEventListener = vi.spyOn(browserNavigation, "addEventListener");
+  Object.defineProperty(window, "navigation", {
+    configurable: true,
+    value: browserNavigation,
+  });
+  const intercept = vi.fn();
+  const pushState = vi.spyOn(window.history, "pushState");
+  const replaceState = vi.spyOn(window.history, "replaceState");
+  render(<Harness dirty />);
+
+  const backEvent = new Event("navigate", { cancelable: true });
+  Object.assign(backEvent, {
+    canIntercept: true,
+    intercept,
+    navigationType: "traverse",
+  });
+  browserNavigation.dispatchEvent(backEvent);
+
+  expect(addEventListener).not.toHaveBeenCalledWith("navigate", expect.any(Function));
   expect(intercept).not.toHaveBeenCalled();
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(pushState).not.toHaveBeenCalled();

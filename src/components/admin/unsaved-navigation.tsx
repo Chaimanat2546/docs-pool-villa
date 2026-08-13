@@ -92,8 +92,15 @@ export function UnsavedNavigationProvider({ children }: { children: React.ReactN
   }, [dirty]);
 
   useEffect(() => {
-    const browserNavigation = (window as Window & { navigation?: BrowserNavigation }).navigation;
-    if (!browserNavigation) return;
+    const browserWindow = window as Window & {
+      NavigationPrecommitController?: unknown;
+      navigation?: BrowserNavigation;
+    };
+    const browserNavigation = browserWindow.navigation;
+    if (
+      !browserNavigation
+      || typeof browserWindow.NavigationPrecommitController !== "function"
+    ) return;
     const activeNavigation = browserNavigation;
 
     function handleNavigate(untypedEvent: Event) {
