@@ -4,6 +4,8 @@
 
 **Pre-M04 remediation:** Local complete; see [Remediation TODO](M01-M03-remediation.md) for the Staging gate.
 
+**Post-M04 correction:** เปลี่ยน native `window.prompt()` ของ Alt text, Link และ YouTube เป็น accessible in-page dialog เพื่อรองรับ browser ที่ไม่รองรับ native prompt; TypeScript, content tests และ lint ผ่าน
+
 ## Scope
 
 - [x] Tiptap schema, Toolbar และ Slash Command
@@ -30,8 +32,8 @@
 
 ## Handoff to M04/M06
 
-- M04 เรียก `uploadPendingImage()` เฉพาะภายใน manual Save แล้วแทน pending image ด้วย `mediaId`/URL ถาวรใน transaction ของเอกสาร
-- M06 เพิ่ม DELETE endpoint และ orchestration: ลบ R2 ก่อนเปลี่ยน DB, rollback และ `cleanup_required`
+- M04 เรียก `uploadPendingImage()` เฉพาะภายใน manual Save แล้วแทน pending image ด้วย `mediaId`/URL ถาวรใน transaction ของเอกสาร พร้อมเพิ่ม DELETE/document-delete orchestration และ immediate rollback ขั้นต่ำตามแผนที่ภูอนุมัติ
+- M06 ต่อจาก contract ของ M04 เพื่อทำ remove-existing-image-before-save, cleanup retry ตอนเปิด/Save และ category cascade orchestration แบบเต็ม
 
 ## Acceptance
 

@@ -26,4 +26,5 @@ M02 บังคับรายการนี้ใน trigger ของ `doc_s
 - Draft/Archived/Deleted: Public ตอบ 404
 - Published เท่านั้นที่อยู่ใน Sitemap/Canonical/Search
 - Admin/Preview/Non-published ใช้ `noindex`
+- M05 อ่าน Redirect ผ่าน RLS ได้เฉพาะปลายทางที่ยัง Public; old path ที่เข้าเงื่อนไขตอบ permanent redirect ไป canonical path โดยตรง
 

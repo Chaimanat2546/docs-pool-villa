@@ -27,7 +27,9 @@
 - Worker รับ `PUT /uploads` เฉพาะ ticket ที่ผูกกับ `docs/{document_id}/{media_id}.webp`, Origin ที่อนุญาต, `image/webp` และขนาดไม่เกิน 10 MB
 - R2 ใช้ conditional create (`etagDoesNotMatch: '*'`) เพื่อป้องกัน ticket replay เขียนทับ object เดิม; response คืน metadata ที่ตรวจจริงให้ M04 บันทึก
 - Worker Local config อยู่ที่ `workers/docs-media/wrangler.jsonc`; secret local อยู่ใน `.dev.vars` ที่ถูก ignore และห้าม deploy จนกว่าภูจะอนุมัติ
-- M04 เป็นผู้เรียก upload เมื่อ manual Save; M06 รับผิดชอบ DELETE/rollback/cleanup
+- M04 เป็นผู้เรียก upload เมื่อ manual Save และเพิ่ม Worker DELETE/document-delete orchestration กับ immediate rollback ขั้นต่ำ เพื่อให้ Save/Delete fail-closed; M06 รับผิดชอบ remove-existing-image-before-save, cleanup retry ตอนเปิด/Save และ category cascade orchestration แบบเต็ม
+- Worker DELETE ใช้ HMAC ticket ที่ผูก operation, document และ exact object keys; Server Action ไม่ส่ง ticket กลับ Browser และการลบ key เดิมซ้ำเป็น success เพื่อให้ Retry ได้
+- Worker อ่านรูปด้วย `GET /objects/docs/{document_id}/{media_id}.webp` เท่านั้น; ส่งผ่าน R2 stream, `image/webp` และ immutable cache header โดยไม่เปิด bucket listing หรือ arbitrary key access
 
 ## Remove image
 

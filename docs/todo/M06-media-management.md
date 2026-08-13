@@ -7,9 +7,9 @@
 ## Scope
 
 - [ ] ลบรูปเดิมจาก R2 ก่อน Save content ที่เอารูปออก
-- [ ] Upload rollback เมื่อ DB Save ล้มเหลว
-- [ ] `cleanup_required` และ Retry ตอนเปิด/Save เอกสารครั้งถัดไป
-- [ ] ลบรูปทั้งหมดก่อน Hard-delete เอกสาร
+- [ ] ต่อจาก immediate upload rollback/cleanup record ขั้นต่ำของ M04 และทำ Retry เมื่อเปิด/Save เอกสารครั้งถัดไป
+- [ ] `cleanup_required` lifecycle และ Retry orchestration แบบเต็ม
+- [ ] Hard-delete document lifecycle hardening ต่อจาก Worker DELETE/document-delete orchestration ขั้นต่ำของ M04
 - [ ] Category cascade deletion orchestration
 - [ ] Error message และ Retry แบบ minimal
 - [ ] Failure-path tests

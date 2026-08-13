@@ -44,3 +44,16 @@ Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migra
 - `public.doc_section_delete_preview()` คืนจำนวนหมวดย่อย เอกสาร รูป และรายชื่อเอกสารสำหรับ Dialog ยืนยัน
 - `public.doc_delete_section()` ลบได้เฉพาะ subtree ที่ไม่มี Media; เมื่อพบ Media จะ fail-closed โดยไม่เปลี่ยน DB
 
+## M04 document additions
+
+- Migration `20260811092710_document_management_publish_workflow.sql` เพิ่ม `created_by`/`updated_by` ของ Document, `document_id` แบบ nullable ให้ Route history เดิม และ `doc_media_cleanup` สำหรับเก็บ object ที่ rollback ไม่สำเร็จ
+- `public.doc_save_document()` ทำ Create/Update, optimistic locking, status transition, media metadata และ document route history ใน transaction เดียว
+- `public.doc_reorder_documents()`, `public.doc_prepare_document_delete()` และ `public.doc_finalize_document_delete()` บังคับ Admin และ Version check; R2 deletion ยังอยู่ภายนอก DB transaction และต้องสำเร็จก่อน finalize
+- Route ของ Document ใช้ shared transaction-level advisory lock กับ Structure และห้ามชน Redirect route ที่เก็บแล้ว
+
+## M05 public redirect visibility
+
+- Migration `20260813033615_public_docs_redirect_visibility.sql` ให้ Public client อ่าน `doc_route_redirects` ได้ผ่าน RLS เฉพาะ redirect ที่ผูกกับ Document และปลายทางยังผ่าน `doc_private.doc_document_is_public()`
+- Redirect ของ Draft, Archived, Section/Parent ที่ซ่อน หรือ Document ที่ถูกลบ จึงไม่เปิดเผย Route history; Admin ยังคงอ่านและเขียนได้ตาม policy เดิม
+- ไม่เพิ่ม index เพราะ `old_path` มี unique index สำหรับ lookup แล้ว และ index แบบ partial ของ `document_id` รองรับ predicate visibility ที่มีอยู่
+

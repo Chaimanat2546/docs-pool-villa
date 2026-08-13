@@ -9,6 +9,13 @@ export type MediaUploadTicketPayload = {
   expiresAt: number;
 };
 
+export type MediaDeleteTicketPayload = {
+  operation: "delete";
+  documentId: string;
+  objectKeys: string[];
+  expiresAt: number;
+};
+
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const encoder = new TextEncoder();
@@ -68,6 +75,39 @@ export async function verifyMediaUploadTicket(ticket: string, secret: string): P
       typeof payload.expiresAt !== "number" || !Number.isFinite(payload.expiresAt) || payload.expiresAt <= 0
     ) return null;
     return payload as MediaUploadTicketPayload;
+  } catch {
+    return null;
+  }
+}
+
+function isDocumentMediaKey(documentId: string, key: string): boolean {
+  return new RegExp(`^docs/${documentId}/[0-9a-f-]{36}\\.webp$`, "i").test(key);
+}
+
+export async function signMediaDeleteTicket(payload: MediaDeleteTicketPayload, secret: string): Promise<string> {
+  const encodedPayload = toBase64Url(encoder.encode(JSON.stringify(payload)));
+  return `${encodedPayload}.${toBase64Url(await hmac(secret, encodedPayload))}`;
+}
+
+export async function verifyMediaDeleteTicket(ticket: string, secret: string): Promise<MediaDeleteTicketPayload | null> {
+  const [encodedPayload, encodedSignature, ...extra] = ticket.split(".");
+  if (!encodedPayload || !encodedSignature || extra.length > 0) return null;
+  const signature = fromBase64Url(encodedSignature);
+  const payloadBytes = fromBase64Url(encodedPayload);
+  if (!signature || !payloadBytes || !safeEqual(signature, await hmac(secret, encodedPayload))) return null;
+  try {
+    const value: unknown = JSON.parse(new TextDecoder().decode(payloadBytes));
+    if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+    const payload = value as Partial<MediaDeleteTicketPayload>;
+    if (
+      payload.operation !== "delete" ||
+      typeof payload.documentId !== "string" || !uuidPattern.test(payload.documentId) ||
+      !Array.isArray(payload.objectKeys) || payload.objectKeys.length === 0 || payload.objectKeys.length > 1_000 ||
+      new Set(payload.objectKeys).size !== payload.objectKeys.length ||
+      !payload.objectKeys.every((key) => typeof key === "string" && isDocumentMediaKey(payload.documentId!, key)) ||
+      typeof payload.expiresAt !== "number" || !Number.isFinite(payload.expiresAt) || payload.expiresAt <= 0
+    ) return null;
+    return payload as MediaDeleteTicketPayload;
   } catch {
     return null;
   }

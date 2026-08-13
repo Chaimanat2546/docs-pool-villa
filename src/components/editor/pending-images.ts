@@ -68,6 +68,19 @@ export async function uploadPendingImage(
           return;
         }
       }
+      try {
+        const response: unknown = JSON.parse(request.responseText);
+        if (
+          response && typeof response === "object" &&
+          "error" in response && typeof response.error === "string" &&
+          response.error.length <= 200
+        ) {
+          reject(new Error(response.error));
+          return;
+        }
+      } catch {
+        // The fallback below intentionally hides non-JSON upstream responses.
+      }
       reject(new Error("อัปโหลดรูปไม่สำเร็จ"));
     });
     request.addEventListener("error", () => reject(new Error("เชื่อมต่อ Docs Media Worker ไม่สำเร็จ")));

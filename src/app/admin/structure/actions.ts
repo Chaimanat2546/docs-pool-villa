@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
+import { revalidatePublicDocs } from "@/lib/docs/public-cache";
 import { createClient } from "@/lib/server";
 
 export type StructureActionResult = { error?: string; success?: true };
@@ -87,6 +88,7 @@ export async function saveSection(input: unknown): Promise<StructureActionResult
   if (result.error) return { error: userSafeError(result.error.code) };
 
   revalidatePath("/admin/structure");
+  revalidatePublicDocs();
   return { success: true };
 }
 
@@ -113,6 +115,7 @@ export async function deleteSection(
   }
 
   revalidatePath("/admin/structure");
+  revalidatePublicDocs();
   return { success: true };
 }
 

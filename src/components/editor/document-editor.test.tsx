@@ -1,10 +1,11 @@
 /** @vitest-environment jsdom */
 
+import type { JSONContent } from "@tiptap/core";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { ToolbarButton } from "./document-editor";
+import { DocumentEditor, ToolbarButton } from "./document-editor";
 
 describe("DocumentEditor accessibility", () => {
   it("exposes labelled toolbar controls in keyboard tab order", async () => {
@@ -16,5 +17,23 @@ describe("DocumentEditor accessibility", () => {
     const boldButton = screen.getByRole("button", { name: "ตัวหนา" });
     expect(document.activeElement).toBe(boldButton);
     expect(boldButton.getAttribute("aria-pressed")).toBe("false");
+  });
+});
+
+describe("DocumentEditor persisted-content commit", () => {
+  it("replaces the pending blob image when its committed content revision changes", async () => {
+    const pending: JSONContent = {
+      type: "doc", content: [{ type: "image", attrs: { src: "blob:pending-image", alt: "pending", pendingId: "pending-1" } }],
+    };
+    const persisted: JSONContent = {
+      type: "doc", content: [{ type: "image", attrs: { src: "https://media.example.test/objects/docs/document/media.webp", alt: "pending", mediaId: "media-1" } }],
+    };
+    const onChange = () => {};
+    const view = render(<DocumentEditor content={pending} contentRevision={0} onChange={onChange} />);
+
+    expect((await screen.findByRole("img", { name: "pending" })).getAttribute("src")).toBe("blob:pending-image");
+    view.rerender(<DocumentEditor content={persisted} contentRevision={1} onChange={onChange} />);
+
+    expect((await screen.findByRole("img", { name: "pending" })).getAttribute("src")).toBe("https://media.example.test/objects/docs/document/media.webp");
   });
 });
