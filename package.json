@@ -10,6 +10,8 @@
     "test:db": "npx --yes supabase@latest test db --local supabase/tests",
     "test:worker": "vitest --config workers/docs-media/vitest.config.mts run",
     "test:content": "vitest --config vitest.config.mts run src/lib/docs/content.test.ts src/components/editor/document-editor.test.tsx",
+    "test:proxy": "vitest --config vitest.config.mts run src/middleware.test.ts",
+    "test:admin-shell": "vitest --config vitest.config.mts run src/components/admin/admin-shell.test.tsx",
     "test:media": "vitest --config vitest.config.mts run src/lib/media/content-media.test.ts src/lib/media/lifecycle.test.ts src/app/admin/documents/actions.test.ts src/app/admin/documents/document-form.test.tsx src/app/admin/structure/actions.test.ts src/components/admin/media-operation-banner.test.tsx src/components/admin/media-progress-list.test.tsx src/components/admin/hard-delete-dialog.test.tsx src/components/admin/media-cleanup-banner.test.tsx",
     "test:public": "vitest --config vitest.config.mts run src/lib/docs/public-model.test.ts src/components/public/document-content.test.tsx src/components/public/reader-navigation.test.tsx",
     "typecheck:worker": "wrangler types src/env.d.ts --cwd workers/docs-media && tsc -p workers/docs-media/tsconfig.json --noEmit",

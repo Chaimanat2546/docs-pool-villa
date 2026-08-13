@@ -2,8 +2,9 @@ import type { NextRequest } from "next/server";
 
 import { updateSession } from "@/lib/middleware";
 
-// Legacy Middleware is intentionally retained while OpenNext Cloudflare does
-// not support Next.js 16 Node Proxy. Authorization remains in Page/Action/RLS.
+// Legacy Middleware is retained only because the installed OpenNext adapter
+// rejected Next.js Node Proxy in the recorded build. Authorization remains in
+// Page guards, Server Actions and Supabase RLS.
 export async function middleware(request: NextRequest) {
   return updateSession(request);
 }

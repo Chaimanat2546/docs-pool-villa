@@ -8,6 +8,8 @@
 
 **Tech Stack:** Next.js 16.3.0, React 19.2.8, TypeScript, Vitest 4, Supabase/PostgreSQL/pgTAP, Cloudflare Workers/OpenNext 1.20.2, Wrangler 4, R2, PowerShell
 
+> **Recorded final outcome (13 สิงหาคม 2026):** แผนเริ่มต้นให้ย้ายไปใช้ Next `proxy.ts` ตาม convention ใหม่ แต่การ build ที่ทำซ้ำได้พบว่า OpenNext 1.20.2 ปฏิเสธ Node Proxy. จึงใช้ fallback ที่ระบุไว้ใน Task 2: final tree มี `src/middleware.ts` และ `src/middleware.test.ts` เท่านั้น; `src/proxy.ts`/`src/proxy.test.ts` ไม่มีอยู่ในผลลัพธ์สุดท้าย. Next build/OpenNext build ผ่าน โดยคง Next Middleware deprecation และ OpenNext-on-Windows warnings เป็น adapter/environment limitation ที่บันทึกไว้. ส่วนคำสั่ง Proxy ด้านล่างเป็น **เจตนา/เส้นทาง success path ดั้งเดิม** ไม่ใช่การอ้างว่าไฟล์นั้นยัง active.
+
 ## Global Constraints
 
 - Requirement baseline คือ `docs/Poolvilla-Docs-Requirements-TH-v1.2.md`; ห้ามเริ่ม M07
@@ -37,12 +39,12 @@
 - `supabase/fixtures/staging/closeout/inspect.sql` — target counts และ non-target fingerprints แบบ read-only
 - `supabase/fixtures/staging/closeout/cleanup.sql` — exact-ID cleanup พร้อม fail-closed assertions
 
-### Proxy compatibility
+### Session-boundary compatibility (final recorded state)
 
-- `src/proxy.test.ts` — matcher และ `updateSession()` delegation regression
-- `src/proxy.ts` — Next.js 16 Proxy entrypoint เมื่อ OpenNext gates ผ่าน
-- `src/middleware.ts` — ถูกลบใน success path; คงไว้เฉพาะ fallback path ที่ adapter fail แบบ reproducible
-- `package.json` — เพิ่ม focused `test:proxy` command
+- `src/middleware.test.ts` — active matcher และ `updateSession()` delegation regression
+- `src/middleware.ts` — active Edge Middleware fallback หลัง reproducible OpenNext Node Proxy incompatibility
+- `src/proxy.ts`, `src/proxy.test.ts` — เป็น only original success-path attempt ของ Task 2; ไม่อยู่ใน final tree
+- `package.json` — `test:proxy` ชี้ไปที่ `src/middleware.test.ts`
 
 ### Close-out records
 
@@ -157,7 +159,9 @@ git commit -m "test(db): isolate staging fixtures from pgtap"
 
 ---
 
-### Task 2: Migrate to Next.js Proxy with an explicit OpenNext fallback
+### Task 2: Original Next.js Proxy migration plan with explicit OpenNext fallback
+
+**Recorded execution outcome:** Steps 1–5 ได้ทดลอง success path ตาม Next 16.3 convention แล้ว `npm run cf:build` fail เพราะ OpenNext ไม่รองรับ Node Proxy. ได้ดำเนิน fallback ที่อธิบายไว้ใน Task นี้: ไฟล์ active สุดท้ายคือ `src/middleware.ts`/`src/middleware.test.ts`, export `middleware`, และ `test:proxy` ชี้ test ดังกล่าว. ห้ามตีความ code block success path ด้านล่างว่าเป็นสถานะปัจจุบัน.
 
 **Files:**
 - Create: `src/proxy.test.ts`
@@ -836,7 +840,7 @@ npm run typecheck:worker
 npm run lint
 ```
 
-Expected: Proxy focused test passes; Content 7, Public 7, Media 14, Worker 9; typechecks pass; lint has no errors
+Expected final fallback: session-boundary focused test (`src/middleware.test.ts`) passes; Content 12, Public 7, Media 14, Worker 9; typechecks pass; lint has no errors
 
 - [ ] **Step 4: Run production builds and dependency audit**
 
@@ -1336,7 +1340,7 @@ npx --yes supabase@latest migration list --linked
 git diff --check
 ```
 
-Expected: pgTAP 140, Proxy focused test, Content 7, Public 7, Media 14, Worker 9, both typechecks, lint, Next/OpenNext builds, audit, DB lint and migration comparison all pass
+Expected final fallback: pgTAP 140, focused Middleware session-boundary test, Content 12, Public 7, Media 14, Worker 9, both typechecks, lint, Next/OpenNext builds, audit, DB lint and migration comparison all pass; the documented Middleware/OpenNext warnings remain accepted adapter limitations
 
 - [ ] **Step 6: Scan for secrets and stale contradictions**
 

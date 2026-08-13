@@ -1,6 +1,6 @@
 # Pre-M04 Remediation — M01–M03
 
-**Status:** Staging remediation accepted; ready to request approval for M04
+**Status:** Complete — Staging remediation accepted; M04–M06 completed in later approved work
 
 ## Scope
 

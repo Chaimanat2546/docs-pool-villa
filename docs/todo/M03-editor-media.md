@@ -2,7 +2,7 @@
 
 **Status:** Complete
 
-**Pre-M04 remediation:** Local complete; see [Remediation TODO](M01-M03-remediation.md) for the Staging gate.
+**Pre-M04 remediation (historical):** Complete; see [Remediation TODO](M01-M03-remediation.md) for verified evidence.
 
 **Post-M04 correction:** เปลี่ยน native `window.prompt()` ของ Alt text, Link และ YouTube เป็น accessible in-page dialog เพื่อรองรับ browser ที่ไม่รองรับ native prompt; TypeScript, content tests และ lint ผ่าน
 
@@ -35,6 +35,11 @@
 - M04 เรียก `uploadPendingImage()` เฉพาะภายใน manual Save แล้วแทน pending image ด้วย `mediaId`/URL ถาวรใน transaction ของเอกสาร พร้อมเพิ่ม DELETE/document-delete orchestration และ immediate rollback ขั้นต่ำตามแผนที่ภูอนุมัติ
 - M06 ต่อจาก contract ของ M04 เพื่อทำ remove-existing-image-before-save, cleanup retry ตอนเปิด/Save และ category cascade orchestration แบบเต็ม
 
+## M01–M06 close-out verification — 13 สิงหาคม 2026
+
+- `npm run test:content` ล่าสุดผ่าน 12/12 รวม dialog focus containment และการคืน focus ไปยัง Link/YouTube/Image trigger; Browser Staging ยืนยัน Link/YouTube dialog, Escape/focus return, Preview ที่ไม่บันทึก DB และ Mobile 390px.
+- Browser automation ไม่อนุญาต native file chooser ก่อนแอปรับไฟล์ จึงใช้ real-component Image-flow regression เป็นหลักฐานของ Alt dialog/focus path; lifecycle upload จริงได้รับการยืนยันใน M06 แทน. ไม่มี Production action.
+
 ## Acceptance
 
 - ไม่มี Raw HTML หรือ URL อันตรายผ่าน Validation
@@ -44,5 +49,5 @@
 
 ## Stop
 
-สรุปและรอภูยืนยัน M04
+M03 ปิดแล้วจากหลักฐาน Local/Staging; M04–M06 ปิดในรอบถัดมา และ M07 ยังไม่เริ่ม
 

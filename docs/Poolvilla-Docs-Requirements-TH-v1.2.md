@@ -4,7 +4,7 @@
 
 **เวอร์ชัน:** 1.2 (ขอบเขต MVP)  
 **วันที่:** 10 สิงหาคม 2026  
-**สถานะ:** ยืนยัน Requirement แล้ว — รออนุมัติเริ่ม Module M01  
+**สถานะ:** Requirement baseline ยืนยันแล้ว; M01–M06 ปิดงานพร้อมหลักฐาน Local/Staging รวม migration `20260813150200` ที่ apply/verify Staging แล้ว; M07 ยังไม่เริ่มและไม่มี Production action
 **ผู้รับผิดชอบ:** ทีม Poolvilla
 
 ## 1. วัตถุประสงค์

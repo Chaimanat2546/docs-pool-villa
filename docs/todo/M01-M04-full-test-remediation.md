@@ -37,14 +37,13 @@ Requirement baseline: [Poolvilla Docs Requirements TH v1.2](../Poolvilla-Docs-Re
 - [x] ยืนยันว่า linked runner เป็นข้อจำกัดของ hosted tooling ไม่ใช่ application/RLS defect; ไม่ทิ้ง test row, migration หรือ remote schema change
 - [x] ใช้ Local pgTAP เป็น database gate และ Staging browser/RLS/media smoke เป็น integration gate จนกว่าจะมี dedicated test database หรือ Supabase แก้ linked pgTAP runner
 
-### R3 — ย้าย Next.js Middleware convention เป็น Proxy
+### R3 — Next.js Proxy compatibility fallback
 
-**สาเหตุ:** Next.js 16.3 deprecate `middleware.ts` และใช้ `proxy.ts`
+**ผลจริง:** Next.js 16.3.0 แนะนำ `proxy.ts` แทน `middleware.ts` แต่ OpenNext 1.20.2 ใน build นี้ปฏิเสธ Node Proxy โดยตรง. จึงคง `src/middleware.ts` แบบ Edge-compatible เป็น adapter fallback ที่ตรวจซ้ำได้; ไม่มี `src/proxy.ts`. Authorization ยังคงอยู่ที่ Page guard, Server Action และ RLS ไม่ใช่ Middleware.
 
-- [x] ย้าย `src/middleware.ts` เป็น `src/proxy.ts` และเปลี่ยน named export เป็น `proxy`
-- [x] คง matcher และ `updateSession()` เดิม; Server guard/RLS ยังเป็น authorization หลัก
-- [x] Guest `/admin` → `/auth/login`; Admin session เข้า `/admin/structure` ได้
-- [x] `npm run build` ไม่มี middleware deprecation warning
+- [x] มี regression `src/middleware.test.ts` สำหรับ matcher และ `updateSession()` delegation
+- [x] `npm run test:proxy`, `npm run build` และ `npm run cf:build` ผ่าน; Next แสดงเฉพาะ Middleware deprecation warning และ OpenNext บน Windows แสดง adapter warning ที่บันทึกไว้
+- [x] Guest `/admin` → `/auth/login`; non-admin กลับหน้า Public; Admin เข้า `/admin/structure` ได้
 
 ## ลำดับดำเนินงาน
 
@@ -59,13 +58,13 @@ Requirement baseline: [Poolvilla Docs Requirements TH v1.2](../Poolvilla-Docs-Re
 ## Verification matrix
 
 - [x] `npx supabase@latest db reset --local --yes`
-- [x] `npm run test:db` — 93 tests
-- [x] `npm run test:content` และ Component regression ใหม่
-- [x] `npm run test:worker` — 8 tests
+- [x] `npm run test:db` — 140 pgTAP tests
+- [x] `npm run test:content` — 12 tests รวม component regression
+- [x] `npm run test:worker` — 9 tests
 - [x] `npx tsc --noEmit`
 - [x] `npm run typecheck:worker`
 - [x] `npm run lint`
-- [x] `npm run build` — ไม่มี middleware warning
+- [x] `npm run build` — ผ่านพร้อม Next Middleware deprecation warning ที่ยอมรับตาม fallback
 - [x] `npm audit --omit=dev` — 0 vulnerabilities
 - [x] Browser Desktop/Mobile smoke: auth, upload, save, GET, hard-delete, Mobile 390px ไม่มี horizontal overflow/console error และ cleanup test data บน Staging
 - [x] `supabase test db --linked` ถูกตรวจแล้วว่าใช้ไม่ได้กับ hosted pgTAP runner นี้; Local 93 tests เป็น DB gate
@@ -74,10 +73,10 @@ Requirement baseline: [Poolvilla Docs Requirements TH v1.2](../Poolvilla-Docs-Re
 
 - Save รูปสำเร็จแล้วหน้าเดิมใช้ permanent URL และไม่มี pending/dirty state โดยไม่ Reload
 - Failure paths ไม่ล้าง preview/state และไม่ทิ้ง Orphan โดยไม่มีสถานะติดตาม
-- Local pgTAP ผ่าน 93 tests; Staging integration ผ่าน Browser smoke โดยไม่ทิ้ง Test data หรือเปลี่ยน migration history
-- Build ไม่มี middleware deprecation warning และ Auth behavior ไม่เปลี่ยน
+- Local pgTAP ผ่าน 140 tests; Staging integration ผ่าน Browser smoke และ exact-target cleanup โดยไม่ทิ้ง fixture data หรือเปลี่ยน migration history
+- Auth behavior ไม่เปลี่ยน; remaining Middleware deprecation เป็นข้อจำกัด OpenNext adapter ที่บันทึกไว้
 - Test data/R2 object ถูกลบกลับครบ, Documentation ตรงกับผลจริง และ M04 กลับเป็น Complete
-- หยุดรอภูอนุมัติก่อนเริ่ม M05; Production ยังไม่ถูกแตะ
+- Historical checkpoint นี้หยุดก่อนเริ่ม M05; ภายหลัง M05–M06 ปิดจากงานที่ตรวจแล้ว, M07 ยังไม่เริ่ม และ Production ยังไม่ถูกแตะ
 
 ## ไม่อยู่ในขอบเขต
 

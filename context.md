@@ -6,8 +6,8 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: M01–M06 complete; M06 Staging lifecycle, single-flight retry และ UI refresh ผ่านแล้ว. คง fixture M06 ใน Staging (section/document และ object ที่ไม่ได้เป็นเป้าหมายของ lifecycle) ไว้ รอภูอนุมัติ cleanup
-- Deployment: Staging database remediation is approved and complete; ห้าม Deploy หรือ migrate Production จนกว่าภูจะสั่งแยก
+- Current work: M01–M06 ปิดงานแล้ว โดย historical Local/Staging close-out, M01 Admin smoke, M06 real lifecycle/cleanup และ post-closeout safety migration `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Staging ครบ. M07 ยังไม่เริ่มและต้องรอภูยืนยัน
+- Deployment: Docs App Staging `docs-pool-villa-staging` deploy version `2ce99e46-0fbd-4663-a9ab-f9c1fb94b765` สำเร็จด้วย `--keep-vars`; migration `20260813150200` apply Staging สำเร็จโดยไม่มี reset/truncate/delete ข้อมูล. ไม่มี Docs Media Worker หรือ Production action ในรอบนี้
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
 ## Context ตามหัวข้อ

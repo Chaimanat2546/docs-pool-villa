@@ -41,6 +41,9 @@
 
 - prepare document/category ก่อน แล้วลบรูปทั้งหมดตาม manifest ก่อนลบ DB
 - ลบรูปไม่ครบให้คงข้อมูลและแจ้ง Retry; category จะ freeze documents ใน subtree
+- ระหว่าง pending category delete ฐานข้อมูลห้าม Create/Save/Move Document, เปลี่ยนสมาชิก Section subtree หรือเพิ่ม/ย้าย/ลบ Media ที่ทำให้ snapshot เปลี่ยน รวมทั้งห้าม staged save ย้าย Document เข้าหา subtree
+- Finalize category ได้เมื่อ current Document/Media set ตรง exact freeze/manifest เท่านั้น; mismatch ต้องคง operation และข้อมูลเดิมเพื่อ Retry
+- ระหว่าง pending document delete หรือ remove-before-save ฐานข้อมูลห้ามเพิ่ม/ย้าย/แก้/ลบ Media ของ Document ที่ frozen; finalizer ของ Document ต้องเทียบ current Media tuple กับ durable manifest ก่อนลบ DB
 - ไม่ซ่อน Public อัตโนมัติ
 - Hard delete ไม่มี Restore
 
