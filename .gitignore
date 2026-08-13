@@ -43,5 +43,6 @@ next-env.d.ts
 cloudflare-env.d.ts
 .wrangler/
 .open-next/
+.worktrees/
 workers/docs-media/.dev.vars*
 workers/docs-media/src/env.d.ts
