@@ -22,6 +22,7 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<PendingImage[]>([]);
   const dialogInputRef = useRef<HTMLInputElement>(null);
+  const dialogTriggerRef = useRef<HTMLElement | null>(null);
   const appliedContentRevisionRef = useRef(contentRevision);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -104,16 +105,20 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
   }
 
   function openDialog(nextDialog: Exclude<EditorDialog, null>) {
+    dialogTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setDialogError(null);
     setDialogValue("");
     setDialog(nextDialog);
   }
 
   function closeDialog() {
+    const trigger = dialogTriggerRef.current;
     if (dialog === "image" && imageDraft) URL.revokeObjectURL(imageDraft.previewUrl);
     setImageDraft(null);
     setDialog(null);
     setDialogError(null);
+    trigger?.focus();
+    dialogTriggerRef.current = null;
   }
 
   function submitDialog() {

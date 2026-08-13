@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import type { JSONContent } from "@tiptap/core";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
@@ -17,6 +17,21 @@ describe("DocumentEditor accessibility", () => {
     const boldButton = screen.getByRole("button", { name: "ตัวหนา" });
     expect(document.activeElement).toBe(boldButton);
     expect(boldButton.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("returns focus to the Link toolbar trigger after Escape closes its dialog", async () => {
+    const user = userEvent.setup();
+    render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
+
+    const trigger = await screen.findByRole("button", { name: "ลิงก์" });
+    await user.click(trigger);
+
+    const input = await screen.findByRole("textbox", { name: "URL" });
+    await waitFor(() => expect(document.activeElement).toBe(input));
+    await user.keyboard("{Escape}");
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 });
 
