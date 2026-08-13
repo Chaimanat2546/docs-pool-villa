@@ -110,7 +110,12 @@ export function DocumentForm({
         const result = await retryMediaOperation(currentOperation.operationId);
         if ("success" in result) {
           setOperation(null);
-          router.refresh();
+          if (currentOperation.kind === "document_delete") {
+            registerDirty(false);
+            requestNavigation(returnHref);
+          } else {
+            router.refresh();
+          }
         }
         else if ("pending" in result) setOperation(result.operation);
         else setMessage(result.error);
@@ -120,7 +125,7 @@ export function DocumentForm({
         if (retryInFlightRef.current === currentOperation.operationId) retryInFlightRef.current = null;
       }
     });
-  }, [router, startRetry]);
+  }, [registerDirty, requestNavigation, returnHref, router, startRetry]);
 
   useEffect(() => {
     if (!operation || retriedOperationRef.current === operation.operationId) return;

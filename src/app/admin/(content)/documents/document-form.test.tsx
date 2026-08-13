@@ -81,7 +81,7 @@ function renderForm(options: {
   stage?: "content" | "review";
   pendingOperation?: {
     operationId: string;
-    kind: "save_remove";
+    kind: "save_remove" | "document_delete";
     targetId: string;
     files: string[];
     attemptCount: number;
@@ -266,6 +266,44 @@ it("does not dispatch a duplicate retry when a click precedes the automatic effe
   });
 
   await waitFor(() => expect(actions.retryMediaOperation).toHaveBeenCalledTimes(1));
+});
+
+it("returns to the selected folder when a retried document delete completes", async () => {
+  bannerBehavior.triggerRetryBeforeEffect = false;
+  actions.retryMediaOperation.mockResolvedValue({ success: true, kind: "document_delete", targetId: document.id });
+  renderForm({
+    pendingOperation: {
+      operationId: "66666666-6666-4666-8666-666666666666",
+      kind: "document_delete",
+      targetId: document.id,
+      files: ["old.webp"],
+      attemptCount: 1,
+      message: "กำลังรอลบรูปจาก R2",
+    },
+  });
+
+  await waitFor(() => expect(actions.retryMediaOperation).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(unsavedNavigation.requestNavigation).toHaveBeenCalledWith(returnHref));
+  expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(false);
+  expect(navigation.refresh).not.toHaveBeenCalled();
+});
+
+it("refreshes the editor when a retried save cleanup completes", async () => {
+  bannerBehavior.triggerRetryBeforeEffect = false;
+  actions.retryMediaOperation.mockResolvedValue({ success: true, kind: "save_remove", targetId: document.id, version: 2 });
+  renderForm({
+    pendingOperation: {
+      operationId: "77777777-7777-4777-8777-777777777777",
+      kind: "save_remove",
+      targetId: document.id,
+      files: ["old.webp"],
+      attemptCount: 1,
+      message: "กำลังรอลบรูปจาก R2",
+    },
+  });
+
+  await waitFor(() => expect(navigation.refresh).toHaveBeenCalledTimes(1));
+  expect(unsavedNavigation.requestNavigation).not.toHaveBeenCalled();
 });
 
 it("releases the retry lock when the server action throws", async () => {
