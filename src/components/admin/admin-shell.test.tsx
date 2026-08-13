@@ -6,11 +6,30 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { AdminShell } from "./admin-shell";
 
+const { createClient, refresh, replace, signOut } = vi.hoisted(() => {
+  const signOut = vi.fn().mockResolvedValue({ error: null });
+
+  return {
+    createClient: vi.fn(() => ({ auth: { signOut } })),
+    refresh: vi.fn(),
+    replace: vi.fn(),
+    signOut,
+  };
+});
+
+vi.mock("@/lib/client", () => ({ createClient }));
+
 vi.mock("next/navigation", () => ({
   usePathname: () => "/admin/documents",
+  useRouter: () => ({ replace, refresh }),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+  signOut.mockReset();
+  signOut.mockResolvedValue({ error: null });
+});
 
 it("renders the admin navigation with the current page", () => {
   render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
@@ -36,4 +55,69 @@ it("moves focus into the mobile drawer and returns it to the trigger after Escap
 
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   await waitFor(() => expect(document.activeElement).toBe(trigger));
+});
+
+it("closes the mobile drawer when a navigation link is clicked", async () => {
+  const user = userEvent.setup();
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "เมนูผู้ดูแล" }));
+
+  const dialog = screen.getByRole("dialog");
+  const editorLink = within(dialog).getByRole("link", { name: "Editor" });
+  editorLink.addEventListener("click", (event) => event.preventDefault(), { once: true });
+  await user.click(editorLink);
+
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});
+
+it("signs out and returns to the login page", async () => {
+  const user = userEvent.setup();
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "ออกจากระบบ" }));
+
+  await waitFor(() => expect(signOut).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(replace).toHaveBeenCalledWith("/auth/login"));
+  expect(refresh).toHaveBeenCalledTimes(1);
+});
+
+it("disables logout until sign out completes", async () => {
+  const user = userEvent.setup();
+  let resolveSignOut: (value: { error: null }) => void;
+  signOut.mockImplementation(() => new Promise((resolve) => { resolveSignOut = resolve; }));
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  const button = screen.getByRole("button", { name: "ออกจากระบบ" }) as HTMLButtonElement;
+  await user.click(button);
+
+  expect(button.disabled).toBe(true);
+  resolveSignOut!({ error: null });
+  await waitFor(() => expect(replace).toHaveBeenCalledWith("/auth/login"));
+});
+
+it("shows a safe error and re-enables logout when sign out returns an error", async () => {
+  const user = userEvent.setup();
+  signOut.mockResolvedValue({ error: new Error("network") });
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "ออกจากระบบ" }));
+
+  const alert = await screen.findByRole("alert");
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  expect(alert.textContent).toBe("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+  expect((screen.getByRole("button", { name: "ออกจากระบบ" }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+it("shows a safe error and re-enables logout when sign out rejects", async () => {
+  const user = userEvent.setup();
+  signOut.mockRejectedValue(new Error("network"));
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "ออกจากระบบ" }));
+
+  const alert = await screen.findByRole("alert");
+  expect(screen.getAllByRole("alert")).toHaveLength(1);
+  expect(alert.textContent).toBe("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+  expect((screen.getByRole("button", { name: "ออกจากระบบ" }) as HTMLButtonElement).disabled).toBe(false);
 });
