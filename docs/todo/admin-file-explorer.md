@@ -68,7 +68,7 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 - Deploy เฉพาะ Docs App `docs-pool-villa-staging` ด้วย `wrangler deploy --keep-vars`; version `a222ad20-d7f7-41e6-b158-ff3945fd9092` รับ traffic โดยไม่ deploy Docs Media Worker, Migration, R2 cleanup, Auth หรือ Production
 - Guest `/admin` redirect ไป `/auth/login`; Admin session เห็นเมนู **จัดการเนื้อหา** และ Explorer โดย console ไม่มี error/warning
 - สร้าง fixture ชั่วคราว root → child → Draft จาก child, บันทึก Content → Review → กลับ folder เดิม แล้ว hard-delete Draft และลบ child/root ผ่าน typed confirmation จนเหลือเฉพาะข้อมูล Staging เดิม
-- Child action แสดงคำอธิบายจำกัดสองระดับ; ตรวจ responsive Admin ที่ 390px ไม่ได้ใน browser session นี้เพราะไม่มี viewport override จึงคง automated responsive coverage เป็นหลักฐานของส่วนนั้น
+- Child action แสดงคำอธิบายจำกัดสองระดับ; viewport 390px ไม่มี horizontal overflow, Drawer เปิดแล้ว focus ไปปุ่มปิด และ Escape คืน focus ไป **เลือกหมวด** โดย console ไม่มี error/warning
 
 ## ขอบเขตและสถานะ
 
