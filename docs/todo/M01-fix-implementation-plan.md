@@ -161,7 +161,7 @@
 - เปลี่ยน M01 จาก `Rework required` เป็น `Complete`
 - อัปเดต test count และคำสั่งที่ผ่านจริงใน `docs/context/testing-and-commands.md`
 - อัปเดต helper/policy design ใน `docs/context/auth-and-rls.md`
-- สรุปไฟล์ที่เปลี่ยน Tests ข้อจำกัด และหยุดรอภูอนุมัติ M02
+- Historical checkpoint นี้สรุปไฟล์ Tests และข้อจำกัดก่อนเริ่ม M02; ภายหลัง M02–M06 ปิดจากงานที่ตรวจแล้ว และ M07 ยังไม่เริ่ม
 
 ## Stop conditions
 

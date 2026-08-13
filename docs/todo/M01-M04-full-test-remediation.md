@@ -76,7 +76,7 @@ Requirement baseline: [Poolvilla Docs Requirements TH v1.2](../Poolvilla-Docs-Re
 - Local pgTAP ผ่าน 140 tests; Staging integration ผ่าน Browser smoke และ exact-target cleanup โดยไม่ทิ้ง fixture data หรือเปลี่ยน migration history
 - Auth behavior ไม่เปลี่ยน; remaining Middleware deprecation เป็นข้อจำกัด OpenNext adapter ที่บันทึกไว้
 - Test data/R2 object ถูกลบกลับครบ, Documentation ตรงกับผลจริง และ M04 กลับเป็น Complete
-- หยุดรอภูอนุมัติก่อนเริ่ม M05; Production ยังไม่ถูกแตะ
+- Historical checkpoint นี้หยุดก่อนเริ่ม M05; ภายหลัง M05–M06 ปิดจากงานที่ตรวจแล้ว, M07 ยังไม่เริ่ม และ Production ยังไม่ถูกแตะ
 
 ## ไม่อยู่ในขอบเขต
 

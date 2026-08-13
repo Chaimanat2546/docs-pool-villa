@@ -16,7 +16,7 @@ Remediation plan: [M01–M04 Full Test Remediation Plan](M01-M04-full-test-remed
 - [x] Deploy Worker `docs-media-staging` พร้อม signed DELETE endpoint (version `5a583590-41af-4b58-ae0c-c838ddd170f3`)
 - [x] E2E/service validation: สอง session ถูก version conflict, Mobile 390px render, hard-delete no-media บน Staging, Worker test ครอบคลุม signed delete success/idempotent/R2 failure และทดสอบจริงจาก Admin ด้วยรูป: upload, Save, GET แสดงรูป, hard-delete เอกสารและหมวดทดสอบกลับสำเร็จ
 
-> Real-browser image flow ได้รับการยืนยันบน Staging/localhost แล้วด้วยข้อมูลทดสอบที่ลบกลับครบ: Worker รับ Upload/GET/DELETE และลำดับ hard-delete เป็น R2 ก่อน DB. M06 ยังต้องทดสอบ remove-existing-image-before-save และ cleanup retry ตามขอบเขต Module
+> Real-browser image flow ได้รับการยืนยันบน Staging/localhost แล้วด้วยข้อมูลทดสอบที่ลบกลับครบ: Worker รับ Upload/GET/DELETE และลำดับ hard-delete เป็น R2 ก่อน DB. remove-existing-image-before-save และ cleanup retry ได้รับการทดสอบและปิดใน M06 แล้ว
 
 ## Full Test remediation — 13 สิงหาคม 2026
 
@@ -214,4 +214,4 @@ Checklist ทุกข้อใน M04 ได้รับหลักฐาน�
 
 ## Stop
 
-ปิด Module แล้วตามการอนุมัติของภู; หยุดรอภูยืนยัน M05 ห้ามเริ่ม M05 เอง
+M04 ปิดแล้วตามการอนุมัติของภู; M05–M06 ปิดในรอบถัดมา และ M07 ยังไม่เริ่ม

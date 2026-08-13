@@ -2,7 +2,7 @@
 
 **Status:** Complete — Approved Staging App smoke passed
 
-**Pre-M04 remediation:** Local complete; see [Remediation TODO](M01-M03-remediation.md) for the Staging gate.
+**Pre-M04 remediation (historical):** Complete; see [Remediation TODO](M01-M03-remediation.md) for verified evidence.
 
 แผนแก้ไข: [M01 Remediation Implementation Plan](M01-fix-implementation-plan.md)
 
@@ -34,7 +34,7 @@
 
 ## Stop
 
-สรุปผล ไฟล์ Tests และประเด็นค้าง แล้วรอภูยืนยัน M02
+M01 ปิดแล้ว; M02–M06 ปิดในรอบถัดมา และ M07 ยังไม่เริ่มจนกว่าภูจะยืนยัน
 
 ## Previous verification result
 
@@ -62,7 +62,7 @@
 
 ## Admin navigation/sign-out local evidence — 13 สิงหาคม 2026
 
-- หลักฐาน M01–M06 ข้างต้นเป็นบันทึกเดิมและคงไว้ทั้งหมด; การเปลี่ยน Admin navigation/sign-out รอบนี้ผ่านเฉพาะ Local verification จึงยังไม่ใช่หลักฐาน Staging success หรือการปิด M01.
+- บันทึกนี้เป็น historical checkpoint ก่อน Approved Staging App smoke: ณ จุดนี้ Admin navigation/sign-out ผ่านเฉพาะ Local และยังไม่ใช้ปิด M01; หลักฐาน Staging ในหัวข้อถัดไปเป็นผลที่ใช้ปิด M01 แล้ว.
 - Source review ด้วย `rg -n "await requireAdmin\\(\\)" src/app/admin` ยืนยันว่า Server guard ยังคงอยู่ที่ `/admin`, `/admin/structure`, `/admin/documents`, `/admin/documents/new`, `/admin/documents/[id]` และ `/admin/editor` (รวม Server Actions ที่เกี่ยวข้อง).
 - `npm run test:admin-shell` ผ่าน 7/7 tests; `npx tsc --noEmit`, `npm run lint`, `npm run build`, `npm run cf:build` และ `git diff --check` ผ่านใน Local.
 - OpenNext build จบสำเร็จโดยมีคำเตือนเดิมเรื่อง Next `middleware` deprecated และข้อจำกัด OpenNext บน Windows; ไม่มี error จากคำสั่ง.

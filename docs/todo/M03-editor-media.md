@@ -2,7 +2,7 @@
 
 **Status:** Complete
 
-**Pre-M04 remediation:** Local complete; see [Remediation TODO](M01-M03-remediation.md) for the Staging gate.
+**Pre-M04 remediation (historical):** Complete; see [Remediation TODO](M01-M03-remediation.md) for verified evidence.
 
 **Post-M04 correction:** เปลี่ยน native `window.prompt()` ของ Alt text, Link และ YouTube เป็น accessible in-page dialog เพื่อรองรับ browser ที่ไม่รองรับ native prompt; TypeScript, content tests และ lint ผ่าน
 
@@ -49,5 +49,5 @@
 
 ## Stop
 
-สรุปและรอภูยืนยัน M04
+M03 ปิดแล้วจากหลักฐาน Local/Staging; M04–M06 ปิดในรอบถัดมา และ M07 ยังไม่เริ่ม
 

@@ -2,7 +2,7 @@
 
 **Status:** Complete
 
-**Pre-M04 remediation:** Local complete; see [Remediation TODO](M01-M03-remediation.md) for the Staging gate.
+**Pre-M04 remediation (historical):** Complete; see [Remediation TODO](M01-M03-remediation.md) for verified evidence.
 
 ## Scope
 
@@ -47,5 +47,5 @@
 
 ## Stop
 
-สรุปและรอภูยืนยัน M03
+M02 ปิดแล้วจากหลักฐาน Local/Staging; M03–M06 ปิดในรอบถัดมา และ M07 ยังไม่เริ่ม
 
