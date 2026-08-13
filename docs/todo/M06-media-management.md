@@ -1,6 +1,6 @@
 # M06 — Media Lifecycle & Cleanup
 
-**Status:** Complete — Local verification only
+**Status:** Complete locally; Staging backend smoke passed, app deployment pending approval
 
 ชื่อไฟล์คง `media-management` เพื่อให้ลิงก์ที่ตกลงไว้ไม่เปลี่ยน แต่ Module นี้ไม่มี Media Library
 
@@ -26,6 +26,7 @@
 
 - สร้าง migration `20260813062523_docs_media_lifecycle_operations.sql` สำหรับ durable operation, cleanup lease และ trigger ที่ป้องกัน direct save ทำให้ media เดิมกลายเป็น orphan
 - ยังไม่ได้ apply migration หรือ deploy Worker ไป Staging/Production ตามขอบเขตที่ภูอนุมัติในรอบนี้
+- Staging backend smoke (13 สิงหาคม 2026): apply migrations และ deploy Worker แล้ว; เก็บข้อมูลทดสอบ `M06 Staging Keep` ไว้ตามคำสั่งภู และยังไม่ finalize/delete
 - คำสั่งและผลการตรวจ local ล่าสุดบันทึกใน [Testing and Commands](../context/testing-and-commands.md)
 
 ## Stop

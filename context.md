@@ -6,7 +6,7 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: M01–M06 complete locally; หยุดรอภูอนุมัติก่อนเริ่ม M07 หรือทำ Staging verification ของ M06
+- Current work: M01–M06 complete locally; M06 Staging backend smoke ผ่านและคงข้อมูลทดสอบไว้ รอภูอนุมัติ deploy App เพื่อทดสอบ UI/finalize ก่อนเริ่ม M07
 - Deployment: Staging database remediation is approved and complete; ห้าม Deploy หรือ migrate Production จนกว่าภูจะสั่งแยก
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
