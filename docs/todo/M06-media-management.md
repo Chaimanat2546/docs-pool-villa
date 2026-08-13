@@ -1,6 +1,6 @@
 # M06 — Media Lifecycle & Cleanup
 
-**Status:** Not started
+**Status:** In progress — Local implementation only
 
 ชื่อไฟล์คง `media-management` เพื่อให้ลิงก์ที่ตกลงไว้ไม่เปลี่ยน แต่ Module นี้ไม่มี Media Library
 
@@ -8,7 +8,7 @@
 
 - [ ] ลบรูปเดิมจาก R2 ก่อน Save content ที่เอารูปออก
 - [ ] ต่อจาก immediate upload rollback/cleanup record ขั้นต่ำของ M04 และทำ Retry เมื่อเปิด/Save เอกสารครั้งถัดไป
-- [ ] `cleanup_required` lifecycle และ Retry orchestration แบบเต็ม
+- [ ] Cleanup claim/retry lifecycle แทน `cleanup_required` และ Retry orchestration แบบเต็ม
 - [ ] Hard-delete document lifecycle hardening ต่อจาก Worker DELETE/document-delete orchestration ขั้นต่ำของ M04
 - [ ] Category cascade deletion orchestration
 - [ ] Error message และ Retry แบบ minimal
