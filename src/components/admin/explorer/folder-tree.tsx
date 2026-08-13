@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight, Folder, Library } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
@@ -42,6 +42,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
   const [expandedKeys, setExpandedKeys] = useState(() => initialExpandedKeys(sections, selectedSectionId));
   const [focusedKey, setFocusedKey] = useState(() => selectedSectionId ? sectionKey(selectedSectionId) : VIRTUAL_ROOT_KEY);
   const [previousSelectedSectionId, setPreviousSelectedSectionId] = useState(selectedSectionId);
+  const [treeHasFocus, setTreeHasFocus] = useState(false);
   const itemRefs = useRef(new Map<string, HTMLButtonElement>());
 
   const childSectionsByParent = useMemo(() => {
@@ -107,6 +108,16 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
     return nodes;
   }, [childSectionsByParent, expandedKeys, sections]);
 
+  const focusedNodeIsVisible = visibleNodes.some((node) => node.key === focusedKey);
+  const selectedKey = selectedSectionId ? sectionKey(selectedSectionId) : VIRTUAL_ROOT_KEY;
+  const selectedNodeIsVisible = visibleNodes.some((node) => node.key === selectedKey);
+  const reconciledFocusedKey = focusedNodeIsVisible ? focusedKey : selectedNodeIsVisible ? selectedKey : VIRTUAL_ROOT_KEY;
+  const shouldRestoreTreeFocus = !focusedNodeIsVisible && treeHasFocus;
+
+  useLayoutEffect(() => {
+    if (shouldRestoreTreeFocus) itemRefs.current.get(reconciledFocusedKey)?.focus();
+  }, [reconciledFocusedKey, shouldRestoreTreeFocus]);
+
   function focusNode(key: string) {
     setFocusedKey(key);
     itemRefs.current.get(key)?.focus();
@@ -161,7 +172,13 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
   }
 
   return (
-    <div role="tree" aria-label="หมวดคู่มือ" className="space-y-1">
+    <div
+      role="tree"
+      aria-label="หมวดคู่มือ"
+      className="space-y-1"
+      onFocusCapture={() => setTreeHasFocus(true)}
+      onBlurCapture={(event) => setTreeHasFocus(event.currentTarget.contains(event.relatedTarget as Node | null))}
+    >
       {visibleNodes.map((node, index) => {
         const hasChildren = node.childKeys.length > 0;
         const isExpanded = hasChildren && expandedKeys.has(node.key);
@@ -181,7 +198,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
             aria-selected={isSelected}
             aria-expanded={hasChildren ? isExpanded : undefined}
             aria-label={`${node.title} ${node.count} เอกสาร`}
-            tabIndex={focusedKey === node.key ? 0 : -1}
+            tabIndex={reconciledFocusedKey === node.key ? 0 : -1}
             onFocus={() => setFocusedKey(node.key)}
             onClick={() => onNavigate(sectionHref(node.sectionId))}
             onKeyDown={(event) => handleKeyDown(event, node, index)}

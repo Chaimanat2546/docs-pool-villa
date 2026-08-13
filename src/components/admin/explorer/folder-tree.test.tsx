@@ -88,3 +88,33 @@ it("navigates the virtual root without a section query", async () => {
 
   expect(navigate).toHaveBeenCalledWith("/admin/structure");
 });
+
+it("moves the tab stop and focus to a visible selected section when the focused section is removed", async () => {
+  const navigate = vi.fn();
+  const user = userEvent.setup();
+  const { rerender } = render(<FolderTree sections={sections} selectedSectionId="child" onNavigate={navigate} />);
+  screen.getByRole("treeitem", { name: /การจอง/ }).focus();
+
+  rerender(<FolderTree sections={sections.filter((section) => section.id !== "child")} selectedSectionId="root" onNavigate={navigate} />);
+
+  const selectedRoot = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
+  expect(screen.getAllByRole("treeitem").filter((item) => item.tabIndex === 0)).toEqual([selectedRoot]);
+  expect(document.activeElement).toBe(selectedRoot);
+  await user.keyboard("{Enter}");
+  expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root");
+});
+
+it("moves the tab stop and focus to the virtual root when no selected section remains", async () => {
+  const navigate = vi.fn();
+  const user = userEvent.setup();
+  const { rerender } = render(<FolderTree sections={sections} selectedSectionId="child" onNavigate={navigate} />);
+  screen.getByRole("treeitem", { name: /การจอง/ }).focus();
+
+  rerender(<FolderTree sections={sections.filter((section) => section.id !== "child")} selectedSectionId="missing" onNavigate={navigate} />);
+
+  const virtualRoot = screen.getByRole("treeitem", { name: /คู่มือทั้งหมด/ });
+  expect(screen.getAllByRole("treeitem").filter((item) => item.tabIndex === 0)).toEqual([virtualRoot]);
+  expect(document.activeElement).toBe(virtualRoot);
+  await user.keyboard("{Enter}");
+  expect(navigate).toHaveBeenCalledWith("/admin/structure");
+});
