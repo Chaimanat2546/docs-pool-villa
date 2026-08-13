@@ -270,7 +270,8 @@ it("does not dispatch a duplicate retry when a click precedes the automatic effe
 
 it("returns to the selected folder when a retried document delete completes", async () => {
   bannerBehavior.triggerRetryBeforeEffect = false;
-  actions.retryMediaOperation.mockResolvedValue({ success: true, kind: "document_delete", targetId: document.id });
+  let resolveRetry!: (result: { success: true; kind: "document_delete"; targetId: string }) => void;
+  actions.retryMediaOperation.mockReturnValue(new Promise((resolve) => { resolveRetry = resolve; }));
   renderForm({
     pendingOperation: {
       operationId: "66666666-6666-4666-8666-666666666666",
@@ -283,8 +284,14 @@ it("returns to the selected folder when a retried document delete completes", as
   });
 
   await waitFor(() => expect(actions.retryMediaOperation).toHaveBeenCalledTimes(1));
+  unsavedNavigation.registerDirty.mockClear();
+  unsavedNavigation.requestNavigation.mockClear();
+  navigation.refresh.mockClear();
+  resolveRetry({ success: true, kind: "document_delete", targetId: document.id });
+
   await waitFor(() => expect(unsavedNavigation.requestNavigation).toHaveBeenCalledWith(returnHref));
-  expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(false);
+  expect(unsavedNavigation.registerDirty).toHaveBeenCalledTimes(1);
+  expect(unsavedNavigation.registerDirty).toHaveBeenCalledWith(false);
   expect(navigation.refresh).not.toHaveBeenCalled();
 });
 
