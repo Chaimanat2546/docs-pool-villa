@@ -34,12 +34,12 @@ insert into public.doc_documents (id, section_id, title, slug, status) values
   ('20000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000004', 'เผยแพร่ในหมวดที่ซ่อน', 'hidden-direct', 'published'),
   ('20000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'เผยแพร่ใต้หมวดแม่ที่ซ่อน', 'hidden-descendant', 'published');
 
-insert into public.doc_media (id, document_id, object_key, public_url) values
-  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'docs/published-root.png', 'https://example.test/published-root.png'),
-  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'docs/published-child.png', 'https://example.test/published-child.png'),
-  ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003', 'docs/draft.png', 'https://example.test/draft.png'),
-  ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004', 'docs/hidden-direct.png', 'https://example.test/hidden-direct.png'),
-  ('30000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000005', 'docs/hidden-descendant.png', 'https://example.test/hidden-descendant.png');
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('30000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', 'docs/published-root.png', 'https://example.test/published-root.png', 'image/webp', 1, 1, 1),
+  ('30000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', 'docs/published-child.png', 'https://example.test/published-child.png', 'image/webp', 1, 1, 1),
+  ('30000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000003', 'docs/draft.png', 'https://example.test/draft.png', 'image/webp', 1, 1, 1),
+  ('30000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000004', 'docs/hidden-direct.png', 'https://example.test/hidden-direct.png', 'image/webp', 1, 1, 1),
+  ('30000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000005', 'docs/hidden-descendant.png', 'https://example.test/hidden-descendant.png', 'image/webp', 1, 1, 1);
 
 insert into public.doc_route_redirects (id, old_path, target_path) values
   ('40000000-0000-0000-0000-000000000001', '/old', '/new');
@@ -86,8 +86,8 @@ select lives_ok($$insert into public.doc_sections (id, title, slug) values ('100
 select lives_ok($$update public.doc_sections set title = 'Admin updated' where id = '10000000-0000-0000-0000-000000000006'$$, 'Admin can update sections');
 select lives_ok($$insert into public.doc_documents (id, section_id, title, slug) values ('20000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000006', 'Admin', 'admin-document')$$, 'Admin can create documents');
 select lives_ok($$update public.doc_documents set title = 'Admin updated' where id = '20000000-0000-0000-0000-000000000006'$$, 'Admin can update documents');
-select lives_ok($$insert into public.doc_media (id, document_id, object_key, public_url) values ('30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000006', 'docs/admin.png', 'https://example.test/admin.png')$$, 'Admin can create media');
-select lives_ok($$update public.doc_media set cleanup_required = true where id = '30000000-0000-0000-0000-000000000006'$$, 'Admin can update media');
+select lives_ok($$insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values ('30000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000006', 'docs/admin.png', 'https://example.test/admin.png', 'image/webp', 1, 1, 1)$$, 'Admin can create media');
+select lives_ok($$update public.doc_media set width = 2 where id = '30000000-0000-0000-0000-000000000006'$$, 'Admin can update media');
 select lives_ok($$insert into public.doc_route_redirects (id, old_path, target_path) values ('40000000-0000-0000-0000-000000000002', '/admin-old', '/admin-new')$$, 'Admin can create redirects');
 select lives_ok($$update public.doc_route_redirects set target_path = '/admin-newer' where id = '40000000-0000-0000-0000-000000000002'$$, 'Admin can update redirects');
 select lives_ok($$delete from public.doc_media where id = '30000000-0000-0000-0000-000000000006'$$, 'Admin can delete media');

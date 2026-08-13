@@ -142,7 +142,15 @@ export async function saveDocument(value: unknown): Promise<DocumentActionResult
   if (input.media.some((item) => !item.objectKey.startsWith(`docs/${input.id}/`))) return { error: "ข้อมูลรูปไม่ถูกต้อง" };
   const mediaPayload = input.media.map((item) => {
     const publicUrl = mediaPublicUrl(item.objectKey);
-    return publicUrl ? { id: item.mediaId, object_key: item.objectKey, public_url: publicUrl } : null;
+    return publicUrl ? {
+      id: item.mediaId,
+      object_key: item.objectKey,
+      public_url: publicUrl,
+      mime_type: item.mimeType,
+      size_bytes: item.sizeBytes,
+      width: item.width,
+      height: item.height,
+    } : null;
   });
   if (mediaPayload.some((item) => item === null)) return { error: "ยังไม่ได้ตั้งค่า Docs Media Worker" };
 

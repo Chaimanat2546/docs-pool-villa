@@ -1,5 +1,5 @@
 begin;
-select plan(30);
+select plan(34);
 
 insert into public.roles (id, name) values
   (1, '{"th":"Administrator"}'::json),
@@ -33,7 +33,7 @@ select throws_ok(
   'Non-admin cannot save a document through the RPC'
 );
 select throws_ok(
-  $$insert into public.doc_media_cleanup (document_id, object_key, reason) values ('a2000000-0000-0000-0000-000000000001', 'docs/a2000000-0000-0000-0000-000000000001/cleanup.webp', 'test')$$,
+  $$insert into public.doc_media_cleanup (document_id, object_key, last_error) values ('a2000000-0000-0000-0000-000000000001', 'docs/a2000000-0000-0000-0000-000000000001/cleanup.webp', 'test')$$,
   '42501', null,
   'Non-admin cannot create a cleanup record'
 );
@@ -54,7 +54,7 @@ select is(
   (select version from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'เริ่มต้นใช้งาน', 'intro', 'สรุป',
     '{"type":"doc","content":[{"type":"paragraph"}]}'::jsonb, 'draft', 1, null,
-    '[{"id":"a3000000-0000-0000-0000-000000000001","object_key":"docs/a2000000-0000-0000-0000-000000000001/a3000000-0000-0000-0000-000000000001.webp","public_url":"https://media.example.test/a300.webp"}]'::jsonb
+    '[{"id":"a3000000-0000-0000-0000-000000000001","object_key":"docs/a2000000-0000-0000-0000-000000000001/a3000000-0000-0000-0000-000000000001.webp","public_url":"https://media.example.test/a300.webp","mime_type":"image/webp","size_bytes":26,"width":1,"height":1}]'::jsonb
   )),
   1::bigint,
   'Admin creates a draft at version 1'
@@ -62,6 +62,10 @@ select is(
 
 select is((select status from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000001'), 'draft', 'Draft save does not publish');
 select is((select count(*) from public.doc_media where document_id = 'a2000000-0000-0000-0000-000000000001'), 1::bigint, 'Save persists verified media metadata atomically');
+select is((select mime_type from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 'image/webp', 'Save persists verified MIME');
+select is((select size_bytes from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 26::bigint, 'Save persists verified byte size');
+select is((select width from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 1, 'Save persists verified width');
+select is((select height from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 1, 'Save persists verified height');
 select is((select created_by from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000001'), 'a0000000-0000-0000-0000-000000000001'::uuid, 'Document records its creator');
 
 select is(
