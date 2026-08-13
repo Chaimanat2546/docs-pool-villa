@@ -164,6 +164,25 @@ as $$
   );
 $$;
 
+create or replace function doc_private.doc_document_has_pending_media_operation(
+  p_document_id uuid
+)
+returns boolean
+language sql
+stable
+security invoker
+set search_path = pg_catalog
+as $$
+  select p_document_id is not null
+    and exists (
+      select 1
+      from public.doc_media_operation_documents as frozen
+      join public.doc_media_operations as operation on operation.id = frozen.operation_id
+      where frozen.document_id = p_document_id
+        and operation.kind in ('save_remove', 'document_delete')
+    );
+$$;
+
 create or replace function doc_private.doc_reject_pending_section_delete_document_write()
 returns trigger
 language plpgsql
@@ -197,12 +216,15 @@ security invoker
 set search_path = pg_catalog
 as $$
 declare
+  v_new_document_id uuid;
+  v_old_document_id uuid;
   v_new_section_id uuid;
   v_old_section_id uuid;
 begin
   perform pg_advisory_xact_lock(810241, 1);
 
   if tg_op <> 'DELETE' then
+    v_new_document_id := new.document_id;
     select document.section_id
     into v_new_section_id
     from public.doc_documents as document
@@ -210,6 +232,7 @@ begin
   end if;
 
   if tg_op <> 'INSERT' then
+    v_old_document_id := old.document_id;
     select document.section_id
     into v_old_section_id
     from public.doc_documents as document
@@ -219,6 +242,14 @@ begin
   if (select doc_private.doc_section_has_pending_delete(v_new_section_id))
      or (select doc_private.doc_section_has_pending_delete(v_old_section_id)) then
     raise exception 'A section delete operation is pending.' using errcode = 'P0003';
+  end if;
+
+  if coalesce(current_setting('doc_private.allow_frozen_document_media_mutation', true), '') <> 'on'
+     and (
+       (select doc_private.doc_document_has_pending_media_operation(v_new_document_id))
+       or (select doc_private.doc_document_has_pending_media_operation(v_old_document_id))
+     ) then
+    raise exception 'A media operation is pending.' using errcode = 'P0003';
   end if;
 
   return case when tg_op = 'DELETE' then old else new end;
@@ -362,6 +393,8 @@ declare
   v_operation public.doc_media_operations%rowtype;
   v_frozen public.doc_media_operation_documents%rowtype;
   v_saved record;
+  v_current_removal_set jsonb;
+  v_manifest_media_set jsonb;
 begin
   if not (select doc_private.doc_is_admin()) then
     raise exception 'Administrator access is required.' using errcode = '42501';
@@ -374,7 +407,32 @@ begin
     raise exception 'The media operation was not found.' using errcode = 'P0002';
   end if;
   select * into v_frozen from public.doc_media_operation_documents as frozen where frozen.operation_id = p_operation_id for update;
+  perform media.id
+  from public.doc_media as media
+  where media.document_id = v_operation.document_id
+    and media.id not in (select ref.media_id from doc_private.doc_content_media_ids(v_operation.staged_save -> 'content') as ref)
+  order by media.id
+  for update;
+  select coalesce(
+    jsonb_agg(jsonb_build_array(media.document_id, media.id, media.object_key) order by media.document_id, media.id, media.object_key),
+    '[]'::jsonb
+  )
+  into v_current_removal_set
+  from public.doc_media as media
+  where media.document_id = v_operation.document_id
+    and media.id not in (select ref.media_id from doc_private.doc_content_media_ids(v_operation.staged_save -> 'content') as ref);
+  select coalesce(
+    jsonb_agg(jsonb_build_array(item.document_id, item.media_id, item.object_key) order by item.document_id, item.media_id, item.object_key),
+    '[]'::jsonb
+  )
+  into v_manifest_media_set
+  from public.doc_media_operation_items as item
+  where item.operation_id = p_operation_id;
+  if v_current_removal_set is distinct from v_manifest_media_set then
+    raise exception 'The document media changed. Retry saving.' using errcode = 'P0001';
+  end if;
   perform set_config('doc_private.allow_media_removal', 'on', true);
+  perform set_config('doc_private.allow_frozen_document_media_mutation', 'on', true);
   select * into v_saved from public.doc_save_document(
     v_operation.document_id,
     (v_operation.staged_save ->> 'section_id')::uuid,
@@ -392,6 +450,7 @@ begin
       and media.id not in (select ref.media_id from doc_private.doc_content_media_ids(v_operation.staged_save -> 'content') as ref)
   );
   delete from public.doc_media_operations where id = p_operation_id;
+  perform set_config('doc_private.allow_frozen_document_media_mutation', 'off', true);
   perform set_config('doc_private.allow_media_operation_snapshot_write', 'off', true);
   return query select v_saved.document_id, v_saved.version, v_saved.status, v_saved.path;
 end;
@@ -444,6 +503,8 @@ as $$
 declare
   v_operation public.doc_media_operations%rowtype;
   v_frozen public.doc_media_operation_documents%rowtype;
+  v_current_media_set jsonb;
+  v_manifest_media_set jsonb;
 begin
   if not (select doc_private.doc_is_admin()) then
     raise exception 'Administrator access is required.' using errcode = '42501';
@@ -459,12 +520,36 @@ begin
   if (select version from public.doc_documents where id = v_frozen.document_id for update) <> v_frozen.expected_version then
     raise exception 'The document has changed. Reload before deleting.' using errcode = 'P0001';
   end if;
+  perform media.id
+  from public.doc_media as media
+  where media.document_id = v_frozen.document_id
+  order by media.id
+  for update;
+  select coalesce(
+    jsonb_agg(jsonb_build_array(media.document_id, media.id, media.object_key) order by media.document_id, media.id, media.object_key),
+    '[]'::jsonb
+  )
+  into v_current_media_set
+  from public.doc_media as media
+  where media.document_id = v_frozen.document_id;
+  select coalesce(
+    jsonb_agg(jsonb_build_array(item.document_id, item.media_id, item.object_key) order by item.document_id, item.media_id, item.object_key),
+    '[]'::jsonb
+  )
+  into v_manifest_media_set
+  from public.doc_media_operation_items as item
+  where item.operation_id = p_operation_id;
+  if v_current_media_set is distinct from v_manifest_media_set then
+    raise exception 'The document media changed. Retry deletion.' using errcode = 'P0001';
+  end if;
   perform set_config('doc_private.allow_media_operation_snapshot_write', 'on', true);
+  perform set_config('doc_private.allow_frozen_document_media_mutation', 'on', true);
   delete from public.doc_media_operations where id = p_operation_id;
-  perform set_config('doc_private.allow_media_operation_snapshot_write', 'off', true);
   delete from public.doc_route_redirects as redirect where redirect.document_id = v_frozen.document_id;
   delete from public.doc_media as media where media.document_id = v_frozen.document_id;
   delete from public.doc_documents where id = v_frozen.document_id;
+  perform set_config('doc_private.allow_frozen_document_media_mutation', 'off', true);
+  perform set_config('doc_private.allow_media_operation_snapshot_write', 'off', true);
   return query select v_frozen.document_id;
 end;
 $$;
@@ -492,6 +577,17 @@ begin
   end if;
   if exists (select 1 from public.doc_media_operations where section_id = p_section_id) then
     raise exception 'A media operation is pending.' using errcode = 'P0003';
+  end if;
+  if exists (
+    select 1
+    from public.doc_media_operations as operation
+    where operation.kind = 'section_delete'
+      and (
+        doc_private.doc_section_is_in_subtree(p_section_id, operation.section_id)
+        or doc_private.doc_section_is_in_subtree(operation.section_id, p_section_id)
+      )
+  ) then
+    raise exception 'An overlapping section delete operation is pending.' using errcode = 'P0003';
   end if;
   if exists (
     select 1
@@ -654,8 +750,10 @@ $$;
 
 revoke all on function doc_private.doc_section_is_in_subtree(uuid, uuid) from public, anon, authenticated, service_role;
 revoke all on function doc_private.doc_section_has_pending_delete(uuid) from public, anon, authenticated, service_role;
+revoke all on function doc_private.doc_document_has_pending_media_operation(uuid) from public, anon, authenticated, service_role;
 grant execute on function doc_private.doc_section_is_in_subtree(uuid, uuid) to authenticated;
 grant execute on function doc_private.doc_section_has_pending_delete(uuid) to authenticated;
+grant execute on function doc_private.doc_document_has_pending_media_operation(uuid) to authenticated;
 
 revoke all on function doc_private.doc_reject_pending_section_delete_document_write() from public, anon, authenticated, service_role;
 revoke all on function doc_private.doc_reject_pending_section_delete_media_write() from public, anon, authenticated, service_role;

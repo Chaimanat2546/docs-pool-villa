@@ -86,12 +86,162 @@ select lives_ok($$select * from public.doc_finalize_document_save((select operat
 select is((select title from public.doc_documents where id = 'b2000000-0000-4000-8000-000000000001'), 'เอกสาร M06 ใหม่', 'Finalized save updates document once');
 select is((select count(*) from public.doc_media where document_id = 'b2000000-0000-4000-8000-000000000001'), 0::bigint, 'Finalized save removes old media metadata');
 
+insert into public.doc_documents (id, section_id, title, slug) values
+  ('d2000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000001', 'M06 Delete Media Freeze', 'm06-delete-media-freeze');
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('d3000000-0000-4000-8000-000000000001', 'd2000000-0000-4000-8000-000000000001', 'docs/d2000000-0000-4000-8000-000000000001/d3000000-0000-4000-8000-000000000001.webp', 'https://media.test/m06-delete-media-freeze.webp', 'image/webp', 26, 1, 1);
+create temporary table prepared_document_delete_media_freeze as
+select * from public.doc_prepare_document_delete('d2000000-0000-4000-8000-000000000001', 1);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height)
+      values ('d3000000-0000-4000-8000-000000000002', 'd2000000-0000-4000-8000-000000000001', 'docs/d2000000-0000-4000-8000-000000000001/d3000000-0000-4000-8000-000000000002.webp', 'https://media.test/m06-delete-late.webp', 'image/webp', 26, 1, 1);
+      raise exception 'Expected frozen document media guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Document-delete preparation blocks adding media after its manifest is frozen'
+);
+reset role;
+alter table public.doc_media disable trigger doc_media_reject_pending_section_delete;
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('d3000000-0000-4000-8000-000000000002', 'd2000000-0000-4000-8000-000000000001', 'docs/d2000000-0000-4000-8000-000000000001/d3000000-0000-4000-8000-000000000002.webp', 'https://media.test/m06-delete-late.webp', 'image/webp', 26, 1, 1);
+alter table public.doc_media enable trigger doc_media_reject_pending_section_delete;
+set local role authenticated;
+set local request.jwt.claim.sub = 'a0000000-0000-4000-8000-000000000001';
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_finalize_document_delete((select operation_id from prepared_document_delete_media_freeze));
+      raise exception 'Expected document delete media manifest guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0001', null, 'Document-delete finalizer rejects current media that is not in its frozen manifest'
+);
+select is((select count(*) from public.doc_media where document_id = 'd2000000-0000-4000-8000-000000000001'), 2::bigint, 'Document-delete media mismatch preserves current metadata');
+
+insert into public.doc_documents (id, section_id, title, slug, content) values
+  ('d2000000-0000-4000-8000-000000000003', 'b1000000-0000-4000-8000-000000000001', 'M06 Save Media Freeze', 'm06-save-media-freeze', '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"d3000000-0000-4000-8000-000000000003","alt":"freeze"}}]}'::jsonb);
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('d3000000-0000-4000-8000-000000000003', 'd2000000-0000-4000-8000-000000000003', 'docs/d2000000-0000-4000-8000-000000000003/d3000000-0000-4000-8000-000000000003.webp', 'https://media.test/m06-save-media-freeze.webp', 'image/webp', 26, 1, 1);
+create temporary table prepared_document_save_media_freeze as
+select * from public.doc_prepare_document_save(
+  'd2000000-0000-4000-8000-000000000003', 'b1000000-0000-4000-8000-000000000001',
+  'M06 Save Media Freeze', 'm06-save-media-freeze', null, '{"type":"doc","content":[]}'::jsonb,
+  'draft', 0, 1, '[]'::jsonb
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      update public.doc_media
+      set object_key = 'docs/d2000000-0000-4000-8000-000000000003/d3000000-0000-4000-8000-000000000003-renamed.webp'
+      where id = 'd3000000-0000-4000-8000-000000000003';
+      raise exception 'Expected frozen document media guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Save-remove preparation blocks changing the frozen media object key'
+);
+reset role;
+alter table public.doc_media disable trigger doc_media_reject_pending_section_delete;
+insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
+  ('d3000000-0000-4000-8000-000000000004', 'd2000000-0000-4000-8000-000000000003', 'docs/d2000000-0000-4000-8000-000000000003/d3000000-0000-4000-8000-000000000004.webp', 'https://media.test/m06-save-late.webp', 'image/webp', 26, 1, 1);
+alter table public.doc_media enable trigger doc_media_reject_pending_section_delete;
+set local role authenticated;
+set local request.jwt.claim.sub = 'a0000000-0000-4000-8000-000000000001';
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_finalize_document_save((select operation_id from prepared_document_save_media_freeze));
+      raise exception 'Expected save remove media manifest guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0001', null, 'Save-remove finalizer rejects current removable media that is not in its frozen manifest'
+);
+select is((select count(*) from public.doc_media where document_id = 'd2000000-0000-4000-8000-000000000003'), 2::bigint, 'Save-remove media mismatch preserves current metadata');
+
 insert into public.doc_sections (id, parent_id, title, slug) values
   ('c1000000-0000-4000-8000-000000000001', null, 'M06 Pending Root', 'm06-pending-root'),
   ('c1000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'M06 Pending Child', 'm06-pending-child'),
   ('c1000000-0000-4000-8000-000000000003', null, 'M06 Outside Root', 'm06-outside-root');
 insert into public.doc_documents (id, section_id, title, slug) values
   ('c2000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000003', 'M06 Move Candidate', 'm06-move-candidate');
+
+insert into public.doc_sections (id, parent_id, title, slug) values
+  ('c1000000-0000-4000-8000-000000000009', null, 'M06 Overlap Root First', 'm06-overlap-root-first'),
+  ('c1000000-0000-4000-8000-000000000010', 'c1000000-0000-4000-8000-000000000009', 'M06 Overlap Root First Child', 'm06-overlap-root-first-child'),
+  ('c1000000-0000-4000-8000-000000000011', null, 'M06 Overlap Child First', 'm06-overlap-child-first'),
+  ('c1000000-0000-4000-8000-000000000012', 'c1000000-0000-4000-8000-000000000011', 'M06 Overlap Child First Child', 'm06-overlap-child-first-child'),
+  ('c1000000-0000-4000-8000-000000000013', null, 'M06 Disjoint One', 'm06-disjoint-one'),
+  ('c1000000-0000-4000-8000-000000000014', null, 'M06 Disjoint Two', 'm06-disjoint-two');
+create temporary table prepared_overlap_root_first as
+select * from public.doc_prepare_section_delete(
+  'c1000000-0000-4000-8000-000000000009',
+  'M06 Overlap Root First'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_prepare_section_delete(
+        'c1000000-0000-4000-8000-000000000010',
+        'M06 Overlap Root First Child'
+      );
+      raise exception 'Expected overlapping section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Preparing a child section delete is rejected while its parent section delete is pending'
+);
+select is(
+  (select count(*) from public.doc_media_operations where kind = 'section_delete' and section_id in ('c1000000-0000-4000-8000-000000000009', 'c1000000-0000-4000-8000-000000000010')),
+  1::bigint,
+  'Root-first overlap rejection preserves only the original operation'
+);
+select lives_ok(
+  $$select * from public.doc_finalize_section_delete((select operation_id from prepared_overlap_root_first))$$,
+  'Root-first overlapping rejection leaves the original delete operation finalizable'
+);
+
+create temporary table prepared_overlap_child_first as
+select * from public.doc_prepare_section_delete(
+  'c1000000-0000-4000-8000-000000000012',
+  'M06 Overlap Child First Child'
+);
+select throws_ok(
+  $test$do $expect_guard$
+    begin
+      perform * from public.doc_prepare_section_delete(
+        'c1000000-0000-4000-8000-000000000011',
+        'M06 Overlap Child First'
+      );
+      raise exception 'Expected overlapping section delete guard.' using errcode = 'P0999';
+    end
+  $expect_guard$$test$,
+  'P0003', null, 'Preparing a parent section delete is rejected while its child section delete is pending'
+);
+select lives_ok(
+  $$select * from public.doc_finalize_section_delete((select operation_id from prepared_overlap_child_first))$$,
+  'Child-first overlapping rejection leaves the original delete operation finalizable'
+);
+create temporary table prepared_overlap_parent_after_child as
+select * from public.doc_prepare_section_delete(
+  'c1000000-0000-4000-8000-000000000011',
+  'M06 Overlap Child First'
+);
+select lives_ok(
+  $$select * from public.doc_finalize_section_delete((select operation_id from prepared_overlap_parent_after_child))$$,
+  'Parent section can be deleted after the child operation finishes'
+);
+
+create temporary table prepared_disjoint_one as
+select * from public.doc_prepare_section_delete('c1000000-0000-4000-8000-000000000013', 'M06 Disjoint One');
+create temporary table prepared_disjoint_two as
+select * from public.doc_prepare_section_delete('c1000000-0000-4000-8000-000000000014', 'M06 Disjoint Two');
+select is(
+  (select count(*) from public.doc_media_operations where kind = 'section_delete' and section_id in ('c1000000-0000-4000-8000-000000000013', 'c1000000-0000-4000-8000-000000000014')),
+  2::bigint,
+  'Disjoint section deletes may be prepared concurrently'
+);
+select lives_ok($$select * from public.doc_finalize_section_delete((select operation_id from prepared_disjoint_one))$$, 'First disjoint section delete remains finalizable');
+select lives_ok($$select * from public.doc_finalize_section_delete((select operation_id from prepared_disjoint_two))$$, 'Second disjoint section delete remains finalizable');
 
 create temporary table prepared_empty_section_delete as
 select * from public.doc_prepare_section_delete(
