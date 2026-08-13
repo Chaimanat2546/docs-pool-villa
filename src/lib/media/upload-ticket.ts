@@ -11,6 +11,8 @@ export type MediaUploadTicketPayload = {
 
 export type MediaDeleteTicketPayload = {
   operation: "delete";
+  operationId: string;
+  operationType: "save_remove" | "document_delete" | "section_delete" | "cleanup";
   documentId: string;
   objectKeys: string[];
   expiresAt: number;
@@ -101,6 +103,8 @@ export async function verifyMediaDeleteTicket(ticket: string, secret: string): P
     const payload = value as Partial<MediaDeleteTicketPayload>;
     if (
       payload.operation !== "delete" ||
+      typeof payload.operationId !== "string" || !uuidPattern.test(payload.operationId) ||
+      (payload.operationType !== "save_remove" && payload.operationType !== "document_delete" && payload.operationType !== "section_delete" && payload.operationType !== "cleanup") ||
       typeof payload.documentId !== "string" || !uuidPattern.test(payload.documentId) ||
       !Array.isArray(payload.objectKeys) || payload.objectKeys.length === 0 || payload.objectKeys.length > 1_000 ||
       new Set(payload.objectKeys).size !== payload.objectKeys.length ||

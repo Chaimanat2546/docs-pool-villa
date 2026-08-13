@@ -15,10 +15,10 @@
 | M02 Structure | Remediation accepted on Staging | [TODO](docs/todo/M02-structure.md) |
 | M03 Editor/Media | Remediation accepted on Staging | [TODO](docs/todo/M03-editor-media.md) |
 | Pre-M04 Remediation | Complete; M04 plan approved | [TODO](docs/todo/M01-M03-remediation.md) |
-| M01–M04 Full Test Remediation | Complete — image save state and Next proxy remediation verified | [PLAN](docs/todo/M01-M04-full-test-remediation.md) |
+| M01–M04 Full Test Remediation | Complete — image save state fixed; legacy Middleware warning is documented as an OpenNext adapter limitation | [PLAN](docs/todo/M01-M04-full-test-remediation.md) |
 | M04 Documents | Complete | [TODO](docs/todo/M04-documents.md) |
 | M05 Public Docs | Complete | [TODO](docs/todo/M05-public-docs.md) |
-| M06 Media Lifecycle | In progress — Local implementation | [TODO](docs/todo/M06-media-management.md) |
+| M06 Media Lifecycle | Complete — Local verification only; awaiting approval before Staging | [TODO](docs/todo/M06-media-management.md) |
 | M07 Search/Hardening | Not started | [TODO](docs/todo/M07-search-hardening.md) |
 
 ## Stop condition

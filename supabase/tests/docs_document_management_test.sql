@@ -53,8 +53,8 @@ set local request.jwt.claim.sub = 'a0000000-0000-0000-0000-000000000001';
 select is(
   (select version from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'เริ่มต้นใช้งาน', 'intro', 'สรุป',
-    '{"type":"doc","content":[{"type":"paragraph"}]}'::jsonb, 'draft', 1, null,
-    '[{"id":"a3000000-0000-0000-0000-000000000001","object_key":"docs/a2000000-0000-0000-0000-000000000001/a3000000-0000-0000-0000-000000000001.webp","public_url":"https://media.example.test/a300.webp","mime_type":"image/webp","size_bytes":26,"width":1,"height":1}]'::jsonb
+    '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"a3000000-0000-4000-8000-000000000001","alt":"ภาพ M04"}}]}'::jsonb, 'draft', 1, null,
+    '[{"id":"a3000000-0000-4000-8000-000000000001","object_key":"docs/a2000000-0000-0000-0000-000000000001/a3000000-0000-4000-8000-000000000001.webp","public_url":"https://media.example.test/a300.webp","mime_type":"image/webp","size_bytes":26,"width":1,"height":1}]'::jsonb
   )),
   1::bigint,
   'Admin creates a draft at version 1'
@@ -62,16 +62,16 @@ select is(
 
 select is((select status from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000001'), 'draft', 'Draft save does not publish');
 select is((select count(*) from public.doc_media where document_id = 'a2000000-0000-0000-0000-000000000001'), 1::bigint, 'Save persists verified media metadata atomically');
-select is((select mime_type from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 'image/webp', 'Save persists verified MIME');
-select is((select size_bytes from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 26::bigint, 'Save persists verified byte size');
-select is((select width from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 1, 'Save persists verified width');
-select is((select height from public.doc_media where id = 'a3000000-0000-0000-0000-000000000001'), 1, 'Save persists verified height');
+select is((select mime_type from public.doc_media where id = 'a3000000-0000-4000-8000-000000000001'), 'image/webp', 'Save persists verified MIME');
+select is((select size_bytes from public.doc_media where id = 'a3000000-0000-4000-8000-000000000001'), 26::bigint, 'Save persists verified byte size');
+select is((select width from public.doc_media where id = 'a3000000-0000-4000-8000-000000000001'), 1, 'Save persists verified width');
+select is((select height from public.doc_media where id = 'a3000000-0000-4000-8000-000000000001'), 1, 'Save persists verified height');
 select is((select created_by from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000001'), 'a0000000-0000-0000-0000-000000000001'::uuid, 'Document records its creator');
 
 select is(
   (select version from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'เริ่มต้นใช้งาน', 'intro', 'สรุป',
-    '{"type":"doc","content":[]}'::jsonb, 'published', 1, 1, '[]'::jsonb
+    '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"a3000000-0000-4000-8000-000000000001","alt":"ภาพ M04"}}]}'::jsonb, 'published', 1, 1, '[]'::jsonb
   )),
   2::bigint,
   'Publishing a document increments its version'
@@ -84,7 +84,7 @@ select published_at from public.doc_documents where id = 'a2000000-0000-0000-000
 select is(
   (select version from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'เริ่มต้นใช้งาน', 'intro', 'สรุป',
-    '{"type":"doc","content":[]}'::jsonb, 'archived', 1, 2, '[]'::jsonb
+    '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"a3000000-0000-4000-8000-000000000001","alt":"ภาพ M04"}}]}'::jsonb, 'archived', 1, 2, '[]'::jsonb
   )),
   3::bigint,
   'Archiving a document increments its version'
@@ -94,7 +94,7 @@ select is((select status from public.doc_documents where id = 'a2000000-0000-000
 select is(
   (select version from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'เริ่มต้นใช้งาน', 'intro', 'สรุป',
-    '{"type":"doc","content":[]}'::jsonb, 'published', 1, 3, '[]'::jsonb
+    '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"a3000000-0000-4000-8000-000000000001","alt":"ภาพ M04"}}]}'::jsonb, 'published', 1, 3, '[]'::jsonb
   )),
   4::bigint,
   'Republishing a document increments its version'
@@ -108,7 +108,7 @@ select is(
 select throws_ok(
   $$select * from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'เขียนทับ', 'intro', null,
-    '{"type":"doc","content":[]}'::jsonb, 'published', 1, 3, '[]'::jsonb
+    '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"a3000000-0000-4000-8000-000000000001","alt":"ภาพ M04"}}]}'::jsonb, 'published', 1, 3, '[]'::jsonb
   )$$,
   'P0001', null,
   'Stale version is rejected without last-write-wins'
@@ -118,7 +118,7 @@ select is((select version from public.doc_documents where id = 'a2000000-0000-00
 select is(
   (select path from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000002', 'เริ่มต้นใช้งาน', 'welcome', 'สรุป',
-    '{"type":"doc","content":[]}'::jsonb, 'published', 0, 4, '[]'::jsonb
+    '{"type":"doc","content":[{"type":"image","attrs":{"mediaId":"a3000000-0000-4000-8000-000000000001","alt":"ภาพ M04"}}]}'::jsonb, 'published', 0, 4, '[]'::jsonb
   )),
   '/guides/getting-started/welcome',
   'Moving a document returns its canonical nested path'
@@ -149,18 +149,12 @@ select lives_ok(
 select is((select sort_order from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000002'), 0, 'First reordered document receives sort order zero');
 select is((select sort_order from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000001'), 1, 'Second reordered document receives sort order one');
 
-select is(
-  (select object_keys from public.doc_prepare_document_delete('a2000000-0000-0000-0000-000000000001', 5)),
-  array['docs/a2000000-0000-0000-0000-000000000001/a3000000-0000-0000-0000-000000000001.webp']::text[],
-  'Delete preparation returns the immutable media manifest'
-);
-select throws_ok(
-  $$select public.doc_finalize_document_delete('a2000000-0000-0000-0000-000000000001', 4)$$,
-  'P0001', null,
-  'Delete finalization rejects a stale version'
-);
+create temporary table prepared_document_delete as
+select * from public.doc_prepare_document_delete('a2000000-0000-0000-0000-000000000001', 5);
+select ok((select operation_id is not null from prepared_document_delete), 'Delete preparation persists an immutable operation');
+select is((select media_count from prepared_document_delete), 1::bigint, 'Delete preparation snapshots the exact media count');
 select lives_ok(
-  $$select public.doc_finalize_document_delete('a2000000-0000-0000-0000-000000000001', 5)$$,
+  $$select * from public.doc_finalize_document_delete((select operation_id from prepared_document_delete))$$,
   'Delete finalization removes a prepared current document'
 );
 select is((select count(*) from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000001'), 0::bigint, 'Hard delete removes the document after external media cleanup');

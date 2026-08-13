@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { ChevronRight, FileWarning, Plus, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Dialog } from "@base-ui/react/dialog";
 
-import { deleteSection, getDeletePreview, saveSection, type DeletePreview } from "./actions";
+import { MediaOperationBanner } from "@/components/admin/media-operation-banner";
+import type { MediaOperationView } from "@/lib/media/lifecycle-types";
+
+import { deleteSection, getDeletePreview, retrySectionMediaOperation, saveSection, type DeletePreview } from "./actions";
 
 export type Section = {
   id: string;
@@ -45,7 +49,7 @@ function toForm(section: Section): SectionForm {
   };
 }
 
-export function StructureManager({ sections }: { sections: Section[] }) {
+export function StructureManager({ sections, pendingOperations = [] }: { sections: Section[]; pendingOperations?: MediaOperationView[] }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(sections[0]?.id ?? null);
   const [form, setForm] = useState<SectionForm>(() => (sections[0] ? toForm(sections[0]) : emptyForm));
@@ -54,7 +58,8 @@ export function StructureManager({ sections }: { sections: Section[] }) {
   const [deleteTarget, setDeleteTarget] = useState<Section | null>(null);
   const [deletePreview, setDeletePreview] = useState<DeletePreview | null>(null);
   const [confirmedName, setConfirmedName] = useState("");
-  const deleteInputRef = useRef<HTMLInputElement>(null);
+  const [operations, setOperations] = useState(pendingOperations);
+  const mutationsBlocked = operations.length > 0;
 
   const byParent = useMemo(() => {
     const result = new Map<string | null, Section[]>();
@@ -69,10 +74,6 @@ export function StructureManager({ sections }: { sections: Section[] }) {
   const selected = sections.find((section) => section.id === selectedId) ?? null;
   const rootSections = byParent.get(null) ?? [];
   const mayBecomeChild = !selected || (byParent.get(selected.id)?.length ?? 0) === 0;
-
-  useEffect(() => {
-    if (deleteTarget) deleteInputRef.current?.focus();
-  }, [deleteTarget]);
 
   function chooseSection(section: Section) {
     setSelectedId(section.id);
@@ -113,10 +114,11 @@ export function StructureManager({ sections }: { sections: Section[] }) {
     setMessage(null);
     startTransition(async () => {
       const result = await deleteSection(deleteTarget.id, confirmedName);
-      if (result.error) {
+      if ("error" in result && result.error) {
         setMessage(result.error);
         return;
       }
+      if ("pending" in result) { setOperations((current) => [...current.filter((operation) => operation.operationId !== result.operation.operationId), result.operation]); return; }
       setDeleteTarget(null);
       setConfirmedName("");
       setSelectedId(null);
@@ -148,7 +150,7 @@ export function StructureManager({ sections }: { sections: Section[] }) {
             <h2 className="font-semibold">โครงสร้างคู่มือ</h2>
             <p className="text-sm text-muted-foreground">เรียงจากลำดับน้อยไปมาก</p>
           </div>
-          <button type="button" onClick={() => createSection()} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90">
+          <button type="button" disabled={mutationsBlocked} onClick={() => createSection()} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50">
             <Plus size={16} aria-hidden="true" /> เพิ่มหมวดหลัก
           </button>
         </div>
@@ -165,7 +167,7 @@ export function StructureManager({ sections }: { sections: Section[] }) {
                     <li key={child.id}><TreeItem section={child} selected={selectedId === child.id} onSelect={chooseSection} /></li>
                   ))}
                 </ul>
-                <button type="button" onClick={() => createSection(root.id)} className="ml-5 mt-2 inline-flex min-h-10 items-center gap-1 rounded-full px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground">
+                <button type="button" disabled={mutationsBlocked} onClick={() => createSection(root.id)} className="ml-5 mt-2 inline-flex min-h-10 items-center gap-1 rounded-full px-3 text-sm text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50">
                   <Plus size={15} aria-hidden="true" /> เพิ่มหมวดย่อย
                 </button>
               </li>
@@ -173,6 +175,8 @@ export function StructureManager({ sections }: { sections: Section[] }) {
           </ul>
         )}
       </section>
+
+      {operations.length > 0 && <section className="lg:col-span-2">{operations.map((operation) => <MediaOperationBanner key={operation.operationId} operation={operation} onRetry={() => startTransition(async () => { const result = await retrySectionMediaOperation(operation.operationId); if ("success" in result) router.refresh(); else if ("pending" in result) setOperations((current) => current.map((candidate) => candidate.operationId === operation.operationId ? result.operation : candidate)); else setMessage(result.error); })} />)}</section>}
 
       <section className="rounded-xl border bg-card p-5 shadow-sm">
         <h2 className="text-lg font-semibold">{selected ? "แก้ไขหมวด" : "สร้างหมวด"}</h2>
@@ -202,21 +206,24 @@ export function StructureManager({ sections }: { sections: Section[] }) {
             แสดงหมวดนี้ในหน้า Public เมื่อมีเอกสาร Published
           </label>
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            {selected ? <button type="button" disabled={isPending} onClick={() => requestDelete(selected)} className="inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"><Trash2 size={16} aria-hidden="true" /> ลบหมวด</button> : <span />}
-            <button disabled={isPending} type="submit" className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" /> {isPending ? "กำลังบันทึก" : "บันทึกหมวด"}</button>
+            {selected ? <button type="button" disabled={isPending || mutationsBlocked} onClick={() => requestDelete(selected)} className="inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"><Trash2 size={16} aria-hidden="true" /> ลบหมวด</button> : <span />}
+            <button disabled={isPending || mutationsBlocked} type="submit" className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" /> {isPending ? "กำลังบันทึก" : "บันทึกหมวด"}</button>
           </div>
         </form>
       </section>
 
-      {deleteTarget && <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4" role="presentation">
-        <div role="dialog" aria-modal="true" aria-labelledby="delete-title" className="w-full max-w-lg rounded-xl bg-card p-6 shadow-xl">
-          <div className="flex items-start gap-3"><FileWarning className="mt-1 text-destructive" aria-hidden="true" /><div><h2 id="delete-title" className="text-lg font-semibold">ยืนยันการลบหมวด</h2><p className="mt-1 text-sm text-muted-foreground">การลบเป็นแบบถาวร เอกสารและหมวดย่อยที่ไม่มีรูปจะถูกลบด้วย</p></div></div>
+      <Dialog.Root open={Boolean(deleteTarget)} onOpenChange={(open) => { if (!open) { setDeleteTarget(null); setDeletePreview(null); setConfirmedName(""); } }}>
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/50" />
+          <Dialog.Popup className="fixed left-1/2 top-1/2 z-50 w-[min(32rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card p-6 shadow-xl outline-none">
+          <div className="flex items-start gap-3"><FileWarning className="mt-1 text-destructive" aria-hidden="true" /><div><Dialog.Title className="text-lg font-semibold">ยืนยันการลบหมวด</Dialog.Title><Dialog.Description className="mt-1 text-sm text-muted-foreground">การลบเป็นแบบถาวร เอกสารและหมวดย่อยที่ไม่มีรูปจะถูกลบด้วย</Dialog.Description></div></div>
           {deletePreview && <div className="mt-4 rounded-lg bg-muted p-3 text-sm"><p>หมวดย่อย: {deletePreview.childSectionCount} หมวด · เอกสาร: {deletePreview.documentCount} รายการ · รูป: {deletePreview.mediaCount} รูป</p>{deletePreview.documentTitles.length > 0 && <ul className="mt-2 list-disc pl-5 text-muted-foreground">{deletePreview.documentTitles.map((title, index) => <li key={`${title}-${index}`}>{title}</li>)}</ul>}{deletePreview.mediaCount > 0 && <p className="mt-2 text-destructive">ระบบจะไม่ลบข้อมูลจนกว่าจะลบรูปจาก R2 สำเร็จ</p>}</div>}
-          <label className="mt-5 block text-sm font-medium" htmlFor="confirm-name">พิมพ์ “{deleteTarget.title}” เพื่อยืนยัน</label>
-          <input ref={deleteInputRef} id="confirm-name" value={confirmedName} onChange={(event) => setConfirmedName(event.target.value)} className="mt-2 h-11 w-full rounded-md border bg-background px-3" />
-          <div className="mt-6 flex justify-end gap-3"><button type="button" disabled={isPending} onClick={() => { setDeleteTarget(null); setDeletePreview(null); }} className="min-h-10 rounded-full px-4 text-sm hover:bg-muted">ยกเลิก</button><button type="button" disabled={isPending || confirmedName !== deleteTarget.title} onClick={confirmDelete} className="min-h-10 rounded-full bg-destructive px-4 text-sm font-medium text-white disabled:opacity-50">{isPending ? "กำลังลบ" : "ลบถาวร"}</button></div>
-        </div>
-      </div>}
+          <label className="mt-5 block text-sm font-medium" htmlFor="confirm-name">พิมพ์ “{deleteTarget?.title ?? ""}” เพื่อยืนยัน</label>
+          <input autoFocus id="confirm-name" value={confirmedName} onChange={(event) => setConfirmedName(event.target.value)} className="mt-2 h-11 w-full rounded-md border bg-background px-3" />
+          <div className="mt-6 flex justify-end gap-3"><Dialog.Close disabled={isPending} className="min-h-10 rounded-full px-4 text-sm hover:bg-muted disabled:opacity-50">ยกเลิก</Dialog.Close><button type="button" disabled={isPending || !deleteTarget || confirmedName !== deleteTarget.title} onClick={confirmDelete} className="min-h-10 rounded-full bg-destructive px-4 text-sm font-medium text-white disabled:opacity-50">{isPending ? "กำลังลบ" : "ลบถาวร"}</button></div>
+          </Dialog.Popup>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   );
 }

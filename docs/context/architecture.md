@@ -16,7 +16,7 @@
 | Staging | `https://sxvkhzhqtrpxgzumsswl.supabase.co` | `0df55f166fa309dcc904e992c43f86db` | `https://docs-pool-villa-staging.chaymanus2003.workers.dev` |
 
 - Existing R2 bucket: `webook-media` (Production legacy bucket; Docs ต้องใช้ Worker แยก)
-- Docs object key: `docs/{document_id}/{image_name}`
+- Docs object key: `docs/{document_id}/{media_id}.webp`
 - Admin path: `/admin`
 
 ค่าข้างต้นเป็น Identifier ไม่ใช่ Secret ห้ามเพิ่ม Key/Token ลงไฟล์นี้

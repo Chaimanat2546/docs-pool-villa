@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const rpc = vi.fn();
+const { runDocumentSave } = vi.hoisted(() => ({ runDocumentSave: vi.fn() }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/auth/require-admin", () => ({ requireAdmin: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("@/lib/docs/content", () => ({ validateDocumentContent: vi.fn((content) => ({ ok: true, content })) }));
 vi.mock("@/lib/docs/public-cache", () => ({ revalidatePublicDocs: vi.fn() }));
-vi.mock("@/lib/media/upload-ticket", () => ({ signMediaDeleteTicket: vi.fn() }));
-vi.mock("@/lib/server", () => ({ createClient: vi.fn(async () => ({ rpc, from: vi.fn() })) }));
+vi.mock("@/lib/media/lifecycle", () => ({
+  prepareAndDeleteDocument: vi.fn(),
+  retryMediaCleanup: vi.fn(),
+  rollbackUploadedMedia: vi.fn(),
+  runDocumentSave,
+  resumeMediaOperation: vi.fn(),
+}));
 
 import { saveDocument } from "./actions";
 
@@ -18,11 +23,11 @@ const mediaId = "33333333-3333-4333-8333-333333333333";
 describe("saveDocument", () => {
   beforeEach(() => {
     process.env.NEXT_PUBLIC_DOCS_MEDIA_WORKER_URL = "https://media.example.test";
-    rpc.mockReset();
-    rpc.mockResolvedValue({ data: [{ document_id: documentId, version: 1, path: "/guides/start" }], error: null });
+    runDocumentSave.mockReset();
+    runDocumentSave.mockResolvedValue({ success: true, kind: "save_remove", targetId: documentId, version: 1, path: "/guides/start" });
   });
 
-  it("forwards Worker-verified media metadata to the document save RPC", async () => {
+  it("forwards Worker-verified media metadata to the lifecycle owner", async () => {
     await saveDocument({
       id: documentId,
       sectionId,
@@ -43,11 +48,11 @@ describe("saveDocument", () => {
       }],
     });
 
-    expect(rpc).toHaveBeenCalledWith("doc_save_document", expect.objectContaining({
-      p_media: [expect.objectContaining({
-        id: mediaId,
-        mime_type: "image/webp",
-        size_bytes: 26,
+    expect(runDocumentSave).toHaveBeenCalledWith(expect.objectContaining({
+      media: [expect.objectContaining({
+        mediaId,
+        mimeType: "image/webp",
+        sizeBytes: 26,
         width: 1,
         height: 1,
       })],

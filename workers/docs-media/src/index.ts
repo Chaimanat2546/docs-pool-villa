@@ -133,8 +133,14 @@ async function handleDelete(request: Request, env: Env): Promise<Response> {
   const ticket = request.headers.get("X-Docs-Media-Ticket") ?? request.headers.get("X-Docs-Media-Delete-Ticket");
   const payload = ticket ? await verifyMediaDeleteTicket(ticket, env.DOCS_MEDIA_UPLOAD_SECRET) : null;
   if (!payload || payload.expiresAt <= Date.now()) return json(request, env, 401, { error: "Delete ticket ไม่ถูกต้องหรือหมดอายุ" });
-  await env.DOCS_MEDIA_BUCKET.delete(payload.objectKeys);
-  return json(request, env, 200, { deleted: payload.objectKeys.length });
+  try {
+    await env.DOCS_MEDIA_BUCKET.delete(payload.objectKeys);
+    console.log(JSON.stringify({ message: "docs media delete completed", operationId: payload.operationId, operationType: payload.operationType, keyCount: payload.objectKeys.length }));
+    return json(request, env, 200, { deleted: payload.objectKeys.length });
+  } catch (error) {
+    console.error(JSON.stringify({ message: "docs media delete failed", operationId: payload.operationId, operationType: payload.operationType, keyCount: payload.objectKeys.length, error: error instanceof Error ? error.message : "Unknown error" }));
+    return json(request, env, 500, { error: "ลบรูปไม่สำเร็จ กรุณาลองอีกครั้ง" });
+  }
 }
 
 async function handlePublicObject(request: Request, env: Env): Promise<Response> {

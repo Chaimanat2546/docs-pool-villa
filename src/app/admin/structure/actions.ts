@@ -4,9 +4,12 @@ import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { revalidatePublicDocs } from "@/lib/docs/public-cache";
+import { prepareAndDeleteSection, resumeMediaOperation } from "@/lib/media/lifecycle";
+import type { LifecycleResult } from "@/lib/media/lifecycle-types";
 import { createClient } from "@/lib/server";
 
 export type StructureActionResult = { error?: string; success?: true };
+export type DeleteSectionResult = StructureActionResult | Extract<LifecycleResult, { pending: true }>;
 export type DeletePreview = {
   childSectionCount: number;
   documentCount: number;
@@ -95,24 +98,13 @@ export async function saveSection(input: unknown): Promise<StructureActionResult
 export async function deleteSection(
   sectionId: unknown,
   confirmedName: unknown,
-): Promise<StructureActionResult> {
+): Promise<DeleteSectionResult> {
   await requireAdmin();
   if (typeof sectionId !== "string" || !uuidPattern.test(sectionId) || typeof confirmedName !== "string") {
     return { error: "ข้อมูลการลบหมวดไม่ถูกต้อง" };
   }
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("doc_delete_section", {
-    p_section_id: sectionId,
-    p_confirmed_title: confirmedName,
-  });
-  if (error) {
-    if (error.code === "P0001") {
-      return { error: "ยังลบหมวดนี้ไม่ได้ เพราะมีรูปที่ต้องลบจาก R2 ให้สำเร็จก่อน" };
-    }
-    if (error.code === "23514") return { error: "ชื่อที่พิมพ์ไม่ตรงกับชื่อหมวด" };
-    if (error.code === "P0002") return { error: "ไม่พบหมวดที่ต้องการลบ" };
-    return { error: "ลบหมวดไม่สำเร็จ กรุณาลองอีกครั้ง" };
-  }
+  const result = await prepareAndDeleteSection(sectionId, confirmedName);
+  if (!("success" in result)) return result;
 
   revalidatePath("/admin/structure");
   revalidatePublicDocs();
@@ -135,4 +127,15 @@ export async function getDeletePreview(sectionId: unknown): Promise<DeletePrevie
     mediaCount: Number(preview.media_count),
     documentTitles: preview.document_titles ?? [],
   };
+}
+
+export async function retrySectionMediaOperation(operationId: unknown): Promise<LifecycleResult> {
+  await requireAdmin();
+  if (typeof operationId !== "string" || !uuidPattern.test(operationId)) return { error: "ข้อมูลงานลบหมวดไม่ถูกต้อง" };
+  const result = await resumeMediaOperation(operationId);
+  if ("success" in result) {
+    revalidatePath("/admin/structure");
+    revalidatePublicDocs();
+  }
+  return result;
 }

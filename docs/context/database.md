@@ -8,6 +8,8 @@ Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migra
 - `doc_documents`
 - `doc_media`
 - `doc_route_redirects`
+- `doc_media_cleanup`
+- `doc_media_operations`, `doc_media_operation_documents`, `doc_media_operation_items`
 
 มี schema private ของ Docs ชื่อ `doc_private` สำหรับ privileged Boolean helpers; `public.doc_is_admin()` เป็น SECURITY INVOKER RPC wrapper ที่คืนค่า Boolean ของผู้เรียกเท่านั้น และตรวจ `EXISTS` จาก `public.users` ด้วย `uid = auth.uid()` และ `role_id = 1` โดยไม่แก้ตาราง Legacy
 
@@ -56,4 +58,11 @@ Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migra
 - Migration `20260813033615_public_docs_redirect_visibility.sql` ให้ Public client อ่าน `doc_route_redirects` ได้ผ่าน RLS เฉพาะ redirect ที่ผูกกับ Document และปลายทางยังผ่าน `doc_private.doc_document_is_public()`
 - Redirect ของ Draft, Archived, Section/Parent ที่ซ่อน หรือ Document ที่ถูกลบ จึงไม่เปิดเผย Route history; Admin ยังคงอ่านและเขียนได้ตาม policy เดิม
 - ไม่เพิ่ม index เพราะ `old_path` มี unique index สำหรับ lookup แล้ว และ index แบบ partial ของ `document_id` รองรับ predicate visibility ที่มีอยู่
+
+## M06 durable media lifecycle
+
+- Migration `20260813062523_docs_media_lifecycle_operations.sql` เพิ่ม operation manifest/freeze สำหรับ save ที่เอารูปออก, hard delete และ section cascade; DB finalize จะทำงานหลัง R2 ลบ exact keys สำเร็จเท่านั้น
+- `doc_media_cleanup` ใช้ claim token และ lease 5 นาทีเพื่อ retry แบบ bounded; state `cleanup_required` ถูกเลิกใช้เพื่อให้มี source of truth เดียว
+- trigger ของ Docs ปฏิเสธ direct content update ที่ทำให้ media เดิมไม่มี reference; finalizer ตั้ง transaction-local guard เท่านั้น
+- RPC ทุกตัวเป็น security invoker, ตรวจ Admin ด้วย `doc_private.doc_is_admin()` และ policy ของ operation tables จำกัดเฉพาะ Admin
 

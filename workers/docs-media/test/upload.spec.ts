@@ -8,6 +8,7 @@ import worker from "../src";
 const documentId = "11111111-1111-4111-8111-111111111111";
 const mediaId = "22222222-2222-4222-8222-222222222222";
 const objectKey = `docs/${documentId}/${mediaId}.webp`;
+const operationId = "77777777-7777-4777-8777-777777777777";
 
 // A structurally valid 1 x 1 VP8L WebP container.
 const webp = new Uint8Array([
@@ -104,7 +105,7 @@ describe("Docs Media Worker", () => {
   it("deletes only signed document keys and permits an idempotent retry", async () => {
     const deleteKey = `docs/${documentId}/44444444-4444-4444-8444-444444444444.webp`;
     await env.DOCS_MEDIA_BUCKET.put(deleteKey, webp);
-    const ticket = await signMediaDeleteTicket({ operation: "delete", documentId, objectKeys: [deleteKey], expiresAt: Date.now() + 60_000 }, "test-docs-media-secret");
+    const ticket = await signMediaDeleteTicket({ operation: "delete", operationId, operationType: "document_delete", documentId, objectKeys: [deleteKey], expiresAt: Date.now() + 60_000 } as never, "test-docs-media-secret");
     const request = () => worker.fetch(new Request("https://media.example.test/objects", {
       method: "DELETE", headers: { "X-Docs-Media-Ticket": ticket },
     }), env, createExecutionContext());
@@ -116,6 +117,7 @@ describe("Docs Media Worker", () => {
   it("rejects a delete ticket for a key outside its document", async () => {
     const ticket = await signMediaDeleteTicket({
       operation: "delete", documentId,
+      operationId, operationType: "document_delete",
       objectKeys: [`docs/55555555-5555-4555-8555-555555555555/${mediaId}.webp`],
       expiresAt: Date.now() + 60_000,
     }, "test-docs-media-secret");
@@ -127,13 +129,21 @@ describe("Docs Media Worker", () => {
 
   it("returns a safe error rather than success when R2 delete fails", async () => {
     const deleteKey = `docs/${documentId}/66666666-6666-4666-8666-666666666666.webp`;
-    const ticket = await signMediaDeleteTicket({ operation: "delete", documentId, objectKeys: [deleteKey], expiresAt: Date.now() + 60_000 }, "test-docs-media-secret");
+    const ticket = await signMediaDeleteTicket({ operation: "delete", operationId, operationType: "document_delete", documentId, objectKeys: [deleteKey], expiresAt: Date.now() + 60_000 } as never, "test-docs-media-secret");
     const deleteSpy = vi.spyOn(env.DOCS_MEDIA_BUCKET, "delete").mockRejectedValueOnce(new Error("R2 unavailable"));
     const response = await worker.fetch(new Request("https://media.example.test/objects", {
       method: "DELETE", headers: { "X-Docs-Media-Delete-Ticket": ticket },
     }), env, createExecutionContext());
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: "อัปโหลดรูปไม่สำเร็จ กรุณาลองอีกครั้ง" });
+    expect(await response.json()).toEqual({ error: "ลบรูปไม่สำเร็จ กรุณาลองอีกครั้ง" });
     expect(deleteSpy).toHaveBeenCalledWith([deleteKey]);
+  });
+
+  it("requires an operation id and type for a delete ticket", async () => {
+    const missingOperation = await signMediaDeleteTicket({ operation: "delete", documentId, objectKeys: [objectKey], expiresAt: Date.now() + 60_000 }, "test-docs-media-secret");
+    const response = await worker.fetch(new Request("https://media.example.test/objects", {
+      method: "DELETE", headers: { "X-Docs-Media-Ticket": missingOperation },
+    }), env, createExecutionContext());
+    expect(response.status).toBe(401);
   });
 });

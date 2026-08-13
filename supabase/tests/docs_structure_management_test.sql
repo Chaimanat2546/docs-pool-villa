@@ -106,14 +106,12 @@ select is(
   'Deletion preview reports media that must be cleaned first'
 );
 
-select throws_ok(
-  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000005', 'หมวดมีรูป')$$,
-  'P0001', null,
-  'Category delete fails closed when media is present'
-);
+create temporary table prepared_media_section_delete as
+select * from public.doc_prepare_section_delete('91000000-0000-0000-0000-000000000005', 'หมวดมีรูป');
+select ok((select operation_id is not null from prepared_media_section_delete), 'Category with media creates a durable cleanup operation');
 
 select throws_ok(
-  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000004', 'ชื่อไม่ตรง')$$,
+  $$select * from public.doc_prepare_section_delete('91000000-0000-0000-0000-000000000004', 'ชื่อไม่ตรง')$$,
   '23514', null,
   'Deletion rejects a confirmation name that does not match atomically'
 );
@@ -130,8 +128,10 @@ select is(
   'Failed media cleanup keeps the category'
 );
 
+create temporary table prepared_section_delete as
+select * from public.doc_prepare_section_delete('91000000-0000-0000-0000-000000000004', 'หมวดลบได้');
 select lives_ok(
-  $$select public.doc_delete_section('91000000-0000-0000-0000-000000000004', 'หมวดลบได้')$$,
+  $$select * from public.doc_finalize_section_delete((select operation_id from prepared_section_delete))$$,
   'Category without media can be deleted'
 );
 
