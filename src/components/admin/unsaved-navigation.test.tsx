@@ -211,6 +211,8 @@ it.each([
   { canIntercept: false, cancelable: true },
 ])("does not claim to guard an unsupported browser traversal: %o", async ({ canIntercept, cancelable }) => {
   const browserNavigation = new EventTarget();
+  const addEventListener = vi.spyOn(browserNavigation, "addEventListener");
+  enableNavigationPrecommitSupport();
   Object.defineProperty(window, "navigation", {
     configurable: true,
     value: browserNavigation,
@@ -228,6 +230,7 @@ it.each([
   });
   browserNavigation.dispatchEvent(backEvent);
 
+  expect(addEventListener).toHaveBeenCalledWith("navigate", expect.any(Function));
   expect(intercept).not.toHaveBeenCalled();
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(pushState).not.toHaveBeenCalled();
