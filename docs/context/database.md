@@ -65,7 +65,7 @@ Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migra
 - `doc_media_cleanup` ใช้ claim token และ lease 5 นาทีเพื่อ retry แบบ bounded; state `cleanup_required` ถูกเลิกใช้เพื่อให้มี source of truth เดียว
 - trigger ของ Docs ปฏิเสธ direct content update ที่ทำให้ media เดิมไม่มี reference; finalizer ตั้ง transaction-local guard เท่านั้น
 - RPC ทุกตัวเป็น security invoker, ตรวจ Admin ด้วย `doc_private.doc_is_admin()` และ policy ของ operation tables จำกัดเฉพาะ Admin
-- Post-closeout race guard ใช้ advisory lock ชุดเดิมแบบ statement/RPC-first ที่ Document, Section, Media และ operation/snapshot mutation boundaries เพื่อห้ามเปลี่ยนสมาชิกของ subtree ระหว่าง pending section delete; ครอบคลุม staged `save_remove` destination และป้องกัน lock order กลับด้านด้วย
-- Operation target และ frozen Document/Media manifest เปลี่ยนตรงไม่ได้หลัง prepare; lifecycle RPC เปิด transaction-local write guard เฉพาะช่วงสร้าง/ปิด exact snapshot ขณะที่ retry bookkeeping ยังอัปเดตได้
+- Post-closeout race guard ใช้ advisory lock ชุดเดิมแบบ statement/RPC-first ที่ Document, Section, Media และ operation/snapshot mutation boundaries เพื่อห้ามเปลี่ยนสมาชิกของ subtree ระหว่าง pending section delete; ครอบคลุม staged `save_remove` destination, section-delete subtree ที่ overlap กัน และป้องกัน lock order กลับด้านด้วย
+- Operation target และ frozen Document/Media manifest เปลี่ยนตรงไม่ได้หลัง prepare; Media ของ Document ที่มี pending `save_remove`/`document_delete` ก็เปลี่ยนตรงไม่ได้. lifecycle RPC เปิด transaction-local write guard เฉพาะช่วงสร้าง/ปิด exact snapshot ขณะที่ retry bookkeeping ยังอัปเดตได้
 - Section finalizer lock และเทียบ exact sorted Document IDs รวม exact `(document_id, media_id, object_key)` manifest ก่อนลบ; mismatch คืน `P0001`, คง operation/data เพื่อ Retry และลบ DB เฉพาะ frozen Document IDs หลัง guard ผ่าน
 

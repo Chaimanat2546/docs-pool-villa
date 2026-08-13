@@ -4,7 +4,7 @@
 
 **เวอร์ชัน:** 1.2 (ขอบเขต MVP)  
 **วันที่:** 10 สิงหาคม 2026  
-**สถานะ:** Requirement baseline ยืนยันแล้ว; M01–M06 ปิดจากงานที่ตรวจแล้ว, M07 ยังไม่เริ่ม และยังไม่มี Production action
+**สถานะ:** Requirement baseline ยืนยันแล้ว; historical close-out M01–M06 มีหลักฐานที่ตรวจแล้ว แต่ M06 post-closeout safety remediation ยังรอ apply/verify Staging ของ migration `20260813150200`; M07 ยังไม่เริ่มและไม่มี Production action
 **ผู้รับผิดชอบ:** ทีม Poolvilla
 
 ## 1. วัตถุประสงค์
