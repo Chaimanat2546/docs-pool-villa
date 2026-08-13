@@ -6,7 +6,7 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: M01–M05 complete; M06 ผ่าน Staging lifecycle แต่พบ UI retry race จาก repeated smoke จึงต้องแก้ก่อนปิด Module. คงข้อมูลทดสอบ `M06 Staging Keep` และ R2 object ทดสอบไว้ รอภูอนุมัติ cleanup
+- Current work: M01–M06 complete; M06 Staging lifecycle, single-flight retry และ UI refresh ผ่านแล้ว. คง fixture M06 ใน Staging (section/document และ object ที่ไม่ได้เป็นเป้าหมายของ lifecycle) ไว้ รอภูอนุมัติ cleanup
 - Deployment: Staging database remediation is approved and complete; ห้าม Deploy หรือ migrate Production จนกว่าภูจะสั่งแยก
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 

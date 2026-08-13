@@ -29,21 +29,21 @@
 - Consumes: `retryMediaOperation(operationId): Promise<LifecycleResult>` from `./actions`.
 - Produces: One Server Action invocation per unresolved operation, whether triggered by the mount effect or the Retry button.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Render `DocumentForm` with a pending operation whose mocked retry promise remains unresolved. Trigger the mount effect and immediately trigger the Retry button. Assert the action has one invocation, not two.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest --config vitest.config.mts run src/app/admin/documents/document-form.test.tsx`
 
 Expected: FAIL because the current effect and button handlers each dispatch `retryMediaOperation`.
 
-- [ ] **Step 3: Write the minimal implementation**
+- [x] **Step 3: Write the minimal implementation**
 
 Add one `useRef<string | null>` that is claimed synchronously before `startTransition`. Route both effect and button through one `retryOperation` callback. Clear `operation` before `router.refresh()` on success and release the ref for pending/error results.
 
-- [ ] **Step 4: Run the focused test to verify it passes**
+- [x] **Step 4: Run the focused test to verify it passes**
 
 Run: `npx vitest --config vitest.config.mts run src/app/admin/documents/document-form.test.tsx`
 
@@ -63,18 +63,18 @@ Expected: PASS with exactly one dispatched action.
 - Consumes: The retry lock from Task 1 and the isolated M06 Staging fixture pattern.
 - Produces: Verification record showing a successful retry without a duplicate-action error.
 
-- [ ] **Step 1: Run local checks**
+- [x] **Step 1: Run local checks**
 
 Run: `npm run test:media`, `npx tsc --noEmit`, and `npm run lint`.
 
-- [ ] **Step 2: Build and deploy only the Staging App**
+- [x] **Step 2: Build and deploy only the Staging App**
 
 Build with the Staging site URL and non-secret build sentinel, assert the build output excludes the local media secret, then run `wrangler deploy --keep-vars` from the repository root.
 
-- [ ] **Step 3: Run an isolated Staging smoke**
+- [x] **Step 3: Run an isolated Staging smoke**
 
 Create a fresh test-only document/media/operation, verify its frozen UI, wait for the automatic retry, and verify DB/R2/UI final state. Do not click Retry while the automatic attempt is active; separately confirm its disabled state.
 
-- [ ] **Step 4: Record outcome and commit**
+- [x] **Step 4: Record outcome and commit**
 
 Mark M06 complete only if no duplicate-action error appears and all checks pass; otherwise retain the remediation status and describe the exact evidence.

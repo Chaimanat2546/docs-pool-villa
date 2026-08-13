@@ -2,7 +2,7 @@
 
 import type { JSONContent } from "@tiptap/core";
 import { Eye, Save } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { DocumentEditor } from "@/components/editor/document-editor";
@@ -66,6 +66,7 @@ export function DocumentForm({ document, sections, pendingOperation = null, hard
   const [operation, setOperation] = useState<MediaOperationView | null>(pendingOperation);
   const [retrying, startRetry] = useTransition();
   const retriedOperationRef = useRef<string | null>(null);
+  const retryInFlightRef = useRef<string | null>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshot({
     sectionId: document?.sectionId ?? sections[0]?.id ?? "", title: document?.title ?? "", slug: document?.slug ?? "",
     excerpt: document?.excerpt ?? "", status: document?.status ?? "draft", sortOrder: document?.sortOrder ?? 0,
@@ -82,16 +83,31 @@ export function DocumentForm({ document, sections, pendingOperation = null, hard
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  const retryOperation = useCallback((currentOperation: MediaOperationView) => {
+    if (retryInFlightRef.current === currentOperation.operationId) return;
+    retryInFlightRef.current = currentOperation.operationId;
+    startRetry(async () => {
+      try {
+        const result = await retryMediaOperation(currentOperation.operationId);
+        if ("success" in result) {
+          setOperation(null);
+          router.refresh();
+        }
+        else if ("pending" in result) setOperation(result.operation);
+        else setMessage(result.error);
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "ไม่สามารถลองลบรูปอีกครั้ง");
+      } finally {
+        if (retryInFlightRef.current === currentOperation.operationId) retryInFlightRef.current = null;
+      }
+    });
+  }, [router, startRetry]);
+
   useEffect(() => {
     if (!operation || retriedOperationRef.current === operation.operationId) return;
     retriedOperationRef.current = operation.operationId;
-    startRetry(async () => {
-      const result = await retryMediaOperation(operation.operationId);
-      if ("success" in result) router.refresh();
-      else if ("pending" in result) setOperation(result.operation);
-      else setMessage(result.error);
-    });
-  }, [operation, router]);
+    retryOperation(operation);
+  }, [operation, retryOperation]);
 
   async function save() {
     if (saving) return;
@@ -151,7 +167,7 @@ export function DocumentForm({ document, sections, pendingOperation = null, hard
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h1 className="text-2xl font-semibold">{document ? "แก้ไขเอกสาร" : "สร้างเอกสาร"}</h1><p className="mt-1 text-sm text-muted-foreground">บันทึกด้วยตนเองเท่านั้น {dirty ? "• มีการแก้ไขที่ยังไม่บันทึก" : ""}</p></div><div className="flex gap-2"><button type="button" onClick={() => setPreviewOpen(true)} className="inline-flex min-h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium"><Eye size={16} aria-hidden="true" />ดูตัวอย่าง</button><button type="button" disabled={saving || Boolean(operation)} onClick={save} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"><Save size={16} aria-hidden="true" />{saving ? "กำลังบันทึก" : "บันทึก"}</button></div></div>
       {message && <p role="alert" className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
-      {operation && <MediaOperationBanner operation={operation} pending={retrying} onRetry={() => startRetry(async () => { const result = await retryMediaOperation(operation.operationId); if ("success" in result) router.refresh(); else if ("pending" in result) setOperation(result.operation); else setMessage(result.error); })} />}
+      {operation && <MediaOperationBanner operation={operation} pending={retrying} onRetry={() => retryOperation(operation)} />}
       <div className="mb-6 grid gap-4 rounded-xl border bg-card p-4 sm:grid-cols-2">
         <label className="text-sm font-medium">ชื่อเอกสาร<input required value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3" /></label>
         <label className="text-sm font-medium">Slug<input required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} className="mt-1 h-11 w-full rounded-md border bg-background px-3 font-mono" /></label>

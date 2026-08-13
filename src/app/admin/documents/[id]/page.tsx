@@ -25,5 +25,5 @@ export default async function EditDocumentPage({ params }: { params: Promise<{ i
   const labels = new Map(references.ok ? references.references.map((reference) => [reference.mediaId, reference.displayLabel]) : []);
   const hardDeleteFiles = (media ?? []).map((item) => labels.get(item.id) ?? item.object_key.split("/").at(-1) ?? "unknown.webp");
   const pendingOperation = freeze?.operation_id ? await readMediaOperation(freeze.operation_id) : null;
-  return <DocumentForm document={record} sections={sections} pendingOperation={pendingOperation} hardDeleteFiles={hardDeleteFiles} />;
+  return <DocumentForm key={`${record.id}:${record.version}`} document={record} sections={sections} pendingOperation={pendingOperation} hardDeleteFiles={hardDeleteFiles} />;
 }
