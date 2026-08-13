@@ -17,17 +17,14 @@ import { getAdminSectionPath, type AdminExplorerSection } from "@/lib/docs/admin
 import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 import type { MediaOperationView } from "@/lib/media/lifecycle-types";
 
-import { SectionInlineForm, type SectionMode } from "./section-inline-form";
+import { SectionInlineForm } from "./section-inline-form";
+import type { SectionMode } from "./section-mode";
 
 type SectionPanelProps = {
   selectedSectionId: string | null;
   mode: SectionMode;
   explorer: AdminExplorerData;
 };
-
-export function sectionMode(value: string | string[] | undefined): SectionMode {
-  return value === "create-root" || value === "create-child" || value === "edit" ? value : "view";
-}
 
 export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanelProps) {
   const router = useRouter();

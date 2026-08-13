@@ -1,4 +1,5 @@
-import { SectionPanel, sectionMode } from "@/components/admin/explorer/section-panel";
+import { sectionMode } from "@/components/admin/explorer/section-mode";
+import { SectionPanel } from "@/components/admin/explorer/section-panel";
 import { resolveAdminSectionId } from "@/lib/docs/admin-explorer";
 import { loadAdminExplorerData } from "@/lib/docs/admin-explorer-server";
 

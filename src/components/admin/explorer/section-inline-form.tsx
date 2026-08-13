@@ -7,7 +7,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { saveSection } from "@/app/admin/(content)/structure/actions";
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
-export type SectionMode = "view" | "create-root" | "create-child" | "edit";
+import type { SectionMode } from "./section-mode";
 
 type EditableSectionMode = Exclude<SectionMode, "view">;
 

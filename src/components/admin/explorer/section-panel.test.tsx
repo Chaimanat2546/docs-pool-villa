@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 
-import { sectionMode, SectionPanel } from "./section-panel";
+import { SectionPanel } from "./section-panel";
 
 const { deleteSection, getDeletePreview, refresh, replace, retrySectionMediaOperation, saveSection } = vi.hoisted(() => ({
   deleteSection: vi.fn(),
@@ -89,15 +89,6 @@ beforeEach(() => {
 });
 
 describe("SectionPanel", () => {
-  it("accepts only the supported URL modes", () => {
-    expect(sectionMode("create-root")).toBe("create-root");
-    expect(sectionMode("create-child")).toBe("create-child");
-    expect(sectionMode("edit")).toBe("edit");
-    expect(sectionMode("remove")).toBe("view");
-    expect(sectionMode(["edit"])).toBe("view");
-    expect(sectionMode(undefined)).toBe("view");
-  });
-
   it("routes root and child creation into focused inline modes", () => {
     const { rerender } = render(<SectionPanel selectedSectionId={rootId} mode="view" explorer={explorer} />);
 
