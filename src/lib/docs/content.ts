@@ -86,7 +86,7 @@ function validateAttributes(node: Record<string, unknown>, mode: ContentValidati
 
   switch (node.type) {
     case "paragraph":
-      return attrs.indentLevel === undefined || (Number.isInteger(attrs.indentLevel) && attrs.indentLevel >= 0 && attrs.indentLevel <= 3)
+      return attrs.indentLevel === undefined || (typeof attrs.indentLevel === "number" && Number.isInteger(attrs.indentLevel) && attrs.indentLevel >= 0 && attrs.indentLevel <= 3)
         ? null
         : "ระดับการเยื้องย่อหน้าไม่ถูกต้อง";
     case "heading":
