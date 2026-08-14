@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toYouTubeNoCookieUrl, validateDocumentContent } from "./content";
+import { normalizeYouTubeContent, toYouTubeNoCookieUrl, validateDocumentContent } from "./content";
 
 describe("document content validation", () => {
   it("rejects raw HTML-shaped or unsafe URL content", () => {
@@ -17,6 +17,30 @@ describe("document content validation", () => {
   it("normalizes valid YouTube URLs to youtube-nocookie", () => {
     expect(toYouTubeNoCookieUrl("https://youtu.be/dQw4w9WgXcQ")).toBe("https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ");
     expect(toYouTubeNoCookieUrl("https://example.com/video")).toBeNull();
+  });
+
+  it("normalizes valid YouTube URLs throughout persisted document content", () => {
+    const content = {
+      type: "doc",
+      content: [{
+        type: "blockquote",
+        content: [{
+          type: "youtube",
+          attrs: { src: "https://youtu.be/AtuNIJ9uZkc?si=P83kSC7fh3VZACeQ" },
+        }],
+      }],
+    };
+
+    expect(normalizeYouTubeContent(content)).toEqual({
+      type: "doc",
+      content: [{
+        type: "blockquote",
+        content: [{
+          type: "youtube",
+          attrs: { src: "https://www.youtube-nocookie.com/embed/AtuNIJ9uZkc" },
+        }],
+      }],
+    });
   });
 
   it("rejects persisted table content", () => {

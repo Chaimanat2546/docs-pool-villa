@@ -7,20 +7,34 @@ import { afterEach, expect, it, vi } from "vitest";
 
 import { UnsavedNavigationProvider, useUnsavedNavigation } from "@/components/admin/unsaved-navigation";
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
+import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 
 import ContentError from "@/app/admin/(content)/error";
 import ContentLoading from "@/app/admin/(content)/loading";
 
 import { AdminExplorerShell, AdminExplorerTree } from "./admin-explorer-shell";
+import { SectionPanel } from "./section-panel";
 
-const { push, sectionQuery } = vi.hoisted(() => ({
+const { deleteSection, getDeletePreview, push, refresh, replace, retrySectionMediaOperation, saveSection, sectionQuery } = vi.hoisted(() => ({
+  deleteSection: vi.fn(),
+  getDeletePreview: vi.fn(),
   push: vi.fn(),
+  refresh: vi.fn(),
+  replace: vi.fn(),
+  retrySectionMediaOperation: vi.fn(),
+  saveSection: vi.fn(),
   sectionQuery: { value: null as string | null },
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ push, refresh, replace }),
   useSearchParams: () => ({ get: (key: string) => key === "section" ? sectionQuery.value : null }),
+}));
+vi.mock("@/app/admin/(content)/structure/actions", () => ({
+  deleteSection,
+  getDeletePreview,
+  retrySectionMediaOperation,
+  saveSection,
 }));
 
 const sections: AdminExplorerSection[] = [
@@ -43,6 +57,13 @@ const sections: AdminExplorerSection[] = [
     directDocumentCount: 2,
   },
 ];
+
+const explorer: AdminExplorerData = {
+  sections,
+  documents: [],
+  pendingSectionOperations: [],
+  cleanupOperation: null,
+};
 
 afterEach(() => {
   cleanup();
@@ -70,6 +91,20 @@ function ExplorerHarness({ dirty = false }: { dirty?: boolean }) {
         desktopTree={<AdminExplorerTree sections={sections} />}
       >
         <p>รายการเอกสาร</p>
+      </AdminExplorerShell>
+    </UnsavedNavigationProvider>
+  );
+}
+
+function CreationHarness({ mode, selectedSectionId = null }: { mode: "view" | "create-root" | "create-child"; selectedSectionId?: string | null }) {
+  sectionQuery.value = selectedSectionId;
+  return (
+    <UnsavedNavigationProvider>
+      <AdminExplorerShell
+        mobileTree={<AdminExplorerTree sections={sections} closeDrawer />}
+        desktopTree={<AdminExplorerTree sections={sections} />}
+      >
+        <SectionPanel selectedSectionId={selectedSectionId} mode={mode} explorer={explorer} />
       </AdminExplorerShell>
     </UnsavedNavigationProvider>
   );
@@ -195,4 +230,62 @@ it("closes the mobile folder drawer after clean navigation is approved", async (
 
   await waitFor(() => expect(screen.queryByRole("dialog", { name: "หมวดคู่มือ" })).toBeNull());
   expect(push).toHaveBeenCalledWith("/admin/structure?section=root");
+});
+
+it("returns cancel focus to the exact desktop sidebar creation action", async () => {
+  const user = userEvent.setup();
+  const { rerender } = render(<CreationHarness mode="view" />);
+  const origin = screen.getByRole("button", { name: "สร้าง Sub-topic ใน เริ่มต้น" });
+
+  await user.click(origin);
+  expect(push).toHaveBeenCalledWith("/admin/structure?section=root&mode=create-child");
+  rerender(<CreationHarness mode="create-child" selectedSectionId="root" />);
+  await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+
+  expect(document.activeElement).toBe(origin);
+});
+
+it("uses the mobile drawer trigger as the safe cancel-focus fallback after creation closes the drawer", async () => {
+  const user = userEvent.setup();
+  const { rerender } = render(<CreationHarness mode="view" />);
+  const drawerTrigger = screen.getByRole("button", { name: "เลือกหมวด" });
+  await user.click(drawerTrigger);
+  const drawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
+  const origin = within(drawer).getByRole("button", { name: "สร้าง Topic" });
+
+  await user.click(origin);
+  await waitFor(() => expect(origin.isConnected).toBe(false));
+  rerender(<CreationHarness mode="create-root" />);
+  await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+
+  expect(document.activeElement).toBe(drawerTrigger);
+});
+
+it("disables desktop and mobile creation actions immediately when deletion becomes pending", async () => {
+  const user = userEvent.setup();
+  getDeletePreview.mockResolvedValue({ childSectionCount: 1, documentCount: 0, mediaCount: 1, documentTitles: [] });
+  deleteSection.mockResolvedValue({
+    pending: true,
+    operation: {
+      operationId: "operation-1",
+      kind: "section_delete",
+      targetId: "root",
+      files: ["pending.webp"],
+      attemptCount: 1,
+      message: "ลบรูปไม่สำเร็จ",
+    },
+  });
+  render(<CreationHarness mode="view" selectedSectionId="root" />);
+
+  await user.click(screen.getByRole("button", { name: "ลบหมวด" }));
+  const dialog = await screen.findByRole("dialog", { name: "ยืนยันการลบหมวด" });
+  await user.type(within(dialog).getByRole("textbox", { name: /พิมพ์.*เริ่มต้น.*เพื่อยืนยัน/ }), "เริ่มต้น");
+  await user.click(within(dialog).getByRole("button", { name: "ลบถาวร" }));
+
+  const desktopSidebar = screen.getByRole("complementary", { name: "หมวดคู่มือ" });
+  await waitFor(() => expect((within(desktopSidebar).getByRole("button", { name: "สร้าง Topic" }) as HTMLButtonElement).disabled).toBe(true));
+  await user.click(screen.getByRole("button", { name: "เลือกหมวด" }));
+  const mobileDrawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
+  expect((within(mobileDrawer).getByRole("button", { name: "สร้าง Topic" }) as HTMLButtonElement).disabled).toBe(true);
+  expect((within(mobileDrawer).getByRole("button", { name: "สร้าง Sub-topic ใน เริ่มต้น" }) as HTMLButtonElement).disabled).toBe(true);
 });

@@ -15,6 +15,7 @@ type SectionInlineFormProps = {
   section: AdminExplorerSection | null;
   parent: AdminExplorerSection | null;
   rootSections: AdminExplorerSection[];
+  initialSortOrder?: number;
   onCancel: () => void;
 };
 
@@ -26,7 +27,7 @@ type SectionFormState = {
   isPublished: boolean;
 };
 
-function initialFormState(mode: EditableSectionMode, section: AdminExplorerSection | null, parent: AdminExplorerSection | null): SectionFormState {
+function initialFormState(mode: EditableSectionMode, section: AdminExplorerSection | null, parent: AdminExplorerSection | null, initialSortOrder: number | undefined): SectionFormState {
   if (mode === "edit" && section) {
     return {
       title: section.title,
@@ -41,7 +42,7 @@ function initialFormState(mode: EditableSectionMode, section: AdminExplorerSecti
     title: "",
     slug: "",
     parentId: mode === "create-child" ? parent?.id ?? "" : "",
-    sortOrder: "0",
+    sortOrder: String(initialSortOrder ?? 0),
     isPublished: true,
   };
 }
@@ -52,10 +53,10 @@ function modeLabel(mode: EditableSectionMode): string {
   return "แก้ไขหมวด";
 }
 
-export function SectionInlineForm({ mode, section, parent, rootSections, onCancel }: SectionInlineFormProps) {
+export function SectionInlineForm({ mode, section, parent, rootSections, initialSortOrder, onCancel }: SectionInlineFormProps) {
   const router = useRouter();
   const titleInputRef = useRef<HTMLInputElement>(null);
-  const [form, setForm] = useState(() => initialFormState(mode, section, parent));
+  const [form, setForm] = useState(() => initialFormState(mode, section, parent, initialSortOrder));
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const label = modeLabel(mode);

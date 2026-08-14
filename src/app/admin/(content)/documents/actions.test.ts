@@ -7,7 +7,10 @@ const { requireAdmin, runDocumentSave } = vi.hoisted(() => ({
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/auth/require-admin", () => ({ requireAdmin }));
-vi.mock("@/lib/docs/content", () => ({ validateDocumentContent: vi.fn((content) => ({ ok: true, content })) }));
+vi.mock("@/lib/docs/content", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/docs/content")>(),
+  validateDocumentContent: vi.fn((content) => ({ ok: true, content })),
+}));
 vi.mock("@/lib/docs/public-cache", () => ({ revalidatePublicDocs: vi.fn() }));
 vi.mock("@/lib/media/lifecycle", () => ({
   prepareAndDeleteDocument: vi.fn(),
@@ -61,6 +64,31 @@ describe("saveDocument", () => {
         width: 1,
         height: 1,
       })],
+    }));
+  });
+
+  it("normalizes YouTube URLs before forwarding content to the persistence lifecycle", async () => {
+    await saveDocument({
+      id: documentId,
+      sectionId,
+      title: "เริ่มต้น",
+      slug: "start",
+      excerpt: "",
+      content: {
+        type: "doc",
+        content: [{ type: "youtube", attrs: { src: "https://youtu.be/AtuNIJ9uZkc?si=P83kSC7fh3VZACeQ" } }],
+      },
+      status: "published",
+      sortOrder: 0,
+      expectedVersion: 1,
+      media: [],
+    });
+
+    expect(runDocumentSave).toHaveBeenCalledWith(expect.objectContaining({
+      content: {
+        type: "doc",
+        content: [{ type: "youtube", attrs: { src: "https://www.youtube-nocookie.com/embed/AtuNIJ9uZkc" } }],
+      },
     }));
   });
 

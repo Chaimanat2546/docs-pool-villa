@@ -98,6 +98,50 @@ describe("SectionPanel", () => {
     expect(screen.getByText(/หมวดแม่:/).textContent).toContain("เริ่มต้น");
   });
 
+  it("prefills new root and child sections after their own highest sibling order", async () => {
+    const user = userEvent.setup();
+    const explorerWithSiblings: AdminExplorerData = {
+      ...explorer,
+      sections: [
+        ...explorer.sections,
+        {
+          id: "55555555-5555-4555-8555-555555555555",
+          parentId: null,
+          title: "หมวดหลักอีกหมวด",
+          slug: "another-root",
+          isPublished: true,
+          sortOrder: 5,
+          directDocumentCount: 0,
+        },
+        {
+          id: "66666666-6666-4666-8666-666666666666",
+          parentId: rootId,
+          title: "หมวดย่อยอีกหมวด",
+          slug: "another-child",
+          isPublished: true,
+          sortOrder: 8,
+          directDocumentCount: 0,
+        },
+      ],
+    };
+    const { rerender } = render(<SectionPanel selectedSectionId={null} mode="create-root" explorer={explorerWithSiblings} />);
+
+    await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
+    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("6");
+
+    rerender(<SectionPanel selectedSectionId={rootId} mode="create-child" explorer={explorerWithSiblings} />);
+    await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
+    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("9");
+  });
+
+  it("prefills a new root section with zero when no root siblings exist", async () => {
+    const user = userEvent.setup();
+    render(<SectionPanel selectedSectionId={null} mode="create-root" explorer={{ ...explorer, sections: [], documents: [] }} />);
+
+    await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
+    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("0");
+  });
+
   it("disables third-level creation with a visible explanation", () => {
     render(<SectionPanel selectedSectionId={childId} mode="view" explorer={explorer} />);
 

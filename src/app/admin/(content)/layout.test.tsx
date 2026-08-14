@@ -25,7 +25,7 @@ vi.mock("next/navigation", () => ({
   unstable_rethrow: route.unstableRethrow,
 }));
 
-import AdminContentLayout, { AdminExplorerContent } from "./layout";
+import AdminContentLayout, { AdminExplorerContent, LoadedAdminExplorerTree } from "./layout";
 import { AdminExplorerShell, AdminExplorerTree } from "@/components/admin/explorer/admin-explorer-shell";
 
 beforeEach(() => {
@@ -81,6 +81,20 @@ it("keeps the shared shell mounted and refreshes from a loader failure at the ro
   expect((await screen.findByRole("alert")).textContent).not.toContain("database-secret");
   await userEvent.click(screen.getByRole("button", { name: "ลองใหม่" }));
   expect(route.refresh).toHaveBeenCalledOnce();
+});
+
+it("passes pending section media work through to disable tree creation actions", async () => {
+  route.loadAdminExplorerData.mockResolvedValue({
+    sections: [{ id: "root", parentId: null, title: "เริ่มต้น", slug: "start", isPublished: true, sortOrder: 0, directDocumentCount: 0 }],
+    documents: [],
+    pendingSectionOperations: [{ operationId: "operation-1" }],
+    cleanupOperation: null,
+  });
+
+  const tree = await LoadedAdminExplorerTree({});
+  render(<UnsavedNavigationProvider>{tree}</UnsavedNavigationProvider>);
+
+  expect((screen.getByRole("button", { name: "สร้าง Topic" }) as HTMLButtonElement).disabled).toBe(true);
 });
 
 it("does not turn authorization redirects or unrelated failures into a data error", async () => {

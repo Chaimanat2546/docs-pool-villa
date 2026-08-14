@@ -79,6 +79,24 @@ export function toYouTubeNoCookieUrl(value: string): string | null {
   }
 }
 
+export function normalizeYouTubeContent(value: unknown): unknown {
+  if (!isRecord(value)) return value;
+
+  const content = Array.isArray(value.content)
+    ? value.content.map(normalizeYouTubeContent)
+    : value.content;
+  const attrs = isRecord(value.attrs) ? value.attrs : null;
+  const src = value.type === "youtube" && typeof attrs?.src === "string"
+    ? toYouTubeNoCookieUrl(attrs.src)
+    : null;
+
+  return {
+    ...value,
+    ...(content === undefined ? {} : { content }),
+    ...(src && attrs ? { attrs: { ...attrs, src } } : {}),
+  };
+}
+
 function validateAttributes(node: Record<string, unknown>, mode: ContentValidationMode): string | null {
   const attrs = node.attrs;
   if (attrs === undefined) return null;

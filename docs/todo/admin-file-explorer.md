@@ -81,3 +81,11 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 - [x] Deploy เฉพาะ Docs App และทำ Guest/Admin Staging smoke แล้ว; ไม่มี Database migration หรือ Docs Media Worker deploy สำหรับ Feature นี้
 - [x] Non-admin Browser smoke ของ File Explorer: session ที่มีอยู่ถูกส่งจาก `/admin`, `/admin/structure` และ `/admin/documents` กลับ Public homepage โดยไม่เห็น Admin Explorer
 - [x] UX follow-up (14 สิงหาคม 2026): รายการเอกสารใน Explorer แบ่งหน้า 5 รายการหลังกรองจากหมวด/คำค้น/สถานะ, ปุ่มก่อนหน้า/ถัดไปจะปรากฏเมื่อเกิน 5 รายการ และการกรองจะกลับหน้าแรก; regression test, TypeScript, lint และ build ผ่านใน Local
+
+## Follow-up: contextual section creation — 14 สิงหาคม 2026
+
+- Sidebar มีคำสั่ง **สร้าง Topic** และ **สร้าง Sub-topic** ตามระดับที่อนุญาต; แบบฟอร์มเลือก parent ที่ตั้งใจจากบริบทที่ผู้ใช้กด และหมวดใหม่ตั้งค่า `sort_order` เป็นลำดับถัดไปของ sibling เดียวกันโดยอัตโนมัติ
+- หลักฐาน Local จริง: focused Explorer regression ผ่าน 3 files, 27/27 tests; `npm run test:admin-shell` ผ่าน 22/22; `npm run test:content` ผ่าน 30/30; `npx tsc --noEmit`, `npm run lint`, `npm run build` และ `git diff --check` ออก 0
+- `npm run build` ยังแสดง warning baseline ของ Next.js ว่า convention `middleware` deprecated; ไม่ใช่ผลเปลี่ยน pass/fail จาก follow-up นี้
+- ไม่เกิดการเปลี่ยน Schema, Migration, RLS, Worker, Remote หรือ Deployment
+- Manual accessibility check แบบ authenticated Admin บน Local ยังทำไม่ได้: เปิด `http://localhost:3000/admin` แล้ว redirect ไป `/auth/login` และไม่มี Admin session ที่ใช้ได้ จึงไม่สร้างหรือแก้ไข remote fixture; Desktop/390px action visibility, form focus, child restriction, overflow และ console ของ authenticated Explorer ยังต้องตรวจเมื่อมี local Admin session

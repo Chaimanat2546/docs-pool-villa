@@ -26,6 +26,13 @@ type SectionPanelProps = {
   explorer: AdminExplorerData;
 };
 
+function nextSectionSortOrder(sections: AdminExplorerSection[], parentId: string | null): number {
+  const siblingOrders = sections
+    .filter((section) => section.parentId === parentId)
+    .map((section) => section.sortOrder);
+  return siblingOrders.length === 0 ? 0 : Math.max(...siblingOrders) + 1;
+}
+
 export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanelProps) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
@@ -55,6 +62,10 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
     : explorer.documents;
   const mutationsBlocked = operations.length > 0;
   const mayCreateChild = selectedSection?.parentId === null;
+  const rootNextSortOrder = nextSectionSortOrder(explorer.sections, null);
+  const childNextSortOrder = selectedSection
+    ? nextSectionSortOrder(explorer.sections, selectedSection.id)
+    : 0;
 
   function cancelForm(href: string, trigger: React.RefObject<HTMLAnchorElement | null>) {
     router.replace(href);
@@ -127,9 +138,9 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
   }
 
   const form = !mutationsBlocked && mode === "create-root"
-    ? <SectionInlineForm key="create-root" mode="create-root" section={null} parent={null} rootSections={rootSections} onCancel={() => cancelForm("/admin/structure", createRootTriggerRef)} />
+    ? <SectionInlineForm key="create-root" mode="create-root" section={null} parent={null} rootSections={rootSections} initialSortOrder={rootNextSortOrder} onCancel={() => cancelForm("/admin/structure", createRootTriggerRef)} />
     : !mutationsBlocked && mode === "create-child" && mayCreateChild
-      ? <SectionInlineForm key={`create-child:${selectedSection.id}`} mode="create-child" section={null} parent={selectedSection} rootSections={rootSections} onCancel={() => cancelForm(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`, createChildTriggerRef)} />
+      ? <SectionInlineForm key={`create-child:${selectedSection.id}`} mode="create-child" section={null} parent={selectedSection} rootSections={rootSections} initialSortOrder={childNextSortOrder} onCancel={() => cancelForm(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`, createChildTriggerRef)} />
       : !mutationsBlocked && mode === "edit" && selectedSection
         ? <SectionInlineForm key={`edit:${selectedSection.id}`} mode="edit" section={selectedSection} parent={parent} rootSections={availableEditParents} onCancel={() => cancelForm(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`, editTriggerRef)} />
         : null;

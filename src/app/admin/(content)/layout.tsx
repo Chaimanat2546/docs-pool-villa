@@ -42,10 +42,13 @@ export async function AdminExplorerContent({ children }: { children: React.React
   return children;
 }
 
-async function LoadedAdminExplorerTree({ closeDrawer = false }: { closeDrawer?: boolean }) {
+export async function LoadedAdminExplorerTree({ closeDrawer = false }: { closeDrawer?: boolean }) {
   let sections;
+  let creationBlocked = false;
   try {
-    ({ sections } = await loadAdminExplorerData());
+    const data = await loadAdminExplorerData();
+    sections = data.sections;
+    creationBlocked = data.pendingSectionOperations.length > 0;
   } catch (error) {
     unstable_rethrow(error);
     return (
@@ -55,7 +58,7 @@ async function LoadedAdminExplorerTree({ closeDrawer = false }: { closeDrawer?: 
     );
   }
 
-  return <AdminExplorerTree sections={sections} closeDrawer={closeDrawer} />;
+  return <AdminExplorerTree sections={sections} creationBlocked={creationBlocked} closeDrawer={closeDrawer} />;
 }
 
 function TreeLoading() {

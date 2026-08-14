@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireAdmin } from "@/lib/auth/require-admin";
-import { validateDocumentContent } from "@/lib/docs/content";
+import { normalizeYouTubeContent, validateDocumentContent } from "@/lib/docs/content";
 import { revalidatePublicDocs } from "@/lib/docs/public-cache";
 import { prepareAndDeleteDocument, retryMediaCleanup as runCleanupRetry, rollbackUploadedMedia as runRollback, runDocumentSave, resumeMediaOperation } from "@/lib/media/lifecycle";
 import type { LifecycleResult, UploadedMediaCommand } from "@/lib/media/lifecycle-types";
@@ -110,7 +110,7 @@ export async function saveDocument(value: unknown): Promise<DocumentActionResult
   if (!input) return { error: "ข้อมูลเอกสารไม่ถูกต้อง" };
   if (!input.title.trim()) return { error: "กรุณาระบุชื่อเอกสาร" };
   if (!slugPattern.test(input.slug)) return { error: "Slug ต้องเป็นตัวพิมพ์เล็ก ตัวเลข และขีดกลางเท่านั้น" };
-  const content = validateDocumentContent(input.content, "persisted");
+  const content = validateDocumentContent(normalizeYouTubeContent(input.content), "persisted");
   if (!content.ok) return { error: content.error };
 
   if (input.media.some((item) => !item.objectKey.startsWith(`docs/${input.id}/`))) return { error: "ข้อมูลรูปไม่ถูกต้อง" };

@@ -94,7 +94,7 @@ export function AdminExplorerShell({ mobileTree, desktopTree, children }: AdminE
   );
 }
 
-export function AdminExplorerTree({ sections, closeDrawer = false }: { sections: AdminExplorerSection[]; closeDrawer?: boolean }) {
+export function AdminExplorerTree({ sections, closeDrawer = false, creationBlocked = false }: { sections: AdminExplorerSection[]; closeDrawer?: boolean; creationBlocked?: boolean }) {
   const searchParams = useSearchParams();
   const { requestNavigation } = useUnsavedNavigation();
   const closeMobileDrawer = useContext(MobileDrawerContext);
@@ -104,5 +104,5 @@ export function AdminExplorerTree({ sections, closeDrawer = false }: { sections:
     requestNavigation(href, undefined, closeDrawer ? closeMobileDrawer ?? undefined : undefined);
   }
 
-  return <FolderTree sections={sections} selectedSectionId={selectedSectionId} onNavigate={navigate} />;
+  return <FolderTree sections={sections} selectedSectionId={selectedSectionId} creationBlocked={creationBlocked} onNavigate={navigate} />;
 }

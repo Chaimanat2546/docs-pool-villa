@@ -9,6 +9,7 @@ export type FolderTreeProps = {
   sections: AdminExplorerSection[];
   selectedSectionId: string | null;
   onNavigate: (href: string) => void;
+  creationBlocked?: boolean;
 };
 
 type VisibleTreeNode = {
@@ -38,7 +39,7 @@ function initialExpandedKeys(sections: AdminExplorerSection[], selectedSectionId
   return expanded;
 }
 
-export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTreeProps) {
+export function FolderTree({ sections, selectedSectionId, onNavigate, creationBlocked = false }: FolderTreeProps) {
   const [expandedKeys, setExpandedKeys] = useState(() => initialExpandedKeys(sections, selectedSectionId));
   const [focusedKey, setFocusedKey] = useState(() => selectedSectionId ? sectionKey(selectedSectionId) : VIRTUAL_ROOT_KEY);
   const [previousSelectedSectionId, setPreviousSelectedSectionId] = useState(selectedSectionId);
@@ -113,6 +114,10 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
   const selectedNodeIsVisible = visibleNodes.some((node) => node.key === selectedKey);
   const reconciledFocusedKey = focusedNodeIsVisible ? focusedKey : selectedNodeIsVisible ? selectedKey : VIRTUAL_ROOT_KEY;
   const shouldRestoreTreeFocus = !focusedNodeIsVisible && treeHasFocus;
+  const expandedRootSections = visibleNodes.filter((node) =>
+    node.parentKey === VIRTUAL_ROOT_KEY && expandedKeys.has(node.key),
+  );
+  const creationBlockMessage = "กำลังจัดการรูปภาพที่ค้างอยู่";
 
   useLayoutEffect(() => {
     if (shouldRestoreTreeFocus) itemRefs.current.get(reconciledFocusedKey)?.focus();
@@ -172,13 +177,14 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
   }
 
   return (
-    <div
-      role="tree"
-      aria-label="หมวดคู่มือ"
-      className="space-y-1"
-      onFocusCapture={() => setTreeHasFocus(true)}
-      onBlurCapture={(event) => setTreeHasFocus(event.currentTarget.contains(event.relatedTarget as Node | null))}
-    >
+    <div className="space-y-1">
+      <div
+        role="tree"
+        aria-label="หมวดคู่มือ"
+        className="space-y-1"
+        onFocusCapture={() => setTreeHasFocus(true)}
+        onBlurCapture={(event) => setTreeHasFocus(event.currentTarget.contains(event.relatedTarget as Node | null))}
+      >
       {visibleNodes.map((node, index) => {
         const hasChildren = node.childKeys.length > 0;
         const isExpanded = hasChildren && expandedKeys.has(node.key);
@@ -186,49 +192,78 @@ export function FolderTree({ sections, selectedSectionId, onNavigate }: FolderTr
         const Icon = node.sectionId === null ? Library : Folder;
 
         return (
-          <div
-            key={node.key}
-            ref={(element) => {
-              if (element) itemRefs.current.set(node.key, element);
-              else itemRefs.current.delete(node.key);
-            }}
-            role="treeitem"
-            aria-level={node.level}
-            aria-selected={isSelected}
-            aria-expanded={hasChildren ? isExpanded : undefined}
-            aria-label={`${node.title} ${node.count} เอกสาร`}
-            tabIndex={reconciledFocusedKey === node.key ? 0 : -1}
-            onFocus={() => setFocusedKey(node.key)}
-            onClick={() => onNavigate(sectionHref(node.sectionId))}
-            onKeyDown={(event) => handleKeyDown(event, node, index)}
-            className="flex min-h-11 w-full cursor-pointer items-center gap-1 rounded-md pr-3 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-selected:bg-muted aria-selected:font-medium"
-            style={{ paddingInlineStart: `${12 + (node.level - 1) * 16}px` }}
-          >
-            {hasChildren ? (
-              <span
-                data-tree-disclosure
-                aria-hidden="true"
-                title={`${isExpanded ? "ยุบ" : "ขยาย"}หมวด ${node.title}`}
-                onPointerUp={(event) => {
-                  event.stopPropagation();
-                  setExpanded(node.key, !isExpanded);
-                }}
-                onClick={(event) => {
-                  event.stopPropagation();
-                }}
-                className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-muted"
-              >
-                <ChevronRight className={`size-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden="true" />
-              </span>
-            ) : (
-              <span className="w-11 shrink-0" aria-hidden="true" />
-            )}
-            <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-            <span className="min-w-0 flex-1 truncate">{node.title}</span>
-            <span className="shrink-0 text-xs tabular-nums text-muted-foreground" aria-hidden="true">{node.count}</span>
-          </div>
+            <div
+              key={node.key}
+              ref={(element) => {
+                if (element) itemRefs.current.set(node.key, element);
+                else itemRefs.current.delete(node.key);
+              }}
+              role="treeitem"
+              aria-level={node.level}
+              aria-selected={isSelected}
+              aria-expanded={hasChildren ? isExpanded : undefined}
+              aria-label={`${node.title} ${node.count} เอกสาร`}
+              tabIndex={reconciledFocusedKey === node.key ? 0 : -1}
+              onFocus={() => setFocusedKey(node.key)}
+              onClick={() => onNavigate(sectionHref(node.sectionId))}
+              onKeyDown={(event) => handleKeyDown(event, node, index)}
+              className="flex min-h-11 w-full cursor-pointer items-center gap-1 rounded-md pr-3 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-selected:bg-muted aria-selected:font-medium"
+              style={{ paddingInlineStart: `${12 + (node.level - 1) * 16}px` }}
+            >
+              {hasChildren ? (
+                <span
+                  data-tree-disclosure
+                  aria-hidden="true"
+                  title={`${isExpanded ? "ยุบ" : "ขยาย"}หมวด ${node.title}`}
+                  onPointerUp={(event) => {
+                    event.stopPropagation();
+                    setExpanded(node.key, !isExpanded);
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                  }}
+                  className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-muted"
+                >
+                  <ChevronRight className={`size-4 transition-transform ${isExpanded ? "rotate-90" : ""}`} aria-hidden="true" />
+                </span>
+              ) : (
+                <span className="w-11 shrink-0" aria-hidden="true" />
+              )}
+              <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate">{node.title}</span>
+              <span className="shrink-0 text-xs tabular-nums text-muted-foreground" aria-hidden="true">{node.count}</span>
+            </div>
         );
       })}
+      </div>
+      <div aria-label="การสร้างหมวด" className="space-y-1">
+        {expandedRootSections.map((root) => (
+          <button
+            key={`create-child:${root.key}`}
+            type="button"
+            aria-label={`สร้าง Sub-topic ใน ${root.title}`}
+            disabled={creationBlocked}
+            title={creationBlocked ? creationBlockMessage : undefined}
+            onClick={() => onNavigate(`/admin/structure?section=${encodeURIComponent(root.sectionId!)}&mode=create-child`)}
+            className="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ paddingInlineStart: "60px" }}
+          >
+            สร้าง Sub-topic ใน {root.title}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-label="สร้าง Topic"
+          disabled={creationBlocked}
+          title={creationBlocked ? creationBlockMessage : undefined}
+          onClick={() => onNavigate("/admin/structure?mode=create-root")}
+          className="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          style={{ paddingInlineStart: "28px" }}
+        >
+          สร้าง Topic
+        </button>
+        {creationBlocked && <p className="sr-only">{creationBlockMessage}; การสร้างหมวดถูกปิดชั่วคราว</p>}
+      </div>
     </div>
   );
 }
