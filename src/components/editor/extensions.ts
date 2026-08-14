@@ -23,18 +23,27 @@ export const DocsParagraph = Paragraph.extend({
       ...this.parent?.(),
       indentLevel: {
         default: 0,
-        parseHTML: (element) => Number(element.getAttribute("data-indent-level")) || 0,
-        renderHTML: (attributes) => attributes.indentLevel > 0 ? { "data-indent-level": attributes.indentLevel } : {},
+        parseHTML: (element) => normalizeIndentLevel(element.getAttribute("data-indent-level")),
+        renderHTML: (attributes) => {
+          const indentLevel = normalizeIndentLevel(String(attributes.indentLevel));
+          return indentLevel > 0 ? { "data-indent-level": indentLevel } : {};
+        },
       },
     };
   },
   addKeyboardShortcuts() {
     const changeIndent = (delta: 1 | -1) => {
-      if (!this.editor.isActive("paragraph")) return false;
-      const current = Number(this.editor.getAttributes("paragraph").indentLevel) || 0;
+      const { selection } = this.editor.state;
+      const { $from } = selection;
+      if (!selection.empty || $from.depth !== 1 || $from.parent.type.name !== "paragraph") return false;
+      const current = normalizeIndentLevel(String($from.parent.attrs.indentLevel));
       const next = Math.max(0, Math.min(3, current + delta));
       if (next === current) return true;
-      return this.editor.commands.updateAttributes("paragraph", { indentLevel: next });
+      return this.editor.commands.command(({ state, tr }) => {
+        const { $from: currentPosition } = state.selection;
+        tr.setNodeMarkup(currentPosition.before(), currentPosition.parent.type, { ...currentPosition.parent.attrs, indentLevel: next });
+        return true;
+      });
     };
 
     return {
@@ -43,6 +52,11 @@ export const DocsParagraph = Paragraph.extend({
     };
   },
 });
+
+function normalizeIndentLevel(value: string | null): number {
+  const indentLevel = Number(value);
+  return Number.isInteger(indentLevel) && indentLevel >= 1 && indentLevel <= 3 ? indentLevel : 0;
+}
 
 export const Callout = Node.create({
   name: "callout",

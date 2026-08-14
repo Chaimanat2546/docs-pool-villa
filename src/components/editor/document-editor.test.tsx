@@ -1,12 +1,14 @@
 /** @vitest-environment jsdom */
 
 import { readFileSync } from "node:fs";
-import type { JSONContent } from "@tiptap/core";
+import { Editor, type JSONContent } from "@tiptap/core";
+import StarterKit from "@tiptap/starter-kit";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { DocumentEditor, ToolbarButton } from "./document-editor";
+import { DocsParagraph, docsExtensions } from "./extensions";
 
 const { preparePendingImage } = vi.hoisted(() => ({ preparePendingImage: vi.fn() }));
 
@@ -71,6 +73,75 @@ describe("DocumentEditor paragraph indent", () => {
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
       content: expect.arrayContaining([expect.objectContaining({ type: "heading", attrs: { level: 2 } })]),
     }), []));
+  });
+
+  it("leaves list item indentation to the list shortcut", () => {
+    const editor = new Editor({
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "bulletList", content: [
+      { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "รายการแรก" }] }] },
+      { type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "รายการสอง" }] }] },
+      ] }] },
+    });
+    let secondItemTextPosition = 0;
+    editor.state.doc.descendants((node, position) => {
+      if (node.text === "รายการสอง") secondItemTextPosition = position + 1;
+    });
+    editor.commands.setTextSelection(secondItemTextPosition);
+
+    editor.view.dom.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true }));
+
+    expect(editor.getJSON()).toEqual(expect.objectContaining({
+      content: expect.arrayContaining([expect.objectContaining({ type: "bulletList", content: [expect.objectContaining({
+        type: "listItem",
+        content: expect.arrayContaining([expect.objectContaining({ type: "bulletList" })]),
+      })] })]),
+    }));
+    editor.destroy();
+  });
+
+  it("does not indent a paragraph inside a callout", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [{ type: "callout", attrs: { kind: "info" }, content: [{ type: "paragraph", content: [{ type: "text", text: "ข้อความ" }] }] }] }} onChange={onChange} />);
+    const editor = document.querySelector<HTMLElement>(".ProseMirror")!;
+    setupEditorGeometry();
+    editor.focus();
+
+    await user.keyboard("{Tab}");
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      content: expect.arrayContaining([expect.objectContaining({
+        type: "callout",
+        content: [expect.objectContaining({ type: "paragraph", attrs: { indentLevel: 0 } })],
+      })]),
+    }), []));
+  });
+
+  it("does not update either paragraph when Tab is pressed with a range selection", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [
+      { type: "paragraph", content: [{ type: "text", text: "ย่อหน้าแรก" }] },
+      { type: "paragraph", content: [{ type: "text", text: "ย่อหน้าสอง" }] },
+    ] }} onChange={onChange} />);
+    const editor = document.querySelector<HTMLElement>(".ProseMirror")!;
+    setupEditorGeometry();
+    editor.focus();
+
+    await user.keyboard("{Control>}{a}{/Control}{Tab}");
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("parses only integer paragraph indent levels from 1 through 3", () => {
+    const editor = new Editor({
+      extensions: [StarterKit.configure({ paragraph: false }), DocsParagraph],
+      content: '<p data-indent-level="2.5">decimal</p><p data-indent-level="9">high</p><p data-indent-level="-1">low</p><p data-indent-level="3">valid</p>',
+    });
+
+    expect(editor.getJSON().content?.map((node) => node.attrs?.indentLevel)).toEqual([0, 0, 0, 3]);
+    editor.destroy();
   });
 });
 
