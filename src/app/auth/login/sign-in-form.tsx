@@ -37,7 +37,7 @@ export function SignInForm({ initialErrorMessage }: { initialErrorMessage?: stri
         return;
       }
 
-      router.replace("/admin");
+      router.replace("/auth/post-login");
       router.refresh();
     } catch {
       setErrorMessage("เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน");
