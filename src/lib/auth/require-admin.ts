@@ -19,6 +19,6 @@ export async function requireAdmin() {
   }
 
   if (!isAdmin) {
-    redirect("/");
+    redirect("/auth/admin-only");
   }
 }
