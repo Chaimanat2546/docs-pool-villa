@@ -72,8 +72,8 @@ describe("public document content", () => {
     expect(screen.getAllByRole("list")).toHaveLength(2);
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.getByAltText("ภาพตัวอย่าง")).not.toBeNull();
-    expect(screen.getByRole("button", { name: "เล่นวิดีโอ" })).not.toBeNull();
+    expect(screen.getByRole("button", { name: "เล่นวิดีโอ YouTube" })).not.toBeNull();
     expect(screen.queryByTitle("วิดีโอ YouTube")).toBeNull();
-    expect(screen.queryByAltText("")).toBeNull();
+    expect(screen.getAllByAltText("")).toHaveLength(1);
   });
 });
