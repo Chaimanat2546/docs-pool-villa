@@ -19,6 +19,15 @@ describe("document content validation", () => {
     expect(toYouTubeNoCookieUrl("https://example.com/video")).toBeNull();
   });
 
+  it("accepts the youtube-nocookie embed URL stored by the editor", () => {
+    const content = {
+      type: "doc",
+      content: [{ type: "youtube", attrs: { src: "https://www.youtube-nocookie.com/embed/s3a4OQR-10M" } }],
+    };
+
+    expect(validateDocumentContent(content, "persisted").ok).toBe(true);
+  });
+
   it("rejects structurally invalid document trees", () => {
     expect(validateDocumentContent({ type: "doc", content: [{ type: "text", text: "root text" }] }, "persisted").ok).toBe(false);
     expect(validateDocumentContent({ type: "doc", content: [{ type: "image", attrs: { src: "https://example.test/image.webp", alt: "ภาพ", mediaId: "11111111-1111-4111-8111-111111111111" }, content: [] }] }, "persisted").ok).toBe(false);

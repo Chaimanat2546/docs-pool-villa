@@ -74,6 +74,9 @@ export function toYouTubeNoCookieUrl(value: string): string | null {
       if (!videoId && url.pathname.startsWith("/embed/")) videoId = url.pathname.split("/")[2] ?? null;
       if (!videoId && url.pathname.startsWith("/shorts/")) videoId = url.pathname.split("/")[2] ?? null;
     }
+    if (host === "youtube-nocookie.com" && url.protocol === "https:" && url.pathname.startsWith("/embed/")) {
+      videoId = url.pathname.split("/")[2] ?? null;
+    }
 
     return videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId)
       ? `https://www.youtube-nocookie.com/embed/${videoId}`
