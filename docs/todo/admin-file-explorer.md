@@ -69,6 +69,7 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 - Guest `/admin` redirect ไป `/auth/login`; Admin session เห็นเมนู **จัดการเนื้อหา** และ Explorer โดย console ไม่มี error/warning
 - สร้าง fixture ชั่วคราว root → child → Draft จาก child, บันทึก Content → Review → กลับ folder เดิม แล้ว hard-delete Draft และลบ child/root ผ่าน typed confirmation จนเหลือเฉพาะข้อมูล Staging เดิม
 - Child action แสดงคำอธิบายจำกัดสองระดับ; viewport 390px ไม่มี horizontal overflow, Drawer เปิดแล้ว focus ไปปุ่มปิด และ Escape คืน focus ไป **เลือกหมวด** โดย console ไม่มี error/warning
+- Non-admin session ที่ภูล็อกอินแล้วถูกทดสอบหลัง deploy: `/admin`, `/admin/structure` และ `/admin/documents` ถูกส่งกลับ Public homepage `/` ทั้งหมด และไม่พบข้อความหรือปุ่ม Admin Explorer ใน DOM; ไม่มีการแก้ไขข้อมูลหรือ inspect cookie/storage
 
 ## ขอบเขตและสถานะ
 
@@ -77,4 +78,4 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 - Unsaved guard ใช้ dialog ของระบบกับลิงก์/การกระทำ/Logout ภายใน Admin และใช้ `beforeunload` สำหรับ refresh, ปิดแท็บ หรือออกจาก document. Browser Back/Forward แบบ same-document จะถูกหน่วงก่อน commit เฉพาะเมื่อ Browser เปิดเผย `NavigationPrecommitController` และ Navigation API ระบุว่า traversal นั้น `canIntercept` และ `cancelable`; Browser ที่ไม่มี precommit support (รวม implementation รุ่นเก่าที่มี `navigation.intercept` เพียงบางส่วน) จะไม่ติดตั้ง traversal handler และใช้พฤติกรรม native โดยไม่ทำ history-bounce หรืออ้างว่ายกเลิก traversal ได้ ส่วน guarded links/actions/Logout และ `beforeunload` ยังทำงานตามเดิม
 - M01–M06 ยังคง Complete; M07 ยังคง Not started จนกว่าภูจะอนุมัติแยก
 - [x] Deploy เฉพาะ Docs App และทำ Guest/Admin Staging smoke แล้ว; ไม่มี Database migration หรือ Docs Media Worker deploy สำหรับ Feature นี้
-- [ ] Non-admin Browser smoke ของ File Explorer ใช้ session ที่มีอยู่ยังไม่ได้ทดสอบในรอบ deploy นี้ (ไม่มี session แยกที่เชื่อมต่ออยู่); M01 authorization boundary ยังคงมีหลักฐาน Staging เดิม
+- [x] Non-admin Browser smoke ของ File Explorer: session ที่มีอยู่ถูกส่งจาก `/admin`, `/admin/structure` และ `/admin/documents` กลับ Public homepage โดยไม่เห็น Admin Explorer

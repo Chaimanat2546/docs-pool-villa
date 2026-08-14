@@ -9,7 +9,7 @@
 - [x] ยืนยัน historical Local/Staging close-out ของ M01–M06 ก่อน post-closeout safety remediation
 - [x] M06 post-closeout safety remediation: apply/verify Staging สำเร็จ
 - [x] Admin File Explorer cross-module follow-up: Local gate และ Staging App/Admin smoke เสร็จแล้ว ([รายละเอียด](docs/todo/admin-file-explorer.md))
-- [ ] Admin File Explorer: non-admin browser smoke ยังรอ session ที่มีอยู่; ไม่มี Migration หรือ Media Worker deploy
+- [x] Admin File Explorer: non-admin browser smoke ผ่าน; ไม่มี Migration หรือ Media Worker deploy
 - [ ] M07 ยังไม่เริ่ม; รอภูยืนยันให้เริ่ม Module ถัดไป
 
 ## Module progress
@@ -30,7 +30,7 @@
 
 | งาน | สถานะ | รายละเอียด |
 |---|---|---|
-| Admin File Explorer | Complete — non-admin browser smoke เป็น follow-up ที่รอ session | [TODO](docs/todo/admin-file-explorer.md) |
+| Admin File Explorer | Complete — Guest/Admin/non-admin browser smoke ผ่าน | [TODO](docs/todo/admin-file-explorer.md) |
 
 Post-closeout safety migration `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Local gate, dry-run และ apply/verify บน Staging แล้วเมื่อ 13 สิงหาคม 2026; migration parity ตรง, DB lint ไม่มี schema error และ advisor พบ `doc_*` = 0. ไม่มี Production action
 
