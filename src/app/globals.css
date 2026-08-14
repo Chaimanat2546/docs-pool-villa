@@ -176,5 +176,6 @@
   }
   html {
     @apply font-sans;
+    scroll-padding-top: 3.5rem;
   }
 }
