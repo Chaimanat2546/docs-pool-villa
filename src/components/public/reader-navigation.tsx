@@ -2,19 +2,45 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { ChevronRight, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import type { PublicNavigationSection } from "@/lib/docs/public-types";
 import type { TocItem } from "./document-content";
 
+function SubsectionDisclosure({ section, currentPath, isOpen, onNavigate, onToggle }: { section: PublicNavigationSection; currentPath: string; isOpen: boolean; onNavigate?: () => void; onToggle: () => void }) {
+  return <li className="pt-2">
+    <button
+      type="button"
+      aria-expanded={isOpen}
+      aria-controls={`section-${section.id}-documents`}
+      onClick={onToggle}
+      className="flex min-h-11 w-full items-center justify-between rounded-md px-3 text-left text-sm font-medium hover:bg-muted"
+    >
+      {section.title}
+      <ChevronRight aria-hidden="true" className={`size-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
+    </button>
+    {isOpen ? <ul id={`section-${section.id}-documents`} className="ml-3 mt-1 space-y-1 border-l pl-2">
+      {section.documents.map((document) => <li key={document.id}><Link href={document.path} onClick={onNavigate} aria-current={document.path === currentPath ? "page" : undefined} className={`flex min-h-11 items-center rounded-md px-3 text-sm ${document.path === currentPath ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{document.title}</Link></li>)}
+    </ul> : null}
+  </li>;
+}
+
 function NavigationTree({ sections, currentPath, onNavigate }: { sections: PublicNavigationSection[]; currentPath: string; onNavigate?: () => void }) {
+  const activeSectionIds = sections.flatMap((section) => section.children.filter((child) => child.documents.some((document) => document.path === currentPath)).map((child) => child.id));
+  const [expandedSectionIds, setExpandedSectionIds] = useState(() => new Set(activeSectionIds));
+
   return <nav aria-label="สารบัญเอกสาร" className="space-y-4">
     {sections.map((section) => <section key={section.id}>
       <h2 className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{section.title}</h2>
       <ul className="mt-1 space-y-1">
         {section.documents.map((document) => <li key={document.id}><Link href={document.path} onClick={onNavigate} aria-current={document.path === currentPath ? "page" : undefined} className={`flex min-h-11 items-center rounded-md px-3 text-sm ${document.path === currentPath ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{document.title}</Link></li>)}
-        {section.children.map((child) => <li key={child.id} className="pt-2"><NavigationTree sections={[child]} currentPath={currentPath} onNavigate={onNavigate} /></li>)}
+        {section.children.map((child) => <SubsectionDisclosure key={child.id} section={child} currentPath={currentPath} isOpen={activeSectionIds.includes(child.id) || expandedSectionIds.has(child.id)} onNavigate={onNavigate} onToggle={() => setExpandedSectionIds((ids) => {
+          const nextIds = new Set(ids);
+          if (nextIds.has(child.id)) nextIds.delete(child.id);
+          else nextIds.add(child.id);
+          return nextIds;
+        })} />)}
       </ul>
     </section>)}
   </nav>;
