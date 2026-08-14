@@ -41,9 +41,9 @@ export function ReaderNavigation({ children, currentPath, sections, toc }: { chi
       </Dialog.Portal>
     </Dialog.Root>
     <div className="mx-auto grid gap-10 xl:w-[74rem] xl:max-w-full xl:grid-cols-[15rem_42rem_12rem]">
-      <aside className="hidden xl:block xl:h-[calc(100vh-6rem)] xl:overflow-y-auto"><NavigationTree sections={sections} currentPath={currentPath} /></aside>
+      <aside className="hidden xl:sticky xl:top-14 xl:block xl:max-h-[calc(100dvh-3.5rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain"><NavigationTree sections={sections} currentPath={currentPath} /></aside>
       <main id="main-content" className="min-w-0"><Toc items={toc} mobile />{children}</main>
-      <aside className="hidden xl:block"><Toc items={toc} /></aside>
+      <aside className="hidden xl:sticky xl:top-14 xl:block xl:max-h-[calc(100dvh-3.5rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain"><Toc items={toc} /></aside>
     </div>
   </div>;
 }
