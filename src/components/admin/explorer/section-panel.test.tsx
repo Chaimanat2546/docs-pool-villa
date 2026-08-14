@@ -108,6 +108,12 @@ describe("SectionPanel", () => {
     expect(document.getElementById(explanationId ?? "")?.textContent).toBe("รองรับหมวดไม่เกิน 2 ระดับ");
   });
 
+  it("does not render the retired section-details card when a section is selected", () => {
+    render(<SectionPanel selectedSectionId={childId} mode="view" explorer={explorer} />);
+
+    expect(screen.queryByRole("heading", { name: "รายละเอียดหมวด" })).toBeNull();
+  });
+
   it("allows long Thai section titles to shrink and wrap without widening the workspace", () => {
     const longTitle = "การตั้งค่าการรับชำระเงินและการแจ้งเตือนสำหรับผู้ดูแลพูลวิลล่าที่มีชื่อหมวดยาวมาก";
     render(<SectionPanel

@@ -212,14 +212,16 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
         </section>
       )}
 
-      <div className="mt-6">
-        {form ?? (
-          <section className="rounded-xl border bg-card p-5 shadow-sm">
-            <h2 className="text-lg font-semibold">{selectedSection ? "รายละเอียดหมวด" : "โครงสร้างคู่มือ"}</h2>
-            {!selectedSection && <p className="mt-2 text-sm text-muted-foreground">เลือกหมวดทางซ้าย หรือเพิ่มหมวดหลักเพื่อเริ่มจัดโครงสร้าง</p>}
-          </section>
-        )}
-      </div>
+      {(form || !selectedSection) && (
+        <div className="mt-6">
+          {form ?? (
+            <section className="rounded-xl border bg-card p-5 shadow-sm">
+              <h2 className="text-lg font-semibold">โครงสร้างคู่มือ</h2>
+              <p className="mt-2 text-sm text-muted-foreground">เลือกหมวดทางซ้าย หรือเพิ่มหมวดหลักเพื่อเริ่มจัดโครงสร้าง</p>
+            </section>
+          )}
+        </div>
+      )}
 
       <Dialog.Root open={Boolean(deleteTarget)} onOpenChange={(open) => { if (!open) closeDeleteDialog(); }}>
         <Dialog.Portal>
