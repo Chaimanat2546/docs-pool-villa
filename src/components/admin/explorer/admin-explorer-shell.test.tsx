@@ -97,7 +97,6 @@ function ExplorerHarness({ dirty = false }: { dirty?: boolean }) {
 }
 
 function CreationHarness({ mode, selectedSectionId = null }: { mode: "view" | "create-root" | "create-child"; selectedSectionId?: string | null }) {
-  sectionQuery.value = selectedSectionId;
   return (
     <UnsavedNavigationProvider>
       <AdminExplorerShell
@@ -129,7 +128,7 @@ it("renders one mobile section trigger and constrains its modal drawer to the vi
   const triggers = screen.getAllByRole("button", { name: "เลือกหมวด" });
   expect(triggers).toHaveLength(1);
   expect(triggers[0].className).toContain("min-h-11");
-  expect(triggers[0].parentElement?.className).toContain("lg:hidden");
+  expect(triggers[0].parentElement?.className).toContain("xl:hidden");
 
   await user.click(triggers[0]);
   const drawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
@@ -148,7 +147,7 @@ it("provides a bounded desktop-only keyboard resize control", async () => {
   expect(slider.step).toBe("16");
   expect(slider.value).toBe("288");
   expect(slider.classList.contains("hidden")).toBe(true);
-  expect(slider.classList.contains("lg:block")).toBe(true);
+  expect(slider.classList.contains("xl:block")).toBe(true);
   expect(screen.getByRole("main").parentElement?.style.gridTemplateColumns).toBe("288px minmax(0,1fr)");
   expect(screen.getByRole("main").className).toContain("min-w-0");
 
@@ -184,7 +183,7 @@ it("validates the requested section before marking a tree item selected", () => 
   sectionQuery.value = "missing";
   const { rerender } = render(<ExplorerHarness />);
 
-  expect(screen.getByRole("treeitem", { name: /คู่มือทั้งหมด/ }).getAttribute("aria-selected")).toBe("true");
+  expect(screen.getAllByRole("treeitem").every((item) => item.getAttribute("aria-selected") === "false")).toBe(true);
 
   sectionQuery.value = "child";
   rerender(<ExplorerHarness />);
@@ -235,10 +234,14 @@ it("closes the mobile folder drawer after clean navigation is approved", async (
 it("returns cancel focus to the exact desktop sidebar creation action", async () => {
   const user = userEvent.setup();
   const { rerender } = render(<CreationHarness mode="view" />);
-  const origin = screen.getByRole("button", { name: "สร้าง Sub-topic ใน เริ่มต้น" });
+  const desktopSidebar = screen.getByRole("complementary", { name: "หมวดคู่มือ" });
+  const root = within(desktopSidebar).getByRole("treeitem", { name: /เริ่มต้น/ });
+  await user.click(root.querySelector<HTMLElement>("[data-tree-disclosure]")!);
+  const origin = within(desktopSidebar).getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" });
 
   await user.click(origin);
   expect(push).toHaveBeenCalledWith("/admin/structure?section=root&mode=create-child");
+  sectionQuery.value = "root";
   rerender(<CreationHarness mode="create-child" selectedSectionId="root" />);
   await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
 
@@ -251,10 +254,11 @@ it("uses the mobile drawer trigger as the safe cancel-focus fallback after creat
   const drawerTrigger = screen.getByRole("button", { name: "เลือกหมวด" });
   await user.click(drawerTrigger);
   const drawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
-  const origin = within(drawer).getByRole("button", { name: "สร้าง Topic" });
+  const origin = within(drawer).getByRole("button", { name: "สร้างหมวดหลัก" });
 
   await user.click(origin);
   await waitFor(() => expect(origin.isConnected).toBe(false));
+  sectionQuery.value = null;
   rerender(<CreationHarness mode="create-root" />);
   await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
 
@@ -275,6 +279,7 @@ it("disables desktop and mobile creation actions immediately when deletion becom
       message: "ลบรูปไม่สำเร็จ",
     },
   });
+  sectionQuery.value = "root";
   render(<CreationHarness mode="view" selectedSectionId="root" />);
 
   await user.click(screen.getByRole("button", { name: "ลบหมวด" }));
@@ -283,9 +288,12 @@ it("disables desktop and mobile creation actions immediately when deletion becom
   await user.click(within(dialog).getByRole("button", { name: "ลบถาวร" }));
 
   const desktopSidebar = screen.getByRole("complementary", { name: "หมวดคู่มือ" });
-  await waitFor(() => expect((within(desktopSidebar).getByRole("button", { name: "สร้าง Topic" }) as HTMLButtonElement).disabled).toBe(true));
+  await waitFor(() => expect((within(desktopSidebar).getByRole("button", { name: "สร้างหมวดหลัก" }) as HTMLButtonElement).disabled).toBe(true));
+  await user.click(within(desktopSidebar).getByRole("treeitem", { name: /เริ่มต้น/ }).querySelector<HTMLElement>("[data-tree-disclosure]")!);
+  expect((within(desktopSidebar).getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" }) as HTMLButtonElement).disabled).toBe(true);
   await user.click(screen.getByRole("button", { name: "เลือกหมวด" }));
   const mobileDrawer = screen.getByRole("dialog", { name: "หมวดคู่มือ" });
-  expect((within(mobileDrawer).getByRole("button", { name: "สร้าง Topic" }) as HTMLButtonElement).disabled).toBe(true);
-  expect((within(mobileDrawer).getByRole("button", { name: "สร้าง Sub-topic ใน เริ่มต้น" }) as HTMLButtonElement).disabled).toBe(true);
+  expect((within(mobileDrawer).getByRole("button", { name: "สร้างหมวดหลัก" }) as HTMLButtonElement).disabled).toBe(true);
+  await user.click(within(mobileDrawer).getByRole("treeitem", { name: /เริ่มต้น/ }).querySelector<HTMLElement>("[data-tree-disclosure]")!);
+  expect((within(mobileDrawer).getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" }) as HTMLButtonElement).disabled).toBe(true);
 });

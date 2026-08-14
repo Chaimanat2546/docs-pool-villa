@@ -40,18 +40,20 @@ const sections: AdminExplorerSection[] = [
 
 afterEach(cleanup);
 
-it("renders the virtual root and direct document counts", () => {
+it("renders a static all-documents heading outside the tree", () => {
   const navigate = vi.fn();
   render(<FolderTree sections={sections} selectedSectionId="child" onNavigate={navigate} />);
 
-  expect(screen.getByRole("treeitem", { name: /คู่มือทั้งหมด/ })).not.toBeNull();
+  expect(screen.getByText("คู่มือทั้งหมด · 3 เอกสาร")).not.toBeNull();
+  expect(screen.queryByRole("treeitem", { name: /คู่มือทั้งหมด/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /คู่มือทั้งหมด/ })).toBeNull();
   expect(screen.getByRole("treeitem", { name: /การจอง.*2/ }).getAttribute("aria-selected")).toBe("true");
-  expect(screen.getByRole("treeitem", { name: /เริ่มต้น.*1/ }).getAttribute("aria-level")).toBe("2");
-  expect(screen.getByRole("treeitem", { name: /การจอง.*2/ }).getAttribute("aria-level")).toBe("3");
+  expect(screen.getByRole("treeitem", { name: /เริ่มต้น.*1/ }).getAttribute("aria-level")).toBe("1");
+  expect(screen.getByRole("treeitem", { name: /การจอง.*2/ }).getAttribute("aria-level")).toBe("2");
   expect(screen.getByRole("treeitem", { name: /การจอง.*2/ }).hasAttribute("aria-expanded")).toBe(false);
 });
 
-it("offers a child creation action for every root without selecting it", async () => {
+it("reveals child creation only when its root is expanded", async () => {
   const navigate = vi.fn();
   const user = userEvent.setup();
   render(<FolderTree sections={sections} selectedSectionId={null} onNavigate={navigate} />);
@@ -59,14 +61,23 @@ it("offers a child creation action for every root without selecting it", async (
   const root = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
   const disclosure = root.querySelector<HTMLElement>("[data-tree-disclosure]");
   expect(disclosure).not.toBeNull();
+  expect(screen.queryByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "สร้างหมวดย่อยใน ทั่วไป" })).toBeNull();
   await user.click(disclosure!);
 
-  const firstRootAction = screen.getByRole("button", { name: "สร้าง Sub-topic ใน เริ่มต้น" });
-  const emptyRootAction = screen.getByRole("button", { name: "สร้าง Sub-topic ใน ทั่วไป" });
+  const firstRootAction = screen.getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" });
   expect(firstRootAction).not.toBeNull();
-  expect(emptyRootAction).not.toBeNull();
-  expect(screen.queryByRole("button", { name: /สร้าง Sub-topic ใน การจอง/ })).toBeNull();
-  expect(screen.getByRole("button", { name: "สร้าง Topic" })).not.toBeNull();
+  expect(firstRootAction.textContent).toContain("＋ เพิ่มหมวดย่อย");
+  expect(screen.queryByRole("button", { name: "สร้างหมวดย่อยใน ทั่วไป" })).toBeNull();
+  const emptyRoot = screen.getByRole("treeitem", { name: /ทั่วไป/ });
+  const emptyDisclosure = emptyRoot.querySelector<HTMLElement>("[data-tree-disclosure]");
+  expect(emptyDisclosure).not.toBeNull();
+  await user.click(emptyDisclosure!);
+  const emptyRootAction = screen.getByRole("button", { name: "สร้างหมวดย่อยใน ทั่วไป" });
+  expect(screen.queryByRole("button", { name: /สร้างหมวดย่อยใน การจอง/ })).toBeNull();
+  expect(screen.getByRole("button", { name: "สร้างหมวดหลัก" })).not.toBeNull();
+  expect(firstRootAction.closest('[role="tree"]')).toBe(screen.getByRole("tree", { name: "หมวดคู่มือ" }));
+  expect(emptyRootAction.closest('[role="tree"]')).toBe(screen.getByRole("tree", { name: "หมวดคู่มือ" }));
   expect(firstRootAction.previousElementSibling).toBe(screen.getByRole("treeitem", { name: /การจอง/ }));
   expect(emptyRootAction.previousElementSibling).toBe(screen.getByRole("treeitem", { name: /ทั่วไป/ }));
 
@@ -74,17 +85,37 @@ it("offers a child creation action for every root without selecting it", async (
   expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root&mode=create-child");
   expect(navigate).not.toHaveBeenCalledWith("/admin/structure?section=root");
 
-  await user.click(screen.getByRole("button", { name: "สร้าง Topic" }));
+  await user.click(screen.getByRole("button", { name: "สร้างหมวดหลัก" }));
   expect(navigate).toHaveBeenCalledWith("/admin/structure?mode=create-root");
   expect(navigate).not.toHaveBeenCalledWith("/admin/structure");
-  expect(screen.getByRole("button", { name: "สร้าง Topic" }).closest('[role="tree"]')).toBeNull();
-  expect(firstRootAction.closest('[role="tree"]')).toBeNull();
+  expect(screen.getByRole("button", { name: "สร้างหมวดหลัก" }).closest('[role="tree"]')).toBeNull();
 
   const tree = screen.getByRole("tree", { name: "หมวดคู่มือ" });
-  const ownedIds = new Set((tree.getAttribute("aria-owns") ?? "").split(" "));
-  expect(screen.getAllByRole("treeitem").every((item) => item.id && ownedIds.has(item.id))).toBe(true);
-  expect(ownedIds.has(firstRootAction.id)).toBe(false);
-  expect(ownedIds.has(emptyRootAction.id)).toBe(false);
+  expect(tree.querySelectorAll('[role="treeitem"]')).toHaveLength(screen.getAllByRole("treeitem").length);
+  expect(screen.getByRole("button", { name: "สร้างหมวดหลัก" }).closest('[role="tree"]')).toBeNull();
+});
+
+it("uses secondary visual treatment for child actions and hides zero document counts", async () => {
+  const navigate = vi.fn();
+  const user = userEvent.setup();
+  render(<FolderTree sections={sections} selectedSectionId="root" onNavigate={navigate} />);
+
+  const root = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
+  expect(root.className).toContain("aria-selected:shadow-[inset_3px_0_0_hsl(var(--primary))]");
+  expect(within(root).getByText("1").className).toContain("rounded-full");
+  expect(screen.queryByText("0")).toBeNull();
+
+  await user.click(root.querySelector<HTMLElement>("[data-tree-disclosure]")!);
+  const childAction = screen.getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" });
+  expect(childAction.className).toContain("text-muted-foreground");
+  expect(screen.getByRole("button", { name: "สร้างหมวดหลัก" }).parentElement?.className).toContain("border-t");
+});
+
+it("prevents pointer drags on a folder row from selecting its label", () => {
+  const navigate = vi.fn();
+  render(<FolderTree sections={sections} selectedSectionId="root" onNavigate={navigate} />);
+
+  expect(screen.getByRole("treeitem", { name: /เริ่มต้น/ }).className).toContain("select-none");
 });
 
 it("keeps creation actions keyboard reachable and submits with Enter and Space", async () => {
@@ -92,7 +123,7 @@ it("keeps creation actions keyboard reachable and submits with Enter and Space",
   const user = userEvent.setup();
   render(<FolderTree sections={sections} selectedSectionId={null} onNavigate={navigate} />);
 
-  const rootAction = screen.getByRole("button", { name: "สร้าง Topic" });
+  const rootAction = screen.getByRole("button", { name: "สร้างหมวดหลัก" });
   rootAction.focus();
   await user.keyboard("{Enter}");
   await user.keyboard(" ");
@@ -106,13 +137,13 @@ it("disables both creation actions while media operations are pending", async ()
   const user = userEvent.setup();
   render(<FolderTree sections={sections} selectedSectionId={null} creationBlocked onNavigate={navigate} />);
 
-  const rootAction = screen.getByRole("button", { name: "สร้าง Topic" });
+  const rootAction = screen.getByRole("button", { name: "สร้างหมวดหลัก" });
   expect((rootAction as HTMLButtonElement).disabled).toBe(true);
   expect(rootAction.getAttribute("title")).toBe("กำลังจัดการรูปภาพที่ค้างอยู่");
 
   const root = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
   await user.click(root.querySelector<HTMLElement>("[data-tree-disclosure]")!);
-  const childAction = screen.getByRole("button", { name: "สร้าง Sub-topic ใน เริ่มต้น" });
+  const childAction = screen.getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" });
   expect((childAction as HTMLButtonElement).disabled).toBe(true);
   expect(childAction.getAttribute("title")).toBe("กำลังจัดการรูปภาพที่ค้างอยู่");
   await user.click(rootAction);
@@ -133,7 +164,7 @@ it("supports Arrow keys, Home, End, expand, collapse, and Enter", async () => {
   expect(navigate).toHaveBeenCalledWith("/admin/structure?section=child");
 
   await user.keyboard("{Home}");
-  expect(document.activeElement).toBe(screen.getByRole("treeitem", { name: /คู่มือทั้งหมด/ }));
+  expect(document.activeElement).toBe(root);
 
   await user.keyboard("{End}");
   expect(document.activeElement).toBe(screen.getByRole("treeitem", { name: /ทั่วไป/ }));
@@ -142,16 +173,12 @@ it("supports Arrow keys, Home, End, expand, collapse, and Enter", async () => {
   expect(root.getAttribute("aria-expanded")).toBe("false");
 });
 
-it("navigates the virtual root without a section query", async () => {
+it("keeps the all-documents heading non-interactive", () => {
   const navigate = vi.fn();
-  const user = userEvent.setup();
   render(<FolderTree sections={sections} selectedSectionId="root" onNavigate={navigate} />);
 
-  const virtualRoot = screen.getByRole("treeitem", { name: /คู่มือทั้งหมด/ });
-  virtualRoot.focus();
-  await user.keyboard("{Enter}");
-
-  expect(navigate).toHaveBeenCalledWith("/admin/structure");
+  expect(screen.getByText("คู่มือทั้งหมด · 3 เอกสาร")).not.toBeNull();
+  expect(navigate).not.toHaveBeenCalled();
 });
 
 it("toggles a parent from its pointer and touch disclosure target without selecting it", async () => {
@@ -189,7 +216,7 @@ it("toggles a parent from its pointer and touch disclosure target without select
   expect(root.getAttribute("aria-expanded")).toBe("false");
 });
 
-it("provides one Tab entry into the tree followed by contextual creation actions", async () => {
+it("provides one Tab entry into the tree followed by root creation when no root is expanded", async () => {
   const navigate = vi.fn();
   const user = userEvent.setup();
   render(
@@ -209,11 +236,7 @@ it("provides one Tab entry into the tree followed by contextual creation actions
   expect(screen.getAllByRole("treeitem").filter((item) => item.tabIndex === 0)).toEqual([selected]);
 
   await user.tab();
-  expect(document.activeElement).toBe(screen.getByRole("button", { name: "สร้าง Sub-topic ใน เริ่มต้น" }));
-  await user.tab();
-  expect(document.activeElement).toBe(screen.getByRole("button", { name: "สร้าง Sub-topic ใน ทั่วไป" }));
-  await user.tab();
-  expect(document.activeElement).toBe(screen.getByRole("button", { name: "สร้าง Topic" }));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "สร้างหมวดหลัก" }));
   await user.tab();
   expect(document.activeElement).toBe(after);
 });
@@ -233,7 +256,7 @@ it("moves the tab stop and focus to a visible selected section when the focused 
   expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root");
 });
 
-it("moves the tab stop and focus to the virtual root when no selected section remains", async () => {
+it("moves the tab stop and focus to the first root when no selected section remains", async () => {
   const navigate = vi.fn();
   const user = userEvent.setup();
   const { rerender } = render(<FolderTree sections={sections} selectedSectionId="child" onNavigate={navigate} />);
@@ -241,9 +264,9 @@ it("moves the tab stop and focus to the virtual root when no selected section re
 
   rerender(<FolderTree sections={sections.filter((section) => section.id !== "child")} selectedSectionId="missing" onNavigate={navigate} />);
 
-  const virtualRoot = screen.getByRole("treeitem", { name: /คู่มือทั้งหมด/ });
-  expect(screen.getAllByRole("treeitem").filter((item) => item.tabIndex === 0)).toEqual([virtualRoot]);
-  expect(document.activeElement).toBe(virtualRoot);
+  const firstRoot = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
+  expect(screen.getAllByRole("treeitem").filter((item) => item.tabIndex === 0)).toEqual([firstRoot]);
+  expect(document.activeElement).toBe(firstRoot);
   await user.keyboard("{Enter}");
-  expect(navigate).toHaveBeenCalledWith("/admin/structure");
+  expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root");
 });

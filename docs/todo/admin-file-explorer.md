@@ -84,7 +84,11 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 
 ## Follow-up: contextual section creation — 14 สิงหาคม 2026
 
-- Sidebar มีคำสั่ง **สร้าง Topic** และ **สร้าง Sub-topic** ตามระดับที่อนุญาต; แบบฟอร์มเลือก parent ที่ตั้งใจจากบริบทที่ผู้ใช้กด และหมวดใหม่ตั้งค่า `sort_order` เป็นลำดับถัดไปของ sibling เดียวกันโดยอัตโนมัติ
+- Sidebar มีคำสั่ง **สร้างหมวดหลัก** และ **สร้างหมวดย่อยใน {ชื่อหมวดหลัก}** ตามระดับที่อนุญาต; แบบฟอร์มเลือก parent ที่ตั้งใจจากบริบทที่ผู้ใช้กด และหมวดใหม่ตั้งค่า `sort_order` เป็นลำดับถัดไปของ sibling เดียวกันโดยอัตโนมัติ
+- Follow-up ล่าสุด: ปุ่ม **＋ เพิ่มหมวดย่อย** จะแสดงใต้หมวดหลักเฉพาะเมื่อกางหมวดแล้ว (รวมหมวดว่าง), ลดข้อความซ้ำชื่อหมวดและแยกเส้นนำสายตา; cancel คืน focus ไปยังปุ่ม sidebar ที่เริ่มงาน (หรือปุ่มเปิด drawer บน Mobile) และปุ่มถูกปิดทันทีเมื่อมีงานจัดการรูปภาพค้างอยู่; ไม่มี Schema, Migration, RLS, Remote หรือ Deployment change
+- Follow-up ล่าสุด: “คู่มือทั้งหมด · {จำนวนเอกสาร} เอกสาร” เป็นหัวข้ออ่านอย่างเดียวเหนือ tree; tree เริ่มที่หมวดหลักโดยไม่มี virtual root หรือการกรองเพิ่ม
+- Follow-up ล่าสุด: หมวดหลักมีน้ำหนักเด่นกว่า หมวดย่อยใช้สีรอง, จำนวนเอกสารที่มากกว่า 0 เป็น badge สีอ่อน (ไม่แสดง 0), หมวดที่เลือกมีพื้นและแถบสีด้านซ้าย และ **＋ สร้างหมวดหลัก** แยกด้วยเส้นคั่นท้าย sidebar
+- แก้ responsive regression: Explorer ใช้ drawer จนถึงก่อน `xl` เพื่อไม่ซ้อนกับ Admin navigation sidebar บนจอขนาดกลาง; แถวหมวดปิดการเลือกข้อความจาก pointer drag
 - หลักฐาน Local จริง: focused Explorer regression ผ่าน 3 files, 27/27 tests; `npm run test:admin-shell` ผ่าน 22/22; `npm run test:content` ผ่าน 30/30; `npx tsc --noEmit`, `npm run lint`, `npm run build` และ `git diff --check` ออก 0
 - `npm run build` ยังแสดง warning baseline ของ Next.js ว่า convention `middleware` deprecated; ไม่ใช่ผลเปลี่ยน pass/fail จาก follow-up นี้
 - ไม่เกิดการเปลี่ยน Schema, Migration, RLS, Worker, Remote หรือ Deployment

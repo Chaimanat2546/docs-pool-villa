@@ -39,6 +39,13 @@ export const DocsParagraph = Paragraph.extend({
       const current = normalizeIndentLevel(String($from.parent.attrs.indentLevel));
       const next = Math.max(0, Math.min(3, current + delta));
       if (next === current) return false;
+      if ($from.nodeBefore?.type.name === "hardBreak") {
+        return this.editor.chain()
+          .deleteRange({ from: $from.pos - 1, to: $from.pos })
+          .splitBlock()
+          .updateAttributes("paragraph", { indentLevel: next })
+          .run();
+      }
       return this.editor.commands.command(({ state, tr }) => {
         const { $from: currentPosition } = state.selection;
         tr.setNodeMarkup(currentPosition.before(), currentPosition.parent.type, { ...currentPosition.parent.attrs, indentLevel: next });

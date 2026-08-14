@@ -94,7 +94,7 @@ it("passes pending section media work through to disable tree creation actions",
   const tree = await LoadedAdminExplorerTree({});
   render(<UnsavedNavigationProvider>{tree}</UnsavedNavigationProvider>);
 
-  expect((screen.getByRole("button", { name: "สร้าง Topic" }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole("button", { name: "สร้างหมวดหลัก" }) as HTMLButtonElement).disabled).toBe(true);
 });
 
 it("does not turn authorization redirects or unrelated failures into a data error", async () => {

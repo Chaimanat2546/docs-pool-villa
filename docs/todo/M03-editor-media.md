@@ -8,6 +8,8 @@
 
 **Post-closeout note (14 August 2026):** Tables were removed completely from the editor, validation, and reader by approved user decision.
 
+**Post-closeout note (14 August 2026):** Paragraph Tab indentation renders as first-line indentation in the editor, Preview, and reader; persisted `indentLevel` and its keyboard behavior remain unchanged. Enter creates an independently indentable ordinary paragraph which renders with no paragraph-to-paragraph gap; headings, lists, callouts, quotes, code blocks, images, and embeds retain their own keyboard behavior. Tab after a legacy hard break first splits it into independently indentable paragraphs.
+
 ## Scope
 
 - [x] Tiptap schema, Toolbar และ Slash Command

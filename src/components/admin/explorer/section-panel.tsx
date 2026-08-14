@@ -18,6 +18,7 @@ import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 import type { MediaOperationView } from "@/lib/media/lifecycle-types";
 
 import { SectionInlineForm } from "./section-inline-form";
+import { useCreationNavigation } from "./admin-explorer-shell";
 import type { SectionMode } from "./section-mode";
 
 type SectionPanelProps = {
@@ -41,6 +42,7 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
   const [deletePreview, setDeletePreview] = useState<DeletePreview | null>(null);
   const [confirmedName, setConfirmedName] = useState("");
   const [isPending, startTransition] = useTransition();
+  const { restoreCreationFocus, setCreationBlocked } = useCreationNavigation();
   const createRootTriggerRef = useRef<HTMLAnchorElement>(null);
   const createChildTriggerRef = useRef<HTMLAnchorElement>(null);
   const editTriggerRef = useRef<HTMLAnchorElement>(null);
@@ -69,7 +71,7 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
 
   function cancelForm(href: string, trigger: React.RefObject<HTMLAnchorElement | null>) {
     router.replace(href);
-    trigger.current?.focus();
+    if (!restoreCreationFocus()) trigger.current?.focus();
   }
 
   function closeDeleteDialog() {
@@ -103,6 +105,7 @@ export function SectionPanel({ selectedSectionId, mode, explorer }: SectionPanel
         return;
       }
       if ("pending" in result) {
+        setCreationBlocked(true);
         setOperations((current) => [
           ...current.filter((operation) => operation.operationId !== result.operation.operationId),
           result.operation,

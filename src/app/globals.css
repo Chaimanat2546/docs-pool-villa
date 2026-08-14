@@ -13,27 +13,30 @@
 .ProseMirror > * + * {
   margin-top: 1rem;
 }
+.docs-editor-content p + p,
+.ProseMirror p + p,
+.docs-content p + p { margin-top: 0; }
 
 .docs-editor-content p[data-indent-level="1"],
 .ProseMirror p[data-indent-level="1"],
-.docs-content p[data-indent-level="1"] { margin-left: 2rem; }
+.docs-content p[data-indent-level="1"] { text-indent: 2rem; }
 .docs-editor-content p[data-indent-level="2"],
 .ProseMirror p[data-indent-level="2"],
-.docs-content p[data-indent-level="2"] { margin-left: 4rem; }
+.docs-content p[data-indent-level="2"] { text-indent: 4rem; }
 .docs-editor-content p[data-indent-level="3"],
 .ProseMirror p[data-indent-level="3"],
-.docs-content p[data-indent-level="3"] { margin-left: 6rem; }
+.docs-content p[data-indent-level="3"] { text-indent: 6rem; }
 
 @media (max-width: 40rem) {
   .docs-editor-content p[data-indent-level="1"],
   .ProseMirror p[data-indent-level="1"],
-  .docs-content p[data-indent-level="1"] { margin-left: 1rem; }
+  .docs-content p[data-indent-level="1"] { text-indent: 1rem; }
   .docs-editor-content p[data-indent-level="2"],
   .ProseMirror p[data-indent-level="2"],
-  .docs-content p[data-indent-level="2"] { margin-left: 2rem; }
+  .docs-content p[data-indent-level="2"] { text-indent: 2rem; }
   .docs-editor-content p[data-indent-level="3"],
   .ProseMirror p[data-indent-level="3"],
-  .docs-content p[data-indent-level="3"] { margin-left: 3rem; }
+  .docs-content p[data-indent-level="3"] { text-indent: 3rem; }
 }
 
 .docs-editor-content h2,
