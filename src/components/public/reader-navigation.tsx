@@ -60,12 +60,12 @@ export function ReaderNavigation({ children, currentPath, sections, toc }: { chi
     else expandedSectionIds.add(sectionId);
     return { ...state, expandedSectionIds };
   });
-  return <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+  return <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6">
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm xl:hidden"><Menu size={18} aria-hidden="true" />เมนูคู่มือ</Dialog.Trigger>
+      <Dialog.Trigger className="sticky top-14 z-20 mb-4 flex min-h-11 w-full items-center gap-2 border-y bg-muted px-4 text-sm xl:hidden"><Menu size={18} aria-hidden="true" />เมนูคู่มือ</Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40 xl:hidden" />
-        <Dialog.Popup aria-label="เมนูคู่มือ" className="fixed inset-y-0 left-0 z-50 w-[min(20rem,calc(100vw-2rem))] overflow-y-auto border-r bg-background p-4 outline-none xl:hidden">
+        <Dialog.Backdrop className="fixed inset-x-0 bottom-0 top-14 z-40 bg-black/40 xl:hidden" />
+        <Dialog.Popup aria-label="เมนูคู่มือ" className="fixed inset-x-0 bottom-0 top-14 z-50 overflow-y-auto border-t bg-background p-4 outline-none xl:hidden">
           <div className="mb-4 flex items-center justify-between"><Dialog.Title className="font-medium">คู่มือ</Dialog.Title><Dialog.Close className="inline-flex size-11 items-center justify-center rounded-full border" aria-label="ปิดเมนู"><X size={18} aria-hidden="true" /></Dialog.Close></div>
           <NavigationTree sections={sections} currentPath={currentPath} expandedSectionIds={navigationState.expandedSectionIds} onNavigate={() => setOpen(false)} onToggle={toggleSection} />
         </Dialog.Popup>
@@ -73,7 +73,7 @@ export function ReaderNavigation({ children, currentPath, sections, toc }: { chi
     </Dialog.Root>
     <div className="mx-auto grid gap-10 xl:w-[74rem] xl:max-w-full xl:grid-cols-[15rem_42rem_12rem]">
       <aside className="hidden xl:sticky xl:top-14 xl:block xl:max-h-[calc(100dvh-3.5rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain"><NavigationTree sections={sections} currentPath={currentPath} expandedSectionIds={navigationState.expandedSectionIds} onToggle={toggleSection} /></aside>
-      <main id="main-content" className="min-w-0"><Toc items={toc} mobile />{children}</main>
+      <main id="main-content" className="min-w-0">{children}</main>
       <aside className="hidden xl:sticky xl:top-14 xl:block xl:max-h-[calc(100dvh-3.5rem)] xl:self-start xl:overflow-y-auto xl:overscroll-contain"><Toc items={toc} /></aside>
     </div>
   </div>;

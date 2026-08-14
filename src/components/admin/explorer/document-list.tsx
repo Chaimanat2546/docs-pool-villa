@@ -31,7 +31,7 @@ const statusStyles: Record<AdminDocumentStatus, string> = {
 };
 
 const dateFormatter = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" });
-const documentsPerPage = 5;
+const documentsPerPage = 4;
 
 export function DocumentList({ documents, sections, selectedSectionId }: DocumentListProps) {
   const [query, setQuery] = useState("");

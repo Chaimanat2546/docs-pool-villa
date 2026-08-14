@@ -23,6 +23,12 @@ const nestedSections = [{
 afterEach(cleanup);
 
 describe("reader navigation", () => {
+  it("fills the available width when the reader is a flex child", () => {
+    const { container } = render(<ReaderNavigation currentPath="/guides/start" sections={sections} toc={[]}><article>เนื้อหา</article></ReaderNavigation>);
+
+    expect(container.firstElementChild?.className).toContain("w-full");
+  });
+
   it("keeps root documents visible and collapses child documents until expanded", async () => {
     const user = userEvent.setup();
     render(<ReaderNavigation currentPath="/guides/start" sections={nestedSections} toc={[]}><article>เนื้อหา</article></ReaderNavigation>);
@@ -34,6 +40,23 @@ describe("reader navigation", () => {
     await user.click(subsection);
     expect(subsection.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("link", { name: "ตั้งค่าบัญชี" })).not.toBeNull();
+  });
+
+  it("uses a full-width mobile navigation drawer below the top bar", async () => {
+    const user = userEvent.setup();
+    render(<ReaderNavigation currentPath="/guides/start" sections={sections} toc={[]}><article>เนื้อหา</article></ReaderNavigation>);
+
+    const trigger = screen.getByRole("button", { name: "เมนูคู่มือ" });
+    expect(trigger.className).toContain("sticky");
+    expect(trigger.className).toContain("top-14");
+    expect(trigger.className).toContain("w-full");
+    expect(trigger.className).not.toContain("rounded-full");
+    await user.click(trigger);
+
+    const drawer = screen.getByRole("dialog", { name: "คู่มือ" });
+    expect(drawer.className).toContain("inset-x-0");
+    expect(drawer.className).toContain("top-14");
+    expect(drawer.className).toContain("bottom-0");
   });
 
   it("opens the active child section and preserves other expanded sections", async () => {
@@ -79,10 +102,10 @@ describe("reader navigation", () => {
     expect(subsectionButtons[0].getAttribute("aria-controls")).not.toBe(subsectionButtons[1].getAttribute("aria-controls"));
   });
 
-  it("opens an accessible mobile drawer, exposes a mobile TOC, and returns focus after Escape", async () => {
+  it("opens an accessible mobile drawer without rendering a mobile TOC and returns focus after Escape", async () => {
     const user = userEvent.setup();
     render(<ReaderNavigation currentPath="/guides/start" sections={sections} toc={[{ id: "intro", level: 2, text: "บทนำ" }]}><article>เนื้อหา</article></ReaderNavigation>);
-    expect(screen.getByText("หัวข้อในหน้านี้")).not.toBeNull();
+    expect(screen.queryByText("หัวข้อในหน้านี้")).toBeNull();
     const trigger = screen.getByRole("button", { name: "เมนูคู่มือ" });
     await user.click(trigger);
     expect(screen.getByRole("dialog", { name: "คู่มือ" })).not.toBeNull();
