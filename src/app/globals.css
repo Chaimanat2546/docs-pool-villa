@@ -6,6 +6,8 @@
   padding: 1.25rem;
   outline: none;
 }
+.docs-editor-content,
+.editor-preview-content { width: 100%; max-width: 42rem; }
 
 .docs-editor-content > * + *,
 .ProseMirror > * + * {
