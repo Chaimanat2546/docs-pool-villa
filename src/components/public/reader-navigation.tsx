@@ -15,13 +15,13 @@ function SubsectionDisclosure({ section, currentPath, isOpen, onNavigate, onTogg
       aria-expanded={isOpen}
       aria-controls={panelId}
       onClick={onToggle}
-      className="flex min-h-11 w-full items-center justify-between rounded-md px-3 text-left text-sm font-medium hover:bg-muted"
+      className="flex min-h-11 w-full items-center justify-between rounded-md pl-5 pr-3 text-left text-sm font-medium hover:bg-muted"
     >
       {section.title}
       <ChevronRight aria-hidden="true" className={`size-4 transition-transform ${isOpen ? "rotate-90" : ""}`} />
     </button>
-    {isOpen ? <ul id={panelId} className="ml-3 mt-1 space-y-1 border-l pl-2">
-      {section.documents.map((document) => <li key={document.id}><Link href={document.path} onClick={onNavigate} aria-current={document.path === currentPath ? "page" : undefined} className={`flex min-h-11 items-center rounded-md px-3 text-sm ${document.path === currentPath ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{document.title}</Link></li>)}
+    {isOpen ? <ul id={panelId} className="ml-5 mt-1 space-y-1 border-l pl-3">
+      {section.documents.map((document) => <li key={document.id}><Link href={document.path} onClick={onNavigate} aria-current={document.path === currentPath ? "page" : undefined} className={`flex min-h-11 items-center rounded-md pl-5 pr-3 text-sm ${document.path === currentPath ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{document.title}</Link></li>)}
     </ul> : null}
   </li>;
 }
@@ -29,11 +29,11 @@ function SubsectionDisclosure({ section, currentPath, isOpen, onNavigate, onTogg
 function NavigationTree({ sections, currentPath, expandedSectionIds, onNavigate, onToggle }: { sections: PublicNavigationSection[]; currentPath: string; expandedSectionIds: Set<string>; onNavigate?: () => void; onToggle: (sectionId: string) => void }) {
   const treeId = useId();
 
-  return <nav aria-label="สารบัญเอกสาร" className="space-y-4">
+  return <nav aria-label="สารบัญเอกสาร" className="space-y-6">
     {sections.map((section) => <section key={section.id}>
-      <h2 className="px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{section.title}</h2>
+      <h2 className="px-3 text-sm font-semibold text-foreground">{section.title}</h2>
       <ul className="mt-1 space-y-1">
-        {section.documents.map((document) => <li key={document.id}><Link href={document.path} onClick={onNavigate} aria-current={document.path === currentPath ? "page" : undefined} className={`flex min-h-11 items-center rounded-md px-3 text-sm ${document.path === currentPath ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{document.title}</Link></li>)}
+        {section.documents.map((document) => <li key={document.id}><Link href={document.path} onClick={onNavigate} aria-current={document.path === currentPath ? "page" : undefined} className={`flex min-h-11 items-center rounded-md pl-5 pr-3 text-sm ${document.path === currentPath ? "bg-muted font-medium text-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}>{document.title}</Link></li>)}
         {section.children.map((child) => <SubsectionDisclosure key={child.id} section={child} currentPath={currentPath} isOpen={expandedSectionIds.has(child.id)} onNavigate={onNavigate} onToggle={() => onToggle(child.id)} panelId={`section-${treeId}-${child.id}-documents`} />)}
       </ul>
     </section>)}
