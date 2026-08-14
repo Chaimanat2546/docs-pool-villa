@@ -57,6 +57,40 @@ describe("DocumentEditor accessibility", () => {
     }), []));
   });
 
+  it("changes the current block to a level 2 heading from the toolbar", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "หัวข้อ" }] }] }} onChange={onChange} />);
+    const rect = { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0, toJSON: () => ({}) };
+    Object.defineProperty(HTMLElement.prototype, "getClientRects", { configurable: true, value: () => [] });
+    Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [] });
+    Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+
+    await user.click(await screen.findByRole("button", { name: "หัวข้อ 2" }));
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      content: expect.arrayContaining([expect.objectContaining({ type: "heading", attrs: { level: 2 } })]),
+    }), []));
+  });
+
+  it("changes the current block to a level 3 heading from the toolbar", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "หัวข้อย่อย" }] }] }} onChange={onChange} />);
+    const rect = { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0, toJSON: () => ({}) };
+    Object.defineProperty(HTMLElement.prototype, "getClientRects", { configurable: true, value: () => [] });
+    Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [] });
+    Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+
+    await user.click(await screen.findByRole("button", { name: "หัวข้อ 3" }));
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      content: expect.arrayContaining([expect.objectContaining({ type: "heading", attrs: { level: 3 } })]),
+    }), []));
+  });
+
   it("does not expose table commands in the toolbar or slash menu", async () => {
     const user = userEvent.setup();
     render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);

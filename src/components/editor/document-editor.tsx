@@ -3,7 +3,7 @@
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { Dialog } from "@base-ui/react/dialog";
-import { Bold, Code2, ImagePlus, Info, Italic, List, ListOrdered, Quote, Undo2, Redo2, Video } from "lucide-react";
+import { Bold, Code2, Heading2, Heading3, ImagePlus, Info, Italic, List, ListOrdered, Quote, Undo2, Redo2, Video } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { docsExtensions } from "./extensions";
@@ -52,10 +52,10 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
   const state = useEditorState({
     editor,
     selector: ({ editor: current }) => current ? {
-      bold: current.isActive("bold"), italic: current.isActive("italic"), bulletList: current.isActive("bulletList"), orderedList: current.isActive("orderedList"), callout: current.isActive("callout"), codeBlock: current.isActive("codeBlock"),
+      bold: current.isActive("bold"), italic: current.isActive("italic"), heading2: current.isActive("heading", { level: 2 }), heading3: current.isActive("heading", { level: 3 }), bulletList: current.isActive("bulletList"), orderedList: current.isActive("orderedList"), callout: current.isActive("callout"), codeBlock: current.isActive("codeBlock"),
     } : null,
   });
-  const toolbarState = state ?? { bold: false, italic: false, bulletList: false, orderedList: false, callout: false, codeBlock: false };
+  const toolbarState = state ?? { bold: false, italic: false, heading2: false, heading3: false, bulletList: false, orderedList: false, callout: false, codeBlock: false };
 
   useEffect(() => { pendingImagesRef.current = pendingImages; }, [pendingImages]);
   useEffect(() => () => pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl)), []);
@@ -162,6 +162,8 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
       <div className="flex flex-wrap gap-1 border-b p-2" role="toolbar" aria-label="เครื่องมือจัดรูปแบบ">
         <ToolbarButton label="ตัวหนา" active={toolbarState.bold} onClick={() => editor.chain().focus().toggleBold().run()}><Bold size={16} /></ToolbarButton>
         <ToolbarButton label="ตัวเอียง" active={toolbarState.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={16} /></ToolbarButton>
+        <ToolbarButton label="หัวข้อ 2" active={toolbarState.heading2} onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}><Heading2 size={16} /></ToolbarButton>
+        <ToolbarButton label="หัวข้อ 3" active={toolbarState.heading3} onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}><Heading3 size={16} /></ToolbarButton>
         <ToolbarButton label="รายการหัวข้อ" active={toolbarState.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={16} /></ToolbarButton>
         <ToolbarButton label="รายการตัวเลข" active={toolbarState.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={16} /></ToolbarButton>
         <ToolbarButton label="กล่องข้อมูล" active={toolbarState.callout} onClick={() => editor.chain().focus().toggleWrap("callout").run()}><Info size={16} /></ToolbarButton>

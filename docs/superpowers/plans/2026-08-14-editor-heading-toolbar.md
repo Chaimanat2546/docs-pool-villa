@@ -27,7 +27,7 @@
 - Consumes: `current.isActive("heading", { level: 2 | 3 })` and `editor.chain().focus().toggleHeading({ level: 2 | 3 }).run()`.
 - Produces: labelled `ToolbarButton` controls that emit `{ type: "heading", attrs: { level: 2 | 3 } }` JSON after a click.
 
-- [ ] **Step 1: Write the failing H2 test**
+- [x] **Step 1: Write the failing H2 test**
 
 ```tsx
 it("changes the current block to a level 2 heading from the toolbar", async () => {
@@ -39,11 +39,11 @@ it("changes the current block to a level 2 heading from the toolbar", async () =
 });
 ```
 
-- [ ] **Step 2: Run the H2 test to verify it fails**
+- [x] **Step 2: Run the H2 test to verify it fails**
 
 Run `npx vitest --config vitest.config.mts run src/components/editor/document-editor.test.tsx -t "changes the current block to a level 2 heading from the toolbar"`. Expected: FAIL because `หัวข้อ 2` does not exist.
 
-- [ ] **Step 3: Write the failing H3 test**
+- [x] **Step 3: Write the failing H3 test**
 
 ```tsx
 it("changes the current block to a level 3 heading from the toolbar", async () => {
@@ -55,11 +55,11 @@ it("changes the current block to a level 3 heading from the toolbar", async () =
 });
 ```
 
-- [ ] **Step 4: Run the H3 test to verify it fails**
+- [x] **Step 4: Run the H3 test to verify it fails**
 
 Run `npx vitest --config vitest.config.mts run src/components/editor/document-editor.test.tsx -t "changes the current block to a level 3 heading from the toolbar"`. Expected: FAIL because `หัวข้อ 3` does not exist.
 
-- [ ] **Step 5: Implement the minimal toolbar additions**
+- [x] **Step 5: Implement the minimal toolbar additions**
 
 ```tsx
 heading2: current.isActive("heading", { level: 2 }),
@@ -70,15 +70,14 @@ heading3: current.isActive("heading", { level: 3 }),
 
 Import `Heading2` and `Heading3`, add false defaults to `toolbarState`, and position the buttons after italic and before list controls.
 
-- [ ] **Step 6: Run focused tests to verify both pass**
+- [x] **Step 6: Run focused tests to verify both pass**
 
 Run `npx vitest --config vitest.config.mts run src/components/editor/document-editor.test.tsx -t "heading from the toolbar"`. Expected: PASS for both tests.
 
-- [ ] **Step 7: Run required validation**
+- [x] **Step 7: Run required validation**
 
 Run `npm run test:content`, `npx tsc --noEmit`, `npm run lint`, and `git diff --check`. Expected: each exits 0.
 
-- [ ] **Step 8: Commit the implementation**
+- [x] **Step 8: Commit the implementation**
 
 Run `git add -- src/components/editor/document-editor.tsx src/components/editor/document-editor.test.tsx docs/superpowers/plans/2026-08-14-editor-heading-toolbar.md` then `git commit -m "feat: add editor heading toolbar"`.
-
