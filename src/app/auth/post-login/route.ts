@@ -17,7 +17,7 @@ export async function GET(request: Request): Promise<Response> {
   const { data: isAdmin, error: accessError } = await supabase.rpc("doc_is_admin");
   if (accessError || !isAdmin) {
     await supabase.auth.signOut().catch(() => undefined);
-    return loginResponse(request, accessError ? "access_check_failed" : "admin_only");
+    return loginResponse(request, "invalid_credentials");
   }
 
   return NextResponse.redirect(new URL("/admin/structure", request.url));

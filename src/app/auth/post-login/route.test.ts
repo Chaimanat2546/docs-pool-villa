@@ -18,7 +18,7 @@ describe("GET /auth/post-login", () => {
     expect(response.headers.get("location")).toBe("http://localhost/admin/structure");
   });
 
-  it("signs out a non-admin before returning to login", async () => {
+  it("signs out a non-admin before returning a generic credential error", async () => {
     const signOut = vi.fn().mockResolvedValue({ error: null });
     createClient.mockResolvedValue({
       auth: {
@@ -31,6 +31,6 @@ describe("GET /auth/post-login", () => {
     const response = await GET(new Request("http://localhost/auth/post-login"));
 
     expect(signOut).toHaveBeenCalledOnce();
-    expect(response.headers.get("location")).toBe("http://localhost/auth/login?error=admin_only");
+    expect(response.headers.get("location")).toBe("http://localhost/auth/login?error=invalid_credentials");
   });
 });

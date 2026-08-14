@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/client";
 
 export function SignInForm({ initialErrorMessage }: { initialErrorMessage?: string }) {
-  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(
     initialErrorMessage ?? null,
   );
@@ -37,8 +35,9 @@ export function SignInForm({ initialErrorMessage }: { initialErrorMessage?: stri
         return;
       }
 
-      router.replace("/auth/post-login");
-      router.refresh();
+      // Route Handler redirects need a document navigation so Set-Cookie is applied immediately.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign("/auth/post-login");
     } catch {
       setErrorMessage("เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน");
     } finally {

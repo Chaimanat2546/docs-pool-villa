@@ -6,10 +6,9 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string | string[] }>;
 }) {
   const query = await searchParams;
-  const initialErrorMessage =
-    query.error === "admin_only"
-      ? "บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแล"
-      : undefined;
+  const initialErrorMessage = query.error === "invalid_credentials"
+    ? "เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน"
+    : undefined;
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-md items-center px-6 py-12">

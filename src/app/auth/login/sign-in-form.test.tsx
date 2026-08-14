@@ -10,13 +10,13 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("SignInForm", () => {
-  it("announces the administrator-only denial before the sign-in form", () => {
+  it("announces a generic credential error before the sign-in form", () => {
     render(
-      <SignInForm initialErrorMessage="บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแล" />,
+      <SignInForm initialErrorMessage="เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน" />,
     );
 
     expect(screen.getByRole("alert").textContent).toContain(
-      "บัญชีนี้ไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแล",
+      "เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมลและรหัสผ่าน",
     );
   });
 });
