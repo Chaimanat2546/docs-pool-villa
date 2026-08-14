@@ -4,7 +4,7 @@
 
 **Goal:** ให้เฉพาะหมวดย่อยของ Public Reader พับ/ขยายได้ พร้อมเปิดหมวดของเอกสารปัจจุบันอัตโนมัติ ขณะที่เอกสารในหมวดหลักแสดงทันที
 
-**Architecture:** Refactor `NavigationTree` ให้ render หมวดหลักเป็น heading และ root document links ตามเดิม แล้ว render child section ผ่าน disclosure button ที่ควบคุมด้วย React `Set<string>` state. State เพิ่ม active child section เมื่อ `currentPath` เปลี่ยนและไม่ลบ id ที่ผู้ใช้เปิดเอง จึงรองรับการเปิดหลายหมวดพร้อมกันโดยไม่เพิ่ม dependency.
+**Architecture:** Refactor `NavigationTree` ให้ render หมวดหลักเป็น heading และ root document links ตามเดิม แล้ว render child section ผ่าน disclosure button แบบ controlled. `ReaderNavigation` เก็บ `{ currentPath, expandedSectionIds }` นอก Mobile dialog และเพิ่ม active child id เพียงครั้งเดียวเมื่อ path เปลี่ยน จึงรองรับการเปิดหลายหมวด พับ active section ภายหลังได้ และคง state เมื่อ drawer ถูก unmount โดยไม่เพิ่ม dependency.
 
 **Tech Stack:** React, Next.js App Router, TypeScript, lucide-react, Vitest, Testing Library, Tailwind CSS v4
 
@@ -30,7 +30,7 @@
 - Consumes: `PublicNavigationSection` whose root `documents` are direct root documents and `children` are child sections
 - Produces: `NavigationTree` that exposes child section buttons with `aria-expanded` and `aria-controls`, while preserving document links and `aria-current="page"`
 
-- [ ] **Step 1: Replace the test fixture with root and child sections, then write failing behavior tests**
+- [x] **Step 1: Replace the test fixture with root and child sections, then write failing behavior tests**
 
 In `reader-navigation.test.tsx`, use this fixture shape in addition to the existing mobile-drawer test data:
 
@@ -73,7 +73,7 @@ it("opens the active child section and preserves other expanded sections", async
 });
 ```
 
-- [ ] **Step 2: Run the focused tests and confirm they fail for the missing disclosure behavior**
+- [x] **Step 2: Run the focused tests and confirm they fail for the missing disclosure behavior**
 
 Run:
 
@@ -83,7 +83,7 @@ npx vitest --config vitest.config.mts run src/components/public/reader-navigatio
 
 Expected: the new tests fail because `NavigationTree` renders child document links immediately and has no child-section buttons with `aria-expanded`.
 
-- [ ] **Step 3: Implement the minimal NavigationTree disclosure UI**
+- [x] **Step 3: Implement the minimal NavigationTree disclosure UI**
 
 In `reader-navigation.tsx`:
 
@@ -111,12 +111,13 @@ When `isOpen` is true only, render the child documents in:
 </ul>
 ```
 
-3. In `NavigationTree`, calculate active direct child ids with `section.children.filter((child) => child.documents.some((document) => document.path === currentPath))`. Initialize `expandedSectionIds` from those ids; in a `useEffect` keyed to `currentPath` and `sections`, union active ids into the current Set. Toggle only the clicked id in a fresh Set.
-4. Keep each root heading and `section.documents` list outside disclosure. Replace the old recursive `section.children.map(...)` render with `SubsectionDisclosure` items.
+3. In `ReaderNavigation`, calculate active direct child ids with `section.children.filter((child) => child.documents.some((document) => document.path === currentPath))`. Store `{ currentPath, expandedSectionIds }` in state outside `Dialog.Portal`; when the stored path differs from `currentPath`, synchronously replace state with the new path and a fresh Set that unions existing and active ids. Toggle only the clicked id in a fresh Set. Pass that controlled state and callback to both NavigationTree instances.
+4. In `NavigationTree`, call `useId()` once and include its value in each child panel id so the Desktop and Mobile instances never duplicate `aria-controls`/`id` values.
+5. Keep each root heading and `section.documents` list outside disclosure. Replace the old recursive `section.children.map(...)` render with `SubsectionDisclosure` items.
 
 Do not alter `ReaderNavigation`, dialog behavior, TOC, or desktop rail classes.
 
-- [ ] **Step 4: Run focused tests and verify green**
+- [x] **Step 4: Run focused tests and verify green**
 
 Run:
 
@@ -126,11 +127,11 @@ npx vitest --config vitest.config.mts run src/components/public/reader-navigatio
 
 Expected: all tests in that file pass, including the existing Drawer Escape/focus test and the two new disclosure tests.
 
-- [ ] **Step 5: Perform browser smoke verification**
+- [x] **Step 5: Perform browser smoke verification**
 
 At desktop width (`xl` or wider), open a document with a child section. Verify root documents display immediately, child documents appear only after their child-section button is clicked, and the active child section is expanded. At width below `xl`, open “เมนูคู่มือ”, verify the same disclosure behavior, click a child document, and confirm the drawer closes through the existing `onNavigate` callback.
 
-- [ ] **Step 6: Run regression checks**
+- [x] **Step 6: Run regression checks**
 
 Run:
 
@@ -142,7 +143,7 @@ npm run build
 
 Expected: every command exits 0. If build prints the known middleware-to-proxy deprecation warning, record it as pre-existing warning rather than a task failure.
 
-- [ ] **Step 7: Commit the task**
+- [x] **Step 7: Commit the task**
 
 ```powershell
 git add -- src/components/public/reader-navigation.tsx src/components/public/reader-navigation.test.tsx
@@ -151,6 +152,6 @@ git commit -m "feat: disclose public reader subsections"
 
 ## Plan Self-Review
 
-- Spec coverage: Task 1 covers root documents always visible, child-only disclosure, active child automatic expansion, multi-open state, accessible semantics, shared desktop/mobile tree, browser behavior, and regression checks.
+- Spec coverage: Task 1 covers root documents always visible, child-only disclosure, active child automatic expansion, multi-open state, accessible semantics, shared desktop/mobile tree, browser behavior, and regression checks. Active ids are derived during render rather than added in an effect because the approved implementation must comply with `react-hooks/set-state-in-effect`.
 - Placeholder scan: all task steps include exact files, fixture values, assertions, markup, commands, and expected outcomes.
 - Type consistency: `PublicNavigationSection`, `currentPath`, document `path`, and the existing document Link props are the only consumed interfaces; no new externally consumed type is introduced.
