@@ -60,6 +60,100 @@ describe("DocumentEditor paragraph indent", () => {
     }), []));
   });
 
+  it("decreases a paragraph indent with Backspace only at the paragraph start", async () => {
+    const user = userEvent.setup();
+    const editorMount = document.createElement("div");
+    document.body.append(editorMount);
+    const editor = new Editor({
+      element: editorMount,
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "paragraph", attrs: { indentLevel: 2 }, content: [{ type: "text", text: "ข้อความ" }] }] },
+    });
+    setupEditorGeometry();
+    editor.commands.setTextSelection(1);
+    editor.view.dom.focus();
+
+    await user.keyboard("{Backspace}");
+
+    expect(editor.getJSON().content?.[0]).toEqual(expect.objectContaining({
+      type: "paragraph",
+      attrs: { indentLevel: 1 },
+      content: [{ type: "text", text: "ข้อความ" }],
+    }));
+    editor.destroy();
+    editorMount.remove();
+  });
+
+  it("keeps normal Backspace behavior away from the paragraph start", async () => {
+    const user = userEvent.setup();
+    const editorMount = document.createElement("div");
+    document.body.append(editorMount);
+    const editor = new Editor({
+      element: editorMount,
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "paragraph", attrs: { indentLevel: 2 }, content: [{ type: "text", text: "ข้อความ" }] }] },
+    });
+    setupEditorGeometry();
+    editor.commands.setTextSelection(3);
+    editor.view.dom.focus();
+
+    await user.keyboard("{Backspace}");
+
+    expect(editor.getJSON().content?.[0]).toEqual(expect.objectContaining({
+      attrs: { indentLevel: 2 },
+      content: [{ type: "text", text: "ขอความ" }],
+    }));
+    editor.destroy();
+    editorMount.remove();
+  });
+
+  it("leaves an unindented paragraph unchanged when Backspace is pressed at its start", async () => {
+    const user = userEvent.setup();
+    const editorMount = document.createElement("div");
+    document.body.append(editorMount);
+    const editor = new Editor({
+      element: editorMount,
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "ข้อความ" }] }] },
+    });
+    setupEditorGeometry();
+    editor.commands.setTextSelection(1);
+    editor.view.dom.focus();
+
+    await user.keyboard("{Backspace}");
+
+    expect(editor.getJSON().content?.[0]).toEqual(expect.objectContaining({
+      type: "paragraph",
+      attrs: { indentLevel: 0 },
+      content: [{ type: "text", text: "ข้อความ" }],
+    }));
+    editor.destroy();
+    editorMount.remove();
+  });
+
+  it("does not add paragraph indentation to a heading when Backspace is pressed", async () => {
+    const user = userEvent.setup();
+    const editorMount = document.createElement("div");
+    document.body.append(editorMount);
+    const editor = new Editor({
+      element: editorMount,
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "หัวข้อ" }] }] },
+    });
+    setupEditorGeometry();
+    editor.commands.setTextSelection(1);
+    editor.view.dom.focus();
+
+    await user.keyboard("{Backspace}");
+
+    expect(editor.getJSON().content?.[0]).toEqual(expect.objectContaining({
+      type: "heading",
+      attrs: { level: 2 },
+    }));
+    editor.destroy();
+    editorMount.remove();
+  });
+
   it("lets Tab and Shift+Tab leave top-level paragraphs at their indent boundaries", async () => {
     const user = userEvent.setup();
     const previousControl = document.createElement("button");

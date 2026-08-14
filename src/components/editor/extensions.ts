@@ -32,10 +32,10 @@ export const DocsParagraph = Paragraph.extend({
     };
   },
   addKeyboardShortcuts() {
-    const changeIndent = (delta: 1 | -1) => {
+    const changeIndent = (delta: 1 | -1, requireParagraphStart = false) => {
       const { selection } = this.editor.state;
       const { $from } = selection;
-      if (!selection.empty || $from.depth !== 1 || $from.parent.type.name !== "paragraph") return false;
+      if (!selection.empty || $from.depth !== 1 || $from.parent.type.name !== "paragraph" || (requireParagraphStart && $from.parentOffset !== 0)) return false;
       const current = normalizeIndentLevel(String($from.parent.attrs.indentLevel));
       const next = Math.max(0, Math.min(3, current + delta));
       if (next === current) return false;
@@ -49,6 +49,7 @@ export const DocsParagraph = Paragraph.extend({
     return {
       Tab: () => changeIndent(1),
       "Shift-Tab": () => changeIndent(-1),
+      Backspace: () => changeIndent(-1, true),
     };
   },
 });
