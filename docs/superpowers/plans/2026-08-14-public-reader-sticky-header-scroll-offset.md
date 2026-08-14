@@ -28,7 +28,7 @@
 - Consumes: `PublicHeader` height from `src/components/public/public-header.tsx` (`min-h-14` = `3.5rem`)
 - Produces: global browser scroll offset via `html { scroll-padding-top: 3.5rem; }`
 
-- [ ] **Step 1: Capture the failing browser behavior before the CSS change**
+- [x] **Step 1: Capture the failing browser behavior before the CSS change**
 
 Open `/test1/test2-docs` with `window.scrollY === 0`, click the visible link named `ถัดไป test1test1`, wait for URL `/test1/test1-docs`, then evaluate:
 
@@ -42,7 +42,7 @@ Open `/test1/test2-docs` with `window.scrollY === 0`, click the visible link nam
 
 Expected before the fix: the breadcrumb top is less than the header bottom; the reproduced baseline is `scrollY = 57`, breadcrumb top `24`, header bottom `57`.
 
-- [ ] **Step 2: Apply the minimal CSS implementation**
+- [x] **Step 2: Apply the minimal CSS implementation**
 
 In the existing `@layer base` block, extend only the existing `html` rule:
 
@@ -55,7 +55,7 @@ html {
 
 Do not change any `<Link>` props or add event handlers. The local Next.js Link documentation specifies `scroll-padding-top` on the scroll container for sticky-header navigation offsets.
 
-- [ ] **Step 3: Verify the browser behavior passes**
+- [x] **Step 3: Verify the browser behavior passes**
 
 Repeat Step 1 with a fresh page navigation. Assert both conditions after the route finishes:
 
@@ -69,7 +69,7 @@ expect(document.querySelector('h1')?.textContent).toBe('test1test1')
 
 Also scroll the page manually and confirm the Public header remains sticky; do not change the browser viewport override unless it was explicitly set for the smoke test.
 
-- [ ] **Step 4: Run regression checks**
+- [x] **Step 4: Run regression checks**
 
 Run:
 
@@ -81,7 +81,7 @@ npm run build
 
 Expected: each command exits with code 0. Record the existing build warning about the deprecated middleware convention only if it appears; it is not a failure for this task.
 
-- [ ] **Step 5: Commit the implementation**
+- [x] **Step 5: Commit the implementation**
 
 ```powershell
 git add -- src/app/globals.css
