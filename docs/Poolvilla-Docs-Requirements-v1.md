@@ -130,7 +130,6 @@ The product is a Mintlify-inspired documentation website with a responsive publi
 | parent_id | UUID, nullable | References `doc_sections.id`; null for a top-level section |
 | name | text | Required |
 | slug | text | Required; route-safe |
-| description | text, nullable | Optional summary |
 | sort_order | integer | Required; determines sibling order |
 | is_published | boolean | Required; controls public navigation visibility |
 | created_by / updated_by | UUID | Existing authenticated user id |

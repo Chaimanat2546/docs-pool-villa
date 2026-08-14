@@ -18,7 +18,7 @@ Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migra
 - `20260626050000_production_baseline.sql` เป็น schema-only snapshot ของ Production schemas `public` และ `private` ณ วันที่ 11 สิงหาคม 2026; ไม่มี object `doc_*`
 - Marker migrations ที่ตามมาไม่มี SQL และมีไว้เพื่อให้ version history ตรงกับ Production ทั้ง 45 รายการ
 - ห้ามแก้ baseline หรือ marker ด้วยมือ และห้ามใช้ `migration repair` กับ Production ภายใต้งาน Docs
-- Docs migrations ถึง `20260813150200` ผ่าน Staging แล้ว; migration ป้องกัน section-delete race `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Local และ Staging verification. ไม่มี Docs migration ใดถูก apply Production
+- Docs migrations ถึง `20260813150200` ผ่าน Staging แล้ว; migration ป้องกัน section-delete race `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Local และ Staging verification. Migration `20260814085611_remove_doc_section_description.sql` ลบ `doc_sections.description` และผ่าน Local/Staging verification แล้ว. ไม่มี Docs migration ใดถูก apply Production
 
 ## Legacy boundary
 
@@ -40,7 +40,7 @@ Schema baseline ถูกสร้างใน M01 ผ่าน Imperative migra
 
 ## M02 structure additions
 
-- Migration `20260811060703_docs_structure_management.sql` เพิ่ม `description`, `is_published` และ audit actor fields ให้ `doc_sections`; เพิ่ม `sort_order` ให้ `doc_documents`
+- Migration `20260811060703_docs_structure_management.sql` เพิ่ม `is_published` และ audit actor fields ให้ `doc_sections`; เพิ่ม `sort_order` ให้ `doc_documents`. ต่อมา `20260814085611_remove_doc_section_description.sql` ลบ `description` ออก
 - Trigger ของ Docs บังคับ slug สงวน, ห้าม self-parent และจำกัด section tree ไว้ที่ 2 ระดับ
 - Route ของ Section ห้ามชน `doc_route_redirects.old_path`
 - `public.doc_section_delete_preview()` คืนจำนวนหมวดย่อย เอกสาร รูป และรายชื่อเอกสารสำหรับ Dialog ยืนยัน

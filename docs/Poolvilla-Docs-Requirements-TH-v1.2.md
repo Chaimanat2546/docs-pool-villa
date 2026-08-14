@@ -252,7 +252,6 @@
 | `id` | UUID | Primary key |
 | `parent_id` | UUID nullable | อ้างถึงหมวดหลัก; ลึกได้สูงสุด 2 ระดับ |
 | `name`, `slug` | Text | Required; Slug unique ภายใต้ Parent |
-| `description` | Text nullable | คำอธิบายหมวด |
 | `sort_order` | Integer | ลำดับใน Parent เดียวกัน |
 | `is_published` | Boolean | ควบคุมการแสดง Public |
 | Metadata | UUID/timestamptz | `created_by`, `updated_by`, `created_at`, `updated_at` |

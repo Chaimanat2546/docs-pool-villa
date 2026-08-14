@@ -7,16 +7,16 @@ import { afterEach, describe, expect, it } from "vitest";
 import { ReaderNavigation } from "./reader-navigation";
 
 const sections = [{
-  id: "section", parentId: null, title: "คู่มือ", slug: "guides", description: null, sortOrder: 1, children: [],
+  id: "section", parentId: null, title: "คู่มือ", slug: "guides", sortOrder: 1, children: [],
   documents: [{ id: "document", sectionId: "section", title: "เริ่มต้น", slug: "start", excerpt: null, updatedAt: "2026-08-13T00:00:00.000Z", sortOrder: 1, path: "/guides/start", sectionTitle: "คู่มือ", parentTitle: null }],
 }];
 
 const nestedSections = [{
-  id: "root", parentId: null, title: "คู่มือ", slug: "guides", description: null, sortOrder: 1,
+  id: "root", parentId: null, title: "คู่มือ", slug: "guides", sortOrder: 1,
   documents: [{ id: "root-document", sectionId: "root", title: "เริ่มต้น", slug: "start", excerpt: null, updatedAt: "2026-08-13T00:00:00.000Z", sortOrder: 1, path: "/guides/start", sectionTitle: "คู่มือ", parentTitle: null }],
   children: [
-    { id: "child-one", parentId: "root", title: "ตั้งค่า", slug: "configuration", description: null, sortOrder: 1, documents: [{ id: "child-one-document", sectionId: "child-one", title: "ตั้งค่าบัญชี", slug: "account", excerpt: null, updatedAt: "2026-08-13T00:00:00.000Z", sortOrder: 1, path: "/guides/configuration/account", sectionTitle: "ตั้งค่า", parentTitle: "คู่มือ" }], children: [] },
-    { id: "child-two", parentId: "root", title: "การใช้งาน", slug: "usage", description: null, sortOrder: 2, documents: [{ id: "child-two-document", sectionId: "child-two", title: "เริ่มใช้งาน", slug: "first-use", excerpt: null, updatedAt: "2026-08-13T00:00:00.000Z", sortOrder: 1, path: "/guides/usage/first-use", sectionTitle: "การใช้งาน", parentTitle: "คู่มือ" }], children: [] },
+    { id: "child-one", parentId: "root", title: "ตั้งค่า", slug: "configuration", sortOrder: 1, documents: [{ id: "child-one-document", sectionId: "child-one", title: "ตั้งค่าบัญชี", slug: "account", excerpt: null, updatedAt: "2026-08-13T00:00:00.000Z", sortOrder: 1, path: "/guides/configuration/account", sectionTitle: "ตั้งค่า", parentTitle: "คู่มือ" }], children: [] },
+    { id: "child-two", parentId: "root", title: "การใช้งาน", slug: "usage", sortOrder: 2, documents: [{ id: "child-two-document", sectionId: "child-two", title: "เริ่มใช้งาน", slug: "first-use", excerpt: null, updatedAt: "2026-08-13T00:00:00.000Z", sortOrder: 2, path: "/guides/usage/first-use", sectionTitle: "การใช้งาน", parentTitle: "คู่มือ" }], children: [] },
   ],
 }];
 

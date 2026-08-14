@@ -4,6 +4,8 @@
 
 **Pre-M04 remediation (historical):** Complete; see [Remediation TODO](M01-M03-remediation.md) for verified evidence.
 
+**Approved follow-up (14 August 2026):** Removed the unused section description field across Docs application/schema/fixtures. Local migration/tests and Staging migration-history/DB-lint verification completed; Production is not authorized or applied.
+
 ## Scope
 
 - [x] CRUD หมวดหลักและหมวดย่อยสูงสุด 2 ระดับ

@@ -2,12 +2,11 @@
 -- through the exact-target manifest after R2 and database preflight checks.
 begin;
 
-insert into public.doc_sections (id, title, slug, description, is_published, sort_order)
+insert into public.doc_sections (id, title, slug, is_published, sort_order)
 values (
   'f6800000-0000-4000-8000-000000000001',
   'M06 Staging Single Flight Keep',
   'm06-staging-single-flight-keep',
-  'ข้อมูลทดสอบ M06 single-flight — เก็บไว้จนกว่าจะได้รับอนุมัติให้ลบ',
   false,
   997
 )

@@ -16,15 +16,15 @@ set local role authenticated;
 set local request.jwt.claim.sub = 'f6000000-0000-4000-8000-000000000001';
 
 insert into public.doc_sections
-  (id, parent_id, title, slug, description, is_published, sort_order)
+  (id, parent_id, title, slug, is_published, sort_order)
 values
   ('fa100000-0000-4000-8000-000000000001', null,
-   'M01-M06 Closeout', 'm01-m06-closeout', 'ข้อมูลทดสอบรอบปิดงาน', true, 900),
+   'M01-M06 Closeout', 'm01-m06-closeout', true, 900),
   ('fa100000-0000-4000-8000-000000000002',
    'fa100000-0000-4000-8000-000000000001',
-   'M01-M06 Closeout Advanced', 'advanced', 'หมวดย่อยทดสอบ', true, 901),
+   'M01-M06 Closeout Advanced', 'advanced', true, 901),
   ('fa100000-0000-4000-8000-000000000003', null,
-   'M01-M06 Closeout Hidden', 'm01-m06-closeout-hidden', 'หมวดซ่อนทดสอบ', false, 902)
+   'M01-M06 Closeout Hidden', 'm01-m06-closeout-hidden', false, 902)
 on conflict (id) do nothing;
 
 insert into public.doc_documents
