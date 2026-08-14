@@ -74,7 +74,10 @@ function renderNode(node: ContentNode, headingIds: TocItem[], headingIndex: { va
   switch (node.type) {
     case "text": return withMarks(node.text ?? "", node.marks);
     case "hardBreak": return <br />;
-    case "paragraph": return <p>{children}</p>;
+    case "paragraph": {
+      const indentLevel = node.attrs?.indentLevel;
+      return <p {...(indentLevel === 1 || indentLevel === 2 || indentLevel === 3 ? { "data-indent-level": indentLevel } : {})}>{children}</p>;
+    }
     case "heading": {
       const item = headingIds[headingIndex.value++];
       return node.attrs?.level === 3 ? <h3 id={item?.id}>{children}</h3> : <h2 id={item?.id}>{children}</h2>;

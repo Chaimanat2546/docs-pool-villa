@@ -45,6 +45,16 @@ describe("document content validation", () => {
     expect(validateDocumentContent(content, "persisted").ok).toBe(true);
   });
 
+  it("accepts only paragraph indent levels from 0 through 3", () => {
+    for (const indentLevel of [0, 1, 2, 3]) {
+      expect(validateDocumentContent({ type: "doc", content: [{ type: "paragraph", attrs: { indentLevel }, content: [{ type: "text", text: "เยื้อง" }] }] }, "persisted").ok).toBe(true);
+    }
+
+    for (const indentLevel of [-1, 1.5, 4, "2"]) {
+      expect(validateDocumentContent({ type: "doc", content: [{ type: "paragraph", attrs: { indentLevel }, content: [{ type: "text", text: "ไม่ถูกต้อง" }] }] }, "persisted").ok).toBe(false);
+    }
+  });
+
   it("rejects structurally invalid document trees", () => {
     expect(validateDocumentContent({ type: "doc", content: [{ type: "text", text: "root text" }] }, "persisted").ok).toBe(false);
     expect(validateDocumentContent({ type: "doc", content: [{ type: "image", attrs: { src: "https://example.test/image.webp", alt: "ภาพ", mediaId: "11111111-1111-4111-8111-111111111111" }, content: [] }] }, "persisted").ok).toBe(false);

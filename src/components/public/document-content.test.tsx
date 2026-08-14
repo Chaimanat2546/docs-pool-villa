@@ -56,6 +56,11 @@ describe("public document content", () => {
     expect(screen.getByText("unsafe")).not.toBeNull();
   });
 
+  it("renders a persisted paragraph indentation level", () => {
+    render(<DocumentContent content={{ type: "doc", content: [{ type: "paragraph", attrs: { indentLevel: 2 }, content: [{ type: "text", text: "เยื้อง" }] }] }} />);
+    expect(screen.getByText("เยื้อง").closest("p")?.getAttribute("data-indent-level")).toBe("2");
+  });
+
   it("renders every supported structural node and rejects malformed embeds", () => {
     render(<DocumentContent content={{ type: "doc", content: [
       { type: "bulletList", content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "bullet" }] }] }] },
