@@ -40,7 +40,7 @@ export function ReaderNavigation({ children, currentPath, sections, toc }: { chi
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
-    <div className="grid gap-10 lg:grid-cols-[15rem_minmax(0,1fr)_12rem]">
+    <div className="mx-auto grid gap-10 lg:w-[74rem] lg:max-w-full lg:grid-cols-[15rem_42rem_12rem]">
       <aside className="hidden lg:block lg:h-[calc(100vh-6rem)] lg:overflow-y-auto"><NavigationTree sections={sections} currentPath={currentPath} /></aside>
       <main id="main-content" className="min-w-0"><Toc items={toc} mobile />{children}</main>
       <aside className="hidden lg:block"><Toc items={toc} /></aside>
