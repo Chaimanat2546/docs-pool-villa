@@ -21,7 +21,6 @@ type SectionInlineFormProps = {
 type SectionFormState = {
   title: string;
   slug: string;
-  description: string;
   parentId: string;
   sortOrder: string;
   isPublished: boolean;
@@ -32,7 +31,6 @@ function initialFormState(mode: EditableSectionMode, section: AdminExplorerSecti
     return {
       title: section.title,
       slug: section.slug,
-      description: section.description ?? "",
       parentId: section.parentId ?? "",
       sortOrder: String(section.sortOrder),
       isPublished: section.isPublished,
@@ -42,7 +40,6 @@ function initialFormState(mode: EditableSectionMode, section: AdminExplorerSecti
   return {
     title: "",
     slug: "",
-    description: "",
     parentId: mode === "create-child" ? parent?.id ?? "" : "",
     sortOrder: "0",
     isPublished: true,
@@ -74,7 +71,6 @@ export function SectionInlineForm({ mode, section, parent, rootSections, onCance
         id: mode === "edit" ? section?.id : undefined,
         title: form.title,
         slug: form.slug,
-        description: form.description,
         parentId: mode === "create-root" ? null : form.parentId || null,
         sortOrder: Number(form.sortOrder),
         isPublished: form.isPublished,
@@ -106,15 +102,6 @@ export function SectionInlineForm({ mode, section, parent, rootSections, onCance
           </select>
         </Field>
       )}
-      <Field label="คำอธิบาย" htmlFor="section-description">
-        <textarea
-          id="section-description"
-          rows={3}
-          value={form.description}
-          onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))}
-          className="w-full rounded-md border bg-background px-3 py-2"
-        />
-      </Field>
       <Field label="ลำดับ" htmlFor="section-order" hint="ตัวเลขน้อยจะแสดงก่อน">
         <input
           id="section-order"

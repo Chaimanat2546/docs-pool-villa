@@ -1,5 +1,5 @@
 begin;
-select plan(18);
+select plan(19);
 
 insert into public.roles (id, name) values
   (1, '{"th":"Administrator"}'::json),
@@ -28,6 +28,14 @@ insert into public.doc_documents (id, section_id, title, slug, sort_order) value
 
 insert into public.doc_media (id, document_id, object_key, public_url, mime_type, size_bytes, width, height) values
   ('93000000-0000-0000-0000-000000000001', '92000000-0000-0000-0000-000000000002', 'docs/92000000-0000-0000-0000-000000000002/media.webp', 'https://example.test/media.webp', 'image/webp', 1, 1, 1);
+
+select is(
+  (select count(*) from information_schema.columns
+   where table_schema = 'public' and table_name = 'doc_sections'
+     and column_name = 'description'),
+  0::bigint,
+  'Doc sections have no retired description column'
+);
 
 select is(
   (select sort_order from public.doc_documents where id = '92000000-0000-0000-0000-000000000001'),

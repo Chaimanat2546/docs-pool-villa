@@ -3,9 +3,9 @@ import { describe, expect, it } from "vitest";
 import { buildPublicIndex, parsePublicPath } from "./public-model";
 
 const sections = [
-  { id: "root", parentId: null, title: "Root", slug: "root", description: null, sortOrder: 2 },
-  { id: "empty", parentId: null, title: "Empty", slug: "empty", description: null, sortOrder: 1 },
-  { id: "child", parentId: "root", title: "Child", slug: "child", description: null, sortOrder: 1 },
+  { id: "root", parentId: null, title: "Root", slug: "root", sortOrder: 2 },
+  { id: "empty", parentId: null, title: "Empty", slug: "empty", sortOrder: 1 },
+  { id: "child", parentId: "root", title: "Child", slug: "child", sortOrder: 1 },
 ];
 
 const documents = [

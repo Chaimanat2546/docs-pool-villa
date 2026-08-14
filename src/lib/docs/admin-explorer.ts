@@ -16,7 +16,6 @@ export type AdminExplorerSection = {
   parentId: string | null;
   title: string;
   slug: string;
-  description: string | null;
   isPublished: boolean;
   sortOrder: number;
   directDocumentCount: number;
@@ -27,7 +26,6 @@ type AdminSectionRow = {
   parent_id: string | null;
   title: string;
   slug: string;
-  description: string | null;
   is_published: boolean;
   sort_order: number;
 };
@@ -89,7 +87,6 @@ export function buildAdminExplorerSections(rows: AdminSectionRow[], documents: A
     parentId: row.parent_id,
     title: row.title,
     slug: row.slug,
-    description: row.description,
     isPublished: row.is_published,
     sortOrder: row.sort_order,
     directDocumentCount: counts.get(row.id) ?? 0,

@@ -7,8 +7,8 @@ import {
 } from "./admin-explorer";
 
 const sectionRows = [
-  { id: "root", parent_id: null, title: "เริ่มต้น", slug: "start", description: null, is_published: true, sort_order: 0 },
-  { id: "child", parent_id: "root", title: "การจอง", slug: "booking", description: null, is_published: true, sort_order: 0 },
+  { id: "root", parent_id: null, title: "เริ่มต้น", slug: "start", is_published: true, sort_order: 0 },
+  { id: "child", parent_id: "root", title: "การจอง", slug: "booking", is_published: true, sort_order: 0 },
 ];
 const documents = [
   { id: "a", sectionId: "root", title: "ภาพรวม", slug: "overview", status: "published" as const, updatedAt: "2026-08-14", sortOrder: 0, version: 1 },

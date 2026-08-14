@@ -3,7 +3,6 @@ export type PublicSection = {
   parentId: string | null;
   title: string;
   slug: string;
-  description: string | null;
   sortOrder: number;
 };
 

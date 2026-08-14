@@ -19,7 +19,6 @@ const childId = "22222222-2222-4222-8222-222222222222";
 const createInput = {
   title: "การจอง",
   slug: "booking",
-  description: "",
   parentId: sectionId,
   sortOrder: 0,
   isPublished: true,
@@ -35,6 +34,13 @@ describe("saveSection", () => {
     createClient.mockResolvedValue({ from: vi.fn().mockReturnValue({ insert }) });
 
     await expect(saveSection(createInput)).resolves.toEqual({ success: true, id: childId });
+    expect(insert).toHaveBeenCalledWith({
+      title: "การจอง",
+      slug: "booking",
+      parent_id: sectionId,
+      sort_order: 0,
+      is_published: true,
+    });
     expect(select).toHaveBeenCalledWith("id");
     expect(single).toHaveBeenCalledOnce();
   });

@@ -49,7 +49,7 @@ describe("admin explorer server loader", () => {
 
   it("authorizes once and maps database rows into explorer data", async () => {
     mockQueries([
-      { data: [{ id: sectionId, parent_id: null, title: "เริ่มต้น", slug: "start", description: null, is_published: true, sort_order: 0 }], error: null },
+      { data: [{ id: sectionId, parent_id: null, title: "เริ่มต้น", slug: "start", is_published: true, sort_order: 0 }], error: null },
       { data: [{ id: documentId, section_id: sectionId, title: "ภาพรวม", slug: "overview", status: "draft", updated_at: "2026-08-14", sort_order: 3, version: "1" }], error: null },
       { data: [{ id: operationId }], error: null },
       { data: [{ id: "cleanup-1", document_id: documentId, display_label: "ภาพตัวอย่าง", attempt_count: 2, last_error: "ลบรูปไม่สำเร็จ" }], error: null },
@@ -57,7 +57,7 @@ describe("admin explorer server loader", () => {
     readMediaOperation.mockResolvedValue({ operationId, kind: "section_delete", targetId: sectionId, files: ["เก่า.webp"], attemptCount: 1, message: "กำลังลบรูป" });
 
     await expect(loadAdminExplorerDataUncached()).resolves.toEqual({
-      sections: [{ id: sectionId, parentId: null, title: "เริ่มต้น", slug: "start", description: null, isPublished: true, sortOrder: 0, directDocumentCount: 1 }],
+      sections: [{ id: sectionId, parentId: null, title: "เริ่มต้น", slug: "start", isPublished: true, sortOrder: 0, directDocumentCount: 1 }],
       documents: [{ id: documentId, sectionId, title: "ภาพรวม", slug: "overview", status: "draft", updatedAt: "2026-08-14", sortOrder: 3, version: 1 }],
       pendingSectionOperations: [{ operationId, kind: "section_delete", targetId: sectionId, files: ["เก่า.webp"], attemptCount: 1, message: "กำลังลบรูป" }],
       cleanupOperation: { operationId: "cleanup-1", kind: "cleanup", targetId: documentId, files: ["ภาพตัวอย่าง"], attemptCount: 2, message: "ลบรูปไม่สำเร็จ" },

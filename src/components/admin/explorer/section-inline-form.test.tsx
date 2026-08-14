@@ -22,7 +22,6 @@ const root: AdminExplorerSection = {
   parentId: null,
   title: "เริ่มต้น",
   slug: "getting-started",
-  description: "ข้อมูลเริ่มต้น",
   isPublished: true,
   sortOrder: 2,
   directDocumentCount: 1,
@@ -33,7 +32,6 @@ const child: AdminExplorerSection = {
   parentId: root.id,
   title: "การจอง",
   slug: "booking",
-  description: "ขั้นตอนการจอง",
   isPublished: false,
   sortOrder: 3,
   directDocumentCount: 2,
@@ -84,12 +82,12 @@ describe("SectionInlineForm", () => {
     expect(refresh).toHaveBeenCalledOnce();
   });
 
-  it("prefills every existing field for rename and editing", () => {
+  it("prefills every active field for rename and editing without a description field", () => {
     render(<SectionInlineForm mode="edit" section={child} parent={root} rootSections={[root]} onCancel={vi.fn()} />);
 
     expect((screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement).value).toBe(child.title);
     expect((screen.getByRole("textbox", { name: "Slug" }) as HTMLInputElement).value).toBe(child.slug);
-    expect((screen.getByRole("textbox", { name: "คำอธิบาย" }) as HTMLTextAreaElement).value).toBe(child.description);
+    expect(screen.queryByRole("textbox", { name: "คำอธิบาย" })).toBeNull();
     expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe(String(child.sortOrder));
     expect((screen.getByRole("checkbox", { name: /แสดงหมวดนี้/ }) as HTMLInputElement).checked).toBe(false);
     expect((screen.getByRole("combobox", { name: "หมวดแม่" }) as HTMLSelectElement).value).toBe(root.id);

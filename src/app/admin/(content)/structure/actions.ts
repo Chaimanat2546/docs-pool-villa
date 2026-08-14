@@ -23,7 +23,6 @@ type SectionInput = {
   id?: string;
   title: string;
   slug: string;
-  description: string;
   parentId: string | null;
   sortOrder: number;
   isPublished: boolean;
@@ -38,18 +37,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function parseSectionInput(value: unknown): SectionInput | null {
   if (!isRecord(value)) return null;
-  const { id, title, slug, description, parentId, sortOrder, isPublished } = value;
+  const { id, title, slug, parentId, sortOrder, isPublished } = value;
   if (
     (id !== undefined && (typeof id !== "string" || !uuidPattern.test(id))) ||
     typeof title !== "string" ||
     typeof slug !== "string" ||
-    typeof description !== "string" ||
     (parentId !== null && (typeof parentId !== "string" || !uuidPattern.test(parentId))) ||
     typeof sortOrder !== "number" || !Number.isInteger(sortOrder) ||
     typeof isPublished !== "boolean"
   ) return null;
 
-  return { id, title, slug, description, parentId, sortOrder, isPublished };
+  return { id, title, slug, parentId, sortOrder, isPublished };
 }
 
 function validateSection(input: SectionInput): string | null {
@@ -80,7 +78,6 @@ export async function saveSection(input: unknown): Promise<StructureActionResult
   const payload = {
     title: parsedInput.title.trim(),
     slug: parsedInput.slug,
-    description: parsedInput.description.trim() || null,
     parent_id: parsedInput.parentId,
     sort_order: parsedInput.sortOrder,
     is_published: parsedInput.isPublished,

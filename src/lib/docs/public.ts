@@ -22,7 +22,6 @@ type DbSection = {
   parent_id: string | null;
   title: string;
   slug: string;
-  description: string | null;
   sort_order: number;
 };
 
@@ -50,7 +49,6 @@ function toSection(row: DbSection): PublicSection {
     parentId: row.parent_id,
     title: row.title,
     slug: row.slug,
-    description: row.description,
     sortOrder: row.sort_order,
   };
 }
@@ -72,7 +70,7 @@ export { parsePublicPath, pathFromSection } from "@/lib/docs/public-model";
 async function loadPublicIndex(): Promise<PublicDocsIndex> {
   const supabase = createPublicClient();
   const [{ data: sectionRows, error: sectionsError }, { data: documentRows, error: documentsError }] = await Promise.all([
-    supabase.from("doc_sections").select("id, parent_id, title, slug, description, sort_order").order("sort_order").order("id"),
+    supabase.from("doc_sections").select("id, parent_id, title, slug, sort_order").order("sort_order").order("id"),
     supabase.from("doc_documents").select("id, section_id, title, slug, excerpt, updated_at, sort_order").order("sort_order").order("id"),
   ]);
   if (sectionsError || documentsError) throw new Error("ไม่สามารถโหลดข้อมูลเอกสารสาธารณะได้");

@@ -25,7 +25,7 @@ export async function loadAdminExplorerDataUncached(): Promise<AdminExplorerData
   await requireAdmin();
   const supabase = await createClient();
   const [sectionsResult, documentsResult, operationRowsResult, cleanupRowsResult] = await Promise.all([
-    supabase.from("doc_sections").select("id, parent_id, title, slug, description, is_published, sort_order").order("sort_order").order("id"),
+    supabase.from("doc_sections").select("id, parent_id, title, slug, is_published, sort_order").order("sort_order").order("id"),
     supabase.from("doc_documents").select("id, section_id, title, slug, status, updated_at, sort_order, version").order("sort_order").order("title"),
     supabase.from("doc_media_operations").select("id").eq("kind", "section_delete").order("created_at"),
     supabase.from("doc_media_cleanup").select("id, document_id, display_label, attempt_count, last_error").order("created_at").limit(100),
