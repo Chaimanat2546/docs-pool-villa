@@ -108,7 +108,7 @@ Database helper และ Shared TypeScript helper ต้องใช้ Contrac
 Trigger บน `doc_documents` ทำงานเมื่อ Insert/Update/Delete กระทบ Title, Excerpt, Content หรือ Status:
 
 - Published document: ลบ Segments เดิมแล้วสร้างชุดใหม่
-- Draft document: ลบ Segments ทั้งหมด
+- Draft หรือ Archived document: ลบ Segments ทั้งหมด
 - Document delete: Foreign key cascade ลบ Segments
 
 Delete/insert ชุดใหม่เกิดใน Transaction เดียวกับ Document mutation ผู้อ่านจึงเห็นชุดเก่าหรือชุดใหม่ที่สมบูรณ์เท่านั้น หาก Extraction หรือ Insert ล้มเหลว Document save ต้อง Rollback เพื่อไม่ให้ Search index ค้างไม่ตรงกับ Source document
