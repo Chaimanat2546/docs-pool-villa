@@ -4,14 +4,14 @@
 
 **Goal:** ทำให้หน้าอ่านเอกสาร Public บน Desktop มีตำแหน่งและความกว้างของ Sidebar, เนื้อหา และ TOC คงที่ในทุกเอกสาร
 
-**Architecture:** ปรับเฉพาะ component client `ReaderNavigation` ให้ grid Desktop มีความกว้างคงที่ 74rem และใช้ 3 รางตายตัว 15rem / 42rem / 12rem. TOC Desktop ยังคงมี `<aside>` แม้ helper `Toc` คืนค่า `null`; ต่ำกว่า `lg` คง drawer และ TOC ในเนื้อหาเช่นเดิม.
+**Architecture:** ปรับเฉพาะ component client `ReaderNavigation` ให้ grid Desktop มีความกว้างคงที่ 74rem และใช้ 3 รางตายตัว 15rem / 42rem / 12rem. TOC Desktop ยังคงมี `<aside>` แม้ helper `Toc` คืนค่า `null`; ต่ำกว่า `xl` คง drawer และ TOC ในเนื้อหาเช่นเดิม.
 
 **Tech Stack:** Next.js 16.3 App Router, React 19, TypeScript, Tailwind CSS 4, Vitest, Testing Library
 
 ## Global Constraints
 
 - แก้เฉพาะ `ReaderNavigation` ของหน้าเอกสาร Public; ห้ามแก้หน้าแรก, data query, document schema หรือ Mobile drawer
-- Desktop คือ Tailwind breakpoint `lg` ขึ้นไป; ต่ำกว่า `lg` ต้องคง behavior เดิม
+- Desktop คือ Tailwind breakpoint `xl` (อย่างน้อย 1280px) ขึ้นไป; ต่ำกว่า `xl` ต้องคง Tablet/Mobile behavior เดิม
 - Desktop grid ใช้ Sidebar `15rem`, เนื้อหา `42rem`, TOC `12rem`, `gap-10` สองช่อง และ container กว้าง `74rem` พร้อม `max-w-full`
 - ไม่มี dependency หรือ breakpoint ใหม่
 - TOC ว่างได้ แต่ Desktop TOC `<aside>` ต้องคงอยู่และจองพื้นที่
@@ -41,15 +41,15 @@
 เปลี่ยน grid wrapper และ TOC aside ใน `reader-navigation.tsx` เป็น:
 
 ```tsx
-<div className="mx-auto grid gap-10 lg:w-[74rem] lg:max-w-full lg:grid-cols-[15rem_42rem_12rem]">
-  <aside className="hidden lg:block lg:h-[calc(100vh-6rem)] lg:overflow-y-auto">
+<div className="mx-auto grid gap-10 xl:w-[74rem] xl:max-w-full xl:grid-cols-[15rem_42rem_12rem]">
+  <aside className="hidden xl:block xl:h-[calc(100vh-6rem)] xl:overflow-y-auto">
     <NavigationTree sections={sections} currentPath={currentPath} />
   </aside>
   <main id="main-content" className="min-w-0">
     <Toc items={toc} mobile />
     {children}
   </main>
-  <aside className="hidden lg:block">
+  <aside className="hidden xl:block">
     <Toc items={toc} />
   </aside>
 </div>
@@ -81,12 +81,13 @@ Expected: ทุกคำสั่ง exit code 0; build ไม่มี type �
 
 - [x] **Step 5: Run browser smoke at Desktop viewport**
 
-เปิดหน้าเอกสาร Published ที่มี TOC และอีกหน้าที่ไม่มี H2/H3 ที่ viewport Desktop เดียวกัน. ยืนยันด้วยภาพหรือ DevTools ว่า:
+เปิดหน้าเอกสาร Published ที่มี TOC และอีกหน้าที่ไม่มี H2/H3 ที่ viewport 1024, 1184, 1232 และ mobile. ยืนยันด้วยภาพหรือ DevTools ว่า:
 
 1. จุดเริ่ม Sidebar, เนื้อหา และ TOC ตรงกันระหว่างสองหน้า
 2. ความกว้างรางเท่ากับ 240px / 672px / 192px และ gap 40px
 3. หน้าที่ไม่มี TOC ยังเหลือรางขวา 192px โดยไม่มีข้อความ placeholder
 4. ที่ Mobile ยังเปิด drawer และ TOC `<details>` ได้
+5. ที่ 1024–1279px ยังคงเป็น Tablet layout (drawer + TOC ใน main); fixed grid เริ่มที่ 1280px (`xl`)
 
 - [x] **Step 6: Commit**
 

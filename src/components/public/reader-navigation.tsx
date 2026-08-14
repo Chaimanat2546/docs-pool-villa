@@ -23,7 +23,7 @@ function NavigationTree({ sections, currentPath, onNavigate }: { sections: Publi
 function Toc({ items, mobile = false }: { items: TocItem[]; mobile?: boolean }) {
   if (!items.length) return null;
   const links = <ul className="space-y-2">{items.map((item) => <li key={item.id} className={item.level === 3 ? "pl-3" : ""}><a href={`#${item.id}`} className="flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground">{item.text}</a></li>)}</ul>;
-  if (mobile) return <details className="mb-8 rounded-xl border p-4 lg:hidden"><summary className="flex min-h-11 cursor-pointer items-center font-medium">หัวข้อในหน้านี้</summary><div className="mt-4">{links}</div></details>;
+  if (mobile) return <details className="mb-8 rounded-xl border p-4 xl:hidden"><summary className="flex min-h-11 cursor-pointer items-center font-medium">หัวข้อในหน้านี้</summary><div className="mt-4">{links}</div></details>;
   return <nav aria-label="หัวข้อในหน้านี้" className="border-l pl-4"><p className="mb-3 text-sm font-medium">ในหน้านี้</p>{links}</nav>;
 }
 
@@ -31,19 +31,19 @@ export function ReaderNavigation({ children, currentPath, sections, toc }: { chi
   const [open, setOpen] = useState(false);
   return <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
     <Dialog.Root open={open} onOpenChange={setOpen}>
-      <Dialog.Trigger className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm lg:hidden"><Menu size={18} aria-hidden="true" />เมนูคู่มือ</Dialog.Trigger>
+      <Dialog.Trigger className="mb-4 inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm xl:hidden"><Menu size={18} aria-hidden="true" />เมนูคู่มือ</Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40 lg:hidden" />
-        <Dialog.Popup aria-label="เมนูคู่มือ" className="fixed inset-y-0 left-0 z-50 w-[min(20rem,calc(100vw-2rem))] overflow-y-auto border-r bg-background p-4 outline-none lg:hidden">
+        <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40 xl:hidden" />
+        <Dialog.Popup aria-label="เมนูคู่มือ" className="fixed inset-y-0 left-0 z-50 w-[min(20rem,calc(100vw-2rem))] overflow-y-auto border-r bg-background p-4 outline-none xl:hidden">
           <div className="mb-4 flex items-center justify-between"><Dialog.Title className="font-medium">คู่มือ</Dialog.Title><Dialog.Close className="inline-flex size-11 items-center justify-center rounded-full border" aria-label="ปิดเมนู"><X size={18} aria-hidden="true" /></Dialog.Close></div>
           <NavigationTree sections={sections} currentPath={currentPath} onNavigate={() => setOpen(false)} />
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
-    <div className="mx-auto grid gap-10 lg:w-[74rem] lg:max-w-full lg:grid-cols-[15rem_42rem_12rem]">
-      <aside className="hidden lg:block lg:h-[calc(100vh-6rem)] lg:overflow-y-auto"><NavigationTree sections={sections} currentPath={currentPath} /></aside>
+    <div className="mx-auto grid gap-10 xl:w-[74rem] xl:max-w-full xl:grid-cols-[15rem_42rem_12rem]">
+      <aside className="hidden xl:block xl:h-[calc(100vh-6rem)] xl:overflow-y-auto"><NavigationTree sections={sections} currentPath={currentPath} /></aside>
       <main id="main-content" className="min-w-0"><Toc items={toc} mobile />{children}</main>
-      <aside className="hidden lg:block"><Toc items={toc} /></aside>
+      <aside className="hidden xl:block"><Toc items={toc} /></aside>
     </div>
   </div>;
 }

@@ -11,7 +11,7 @@
 
 ## Layout
 
-ที่ breakpoint `lg` ขึ้นไป ให้ Reader ใช้ grid กึ่งกลางที่มีรางคงที่:
+ที่ breakpoint `xl` (อย่างน้อย 1280px) ขึ้นไป ให้ Reader ใช้ grid กึ่งกลางที่มีรางคงที่:
 
 | ส่วน | ขนาด |
 |---|---:|
@@ -25,12 +25,12 @@ TOC column ต้อง render เป็น `<aside>` เสมอใน Desktop
 
 ## Responsive behavior
 
-- ต่ำกว่า `lg`: คง Mobile/Tablet behavior เดิม — Sidebar เป็น dialog drawer, TOC อยู่ใน `<details>` ในคอลัมน์เนื้อหา และไม่จองคอลัมน์ Desktop.
+- ต่ำกว่า `xl` (รวม Tablet 1024–1279px): คง Mobile/Tablet behavior เดิม — Sidebar เป็น dialog drawer, TOC อยู่ใน `<details>` ในคอลัมน์เนื้อหา และไม่จองคอลัมน์ Desktop.
 - ไม่มีการเพิ่ม breakpoint หรือ dependency.
 
 ## Verification
 
-- เพิ่ม component test ตรวจ class contract ของ Desktop grid: ราง 15rem / 42rem / 12rem, container width 74rem, และ TOC aside มีอยู่เมื่อ `toc` ว่าง.
+- ตรวจด้วย browser smoke ที่ viewport 1024, 1184, 1232 และ mobile; ไม่เพิ่ม unit test ที่ผูกกับชื่อ Tailwind class.
 - รัน `npm run test:public`, `npm run lint`, และ `npm run build` ก่อนส่งมอบ.
 
 ## Non-goals
