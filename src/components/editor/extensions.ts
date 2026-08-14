@@ -56,6 +56,16 @@ const SlashCommand = Extension.create({
         let selectedIndex = 0;
         let currentItems: SlashItem[] = [];
         let selectItem: ((item: SlashItem) => void) | null = null;
+        const position = (clientRect: (() => DOMRect | null) | null | undefined) => {
+          if (!element) return;
+          const rect = clientRect?.();
+          if (!rect) return;
+          element.style.left = `${rect.left}px`;
+          const gap = 8;
+          const below = rect.bottom + gap;
+          const above = rect.top - element.offsetHeight - gap;
+          element.style.top = `${below + element.offsetHeight <= window.innerHeight - gap ? below : Math.max(gap, above)}px`;
+        };
         const update = () => {
           if (!element) return;
           element.replaceChildren(...currentItems.map((item, index) => {
@@ -82,12 +92,14 @@ const SlashCommand = Extension.create({
             selectItem = props.command as (item: SlashItem) => void;
             selectedIndex = 0;
             update();
+            position(props.clientRect);
           },
           onUpdate: (props) => {
             currentItems = props.items as SlashItem[];
             selectItem = props.command as (item: SlashItem) => void;
             selectedIndex = 0;
             update();
+            position(props.clientRect);
           },
           onKeyDown: (props) => {
             if (props.event.key === "ArrowUp" && currentItems.length > 0) { selectedIndex = (selectedIndex + currentItems.length - 1) % currentItems.length; update(); return true; }

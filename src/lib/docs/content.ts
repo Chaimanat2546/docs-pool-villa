@@ -33,6 +33,7 @@ const allowedChildren: Record<string, ReadonlySet<string>> = {
   orderedList: new Set(["listItem"]),
   listItem: new Set(["paragraph", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
   blockquote: new Set(["paragraph", "heading", "bulletList", "orderedList", "codeBlock", "image", "youtube", "callout"]),
+  callout: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
   codeBlock: new Set(["text", "hardBreak"]),
 };
 

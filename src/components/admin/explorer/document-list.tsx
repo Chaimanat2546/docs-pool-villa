@@ -31,13 +31,24 @@ const statusStyles: Record<AdminDocumentStatus, string> = {
 };
 
 const dateFormatter = new Intl.DateTimeFormat("th-TH", { dateStyle: "medium" });
+const documentsPerPage = 5;
 
 export function DocumentList({ documents, sections, selectedSectionId }: DocumentListProps) {
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<AdminDocumentStatus | "all">("all");
+  const [page, setPage] = useState(1);
   const filteredDocuments = filterAdminDocuments(documents, selectedSectionId, query, status);
+  const totalPages = Math.ceil(filteredDocuments.length / documentsPerPage);
+  const currentPage = Math.min(page, Math.max(totalPages, 1));
+  const pageStart = (currentPage - 1) * documentsPerPage;
+  const visibleDocuments = filteredDocuments.slice(pageStart, pageStart + documentsPerPage);
   const hasQuery = query.trim().length > 0;
   const hasStatusFilter = status !== "all";
+
+  function resetPage(update: () => void) {
+    update();
+    setPage(1);
+  }
 
   return (
     <section aria-labelledby="document-list-title" className="min-w-0 w-full rounded-xl border bg-card shadow-sm">
@@ -68,7 +79,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
             id="document-search"
             type="search"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={(event) => resetPage(() => setQuery(event.target.value))}
             placeholder="ค้นหาจากชื่อหรือ slug"
             className="min-h-11 rounded-md border bg-background px-3 font-normal"
           />
@@ -78,7 +89,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
           <select
             id="document-status"
             value={status}
-            onChange={(event) => setStatus(event.target.value as AdminDocumentStatus | "all")}
+            onChange={(event) => resetPage(() => setStatus(event.target.value as AdminDocumentStatus | "all"))}
             className="min-h-11 rounded-md border bg-background px-3 font-normal"
           >
             <option value="all">ทุกสถานะ</option>
@@ -97,7 +108,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
         />
       ) : (
         <ul aria-label="รายการเอกสาร" className="divide-y">
-          {filteredDocuments.map((document) => {
+          {visibleDocuments.map((document) => {
             const sectionPath = getAdminSectionPath(sections, document.sectionId);
             const documentHref = `/admin/documents/${document.id}?section=${encodeURIComponent(document.sectionId)}`;
 
@@ -139,6 +150,29 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
             );
           })}
         </ul>
+      )}
+      {totalPages > 1 && (
+        <nav aria-label="แบ่งหน้าเอกสาร" className="flex items-center justify-between gap-3 border-t p-4">
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(1, current - 1))}
+            disabled={currentPage === 1}
+            className="inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            หน้าก่อนหน้า
+          </button>
+          <p aria-live="polite" className="text-sm text-muted-foreground">
+            หน้า {currentPage} จาก {totalPages}
+          </p>
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+            disabled={currentPage === totalPages}
+            className="inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            หน้าถัดไป
+          </button>
+        </nav>
       )}
     </section>
   );

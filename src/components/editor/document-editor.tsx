@@ -3,7 +3,7 @@
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { Dialog } from "@base-ui/react/dialog";
-import { Bold, Code2, ImagePlus, Italic, Link2, List, ListOrdered, Quote, Undo2, Redo2, Video } from "lucide-react";
+import { Bold, Code2, ImagePlus, Info, Italic, List, ListOrdered, Quote, Undo2, Redo2, Video } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { docsExtensions } from "./extensions";
@@ -17,7 +17,7 @@ export type DocumentEditorProps = {
   onChange: (content: JSONContent, pendingImages: PendingImage[]) => void;
 };
 
-type EditorDialog = "image" | "link" | "youtube" | null;
+type EditorDialog = "image" | "youtube" | null;
 
 export function DocumentEditor({ content, contentRevision, onChange }: DocumentEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -52,10 +52,10 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
   const state = useEditorState({
     editor,
     selector: ({ editor: current }) => current ? {
-      bold: current.isActive("bold"), italic: current.isActive("italic"), bulletList: current.isActive("bulletList"), orderedList: current.isActive("orderedList"), codeBlock: current.isActive("codeBlock"),
+      bold: current.isActive("bold"), italic: current.isActive("italic"), bulletList: current.isActive("bulletList"), orderedList: current.isActive("orderedList"), callout: current.isActive("callout"), codeBlock: current.isActive("codeBlock"),
     } : null,
   });
-  const toolbarState = state ?? { bold: false, italic: false, bulletList: false, orderedList: false, codeBlock: false };
+  const toolbarState = state ?? { bold: false, italic: false, bulletList: false, orderedList: false, callout: false, codeBlock: false };
 
   useEffect(() => { pendingImagesRef.current = pendingImages; }, [pendingImages]);
   useEffect(() => () => pendingImagesRef.current.forEach((image) => URL.revokeObjectURL(image.previewUrl)), []);
@@ -120,8 +120,8 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
     return <Dialog.Portal>
       <Dialog.Backdrop className="fixed inset-0 z-40 bg-black/40" />
       <Dialog.Popup initialFocus={dialogInputRef} finalFocus={isImage ? imageTriggerRef : true} className="fixed left-1/2 top-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-xl border bg-card p-5 shadow-lg outline-none">
-        <Dialog.Title className="text-lg font-semibold">{isImage ? "คำอธิบายภาพ" : nextDialog === "link" ? "เพิ่มลิงก์" : "เพิ่มวิดีโอ YouTube"}</Dialog.Title>
-        <Dialog.Description className="mt-1 text-sm text-muted-foreground">{isImage ? "ระบุคำอธิบายภาพสำหรับผู้อ่านหน้าจอ" : nextDialog === "link" ? "รองรับ http, https หรือ mailto" : "รองรับ youtube.com หรือ youtu.be"}</Dialog.Description>
+        <Dialog.Title className="text-lg font-semibold">{isImage ? "คำอธิบายภาพ" : "เพิ่มวิดีโอ YouTube"}</Dialog.Title>
+        <Dialog.Description className="mt-1 text-sm text-muted-foreground">{isImage ? "ระบุคำอธิบายภาพสำหรับผู้อ่านหน้าจอ" : "รองรับ youtube.com หรือ youtu.be"}</Dialog.Description>
         <label className="mt-4 block text-sm font-medium" htmlFor="editor-dialog-value">{isImage ? "Alt text" : "URL"}</label>
         <input ref={dialogInputRef} id="editor-dialog-value" value={dialogValue} onChange={(event) => setDialogValue(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); submitDialog(); } }} className="mt-1 w-full rounded-md border bg-background px-3 py-2" />
         {dialogError && <p role="alert" className="mt-2 text-sm text-destructive">{dialogError}</p>}
@@ -149,20 +149,9 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
       return;
     }
 
-    if (dialog === "link") {
-      try {
-        const url = new URL(value);
-        if (!["http:", "https:", "mailto:"].includes(url.protocol)) throw new Error();
-        editor.chain().focus().setLink({ href: value }).run();
-      } catch {
-        setDialogError("URL ไม่ปลอดภัยหรือไม่รองรับ");
-        return;
-      }
-    } else {
-      const normalized = toYouTubeNoCookieUrl(value);
-      if (!normalized) { setDialogError("รองรับเฉพาะลิงก์ youtube.com หรือ youtu.be"); return; }
-      editor.chain().focus().insertContent({ type: "youtube", attrs: { src: normalized } }).run();
-    }
+    const normalized = toYouTubeNoCookieUrl(value);
+    if (!normalized) { setDialogError("รองรับเฉพาะลิงก์ youtube.com หรือ youtu.be"); return; }
+    editor.chain().focus().insertContent({ type: "youtube", attrs: { src: normalized } }).run();
     setDialog(null);
   }
 
@@ -175,10 +164,7 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
         <ToolbarButton label="ตัวเอียง" active={toolbarState.italic} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic size={16} /></ToolbarButton>
         <ToolbarButton label="รายการหัวข้อ" active={toolbarState.bulletList} onClick={() => editor.chain().focus().toggleBulletList().run()}><List size={16} /></ToolbarButton>
         <ToolbarButton label="รายการตัวเลข" active={toolbarState.orderedList} onClick={() => editor.chain().focus().toggleOrderedList().run()}><ListOrdered size={16} /></ToolbarButton>
-        <Dialog.Root open={dialog === "link"} onOpenChange={(open) => setDialogOpen("link", open)}>
-          <Dialog.Trigger aria-label="ลิงก์" className="inline-flex size-10 items-center justify-center rounded-md hover:bg-muted"><Link2 size={16} /></Dialog.Trigger>
-          {renderDialog("link")}
-        </Dialog.Root>
+        <ToolbarButton label="กล่องข้อมูล" active={toolbarState.callout} onClick={() => editor.chain().focus().toggleWrap("callout").run()}><Info size={16} /></ToolbarButton>
         <ToolbarButton label="Quote" onClick={() => editor.chain().focus().toggleBlockquote().run()}><Quote size={16} /></ToolbarButton>
         <ToolbarButton label="Code block" active={toolbarState.codeBlock} onClick={() => editor.chain().focus().toggleCodeBlock().run()}><Code2 size={16} /></ToolbarButton>
         <Dialog.Root open={dialog === "youtube"} onOpenChange={(open) => setDialogOpen("youtube", open)}>

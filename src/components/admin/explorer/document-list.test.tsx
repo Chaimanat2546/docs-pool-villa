@@ -157,6 +157,33 @@ describe("DocumentList", () => {
     expect(screen.queryByRole("link", { name: /แก้ไข แก้ไขการจอง/ })).toBeNull();
   });
 
+  it("paginates filtered documents five at a time and returns to the first page when filters change", async () => {
+    const user = userEvent.setup();
+    const paginatedDocuments = Array.from({ length: 7 }, (_, index) => ({
+      ...documents[1],
+      id: `booking-${index + 1}`,
+      title: `เอกสารการจอง ${index + 1}`,
+      slug: `booking-${index + 1}`,
+      sortOrder: index,
+      status: index === 6 ? "published" as const : "draft" as const,
+    }));
+    renderList("child", paginatedDocuments);
+
+    expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(5);
+    expect(screen.getByText("หน้า 1 จาก 2")).not.toBeNull();
+    expect(screen.queryByText("เอกสารการจอง 6")).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "หน้าถัดไป" }));
+    expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(2);
+    expect(screen.getByText("เอกสารการจอง 6")).not.toBeNull();
+    expect(screen.getByText("หน้า 2 จาก 2")).not.toBeNull();
+
+    await user.selectOptions(screen.getByRole("combobox", { name: "กรองตามสถานะ" }), "draft");
+    expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(5);
+    expect(screen.getByText("หน้า 1 จาก 2")).not.toBeNull();
+    expect(screen.queryByText("เอกสารการจอง 6")).toBeNull();
+  });
+
   it("offers contextual create, edit, and preview actions with 44px targets", () => {
     renderList("child", [documents[1]]);
 

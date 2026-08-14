@@ -32,6 +32,19 @@ describe("document content validation", () => {
     expect(validateDocumentContent(content, "persisted").ok).toBe(true);
   });
 
+  it("accepts the callout structure stored by the editor", () => {
+    const content = {
+      type: "doc",
+      content: [{
+        type: "callout",
+        attrs: { kind: "info" },
+        content: [{ type: "paragraph", content: [{ type: "text", text: "ข้อมูลสำคัญ" }] }],
+      }],
+    };
+
+    expect(validateDocumentContent(content, "persisted").ok).toBe(true);
+  });
+
   it("rejects structurally invalid document trees", () => {
     expect(validateDocumentContent({ type: "doc", content: [{ type: "text", text: "root text" }] }, "persisted").ok).toBe(false);
     expect(validateDocumentContent({ type: "doc", content: [{ type: "image", attrs: { src: "https://example.test/image.webp", alt: "ภาพ", mediaId: "11111111-1111-4111-8111-111111111111" }, content: [] }] }, "persisted").ok).toBe(false);

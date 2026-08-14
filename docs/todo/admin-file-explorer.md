@@ -80,3 +80,4 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 - M01–M06 ยังคง Complete; M07 ยังคง Not started จนกว่าภูจะอนุมัติแยก
 - [x] Deploy เฉพาะ Docs App และทำ Guest/Admin Staging smoke แล้ว; ไม่มี Database migration หรือ Docs Media Worker deploy สำหรับ Feature นี้
 - [x] Non-admin Browser smoke ของ File Explorer: session ที่มีอยู่ถูกส่งจาก `/admin`, `/admin/structure` และ `/admin/documents` กลับ Public homepage โดยไม่เห็น Admin Explorer
+- [x] UX follow-up (14 สิงหาคม 2026): รายการเอกสารใน Explorer แบ่งหน้า 5 รายการหลังกรองจากหมวด/คำค้น/สถานะ, ปุ่มก่อนหน้า/ถัดไปจะปรากฏเมื่อเกิน 5 รายการ และการกรองจะกลับหน้าแรก; regression test, TypeScript, lint และ build ผ่านใน Local

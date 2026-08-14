@@ -1,5 +1,6 @@
 /** @vitest-environment jsdom */
 
+import { readFileSync } from "node:fs";
 import type { JSONContent } from "@tiptap/core";
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -19,12 +20,50 @@ afterEach(() => {
 });
 
 describe("DocumentEditor accessibility", () => {
+  it("styles quotes distinctly inside the editor", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+
+    expect(css).toMatch(/\.docs-editor-content blockquote[\s\S]*border-left/);
+  });
+
+  it("styles code blocks distinctly inside the editor", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+
+    expect(css).toMatch(/\.docs-editor-content pre[\s\S]*background/);
+  });
+
+  it("keeps the slash menu scrollable within the viewport", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+
+    expect(css).toMatch(/\.docs-slash-menu[\s\S]*max-height[\s\S]*overflow-y/);
+  });
+
+  it("wraps existing text in an info callout from the toolbar", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "ข้อความสำคัญ" }] }] }} onChange={onChange} />);
+
+    await screen.findByText("ข้อความสำคัญ");
+    const rect = { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0, toJSON: () => ({}) };
+    Object.defineProperty(HTMLElement.prototype, "getClientRects", { configurable: true, value: () => [] });
+    Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+    Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [] });
+    Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+    await user.click(screen.getByRole("button", { name: "กล่องข้อมูล" }));
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      type: "doc",
+      content: expect.arrayContaining([expect.objectContaining({ type: "callout", attrs: { kind: "info" }, content: [{ type: "paragraph", content: [{ type: "text", text: "ข้อความสำคัญ" }] }] })]),
+    }), []));
+  });
+
   it("does not expose table commands in the toolbar or slash menu", async () => {
     const user = userEvent.setup();
     render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
 
     expect(await screen.findByRole("button", { name: "ตัวหนา" })).not.toBeNull();
     expect(screen.queryByRole("button", { name: "ตาราง" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "ลิงก์" })).toBeNull();
 
     const editor = document.querySelector<HTMLElement>(".ProseMirror");
     expect(editor).not.toBeNull();
@@ -33,6 +72,8 @@ describe("DocumentEditor accessibility", () => {
 
     const slashMenu = await screen.findByRole("listbox");
     expect(within(slashMenu).queryByRole("option", { name: /^ตาราง/ })).toBeNull();
+    expect((slashMenu as HTMLElement).style.top).not.toBe("");
+    expect((slashMenu as HTMLElement).style.left).not.toBe("");
   });
 
   it("exposes labelled toolbar controls in keyboard tab order", async () => {
@@ -46,11 +87,11 @@ describe("DocumentEditor accessibility", () => {
     expect(boldButton.getAttribute("aria-pressed")).toBe("false");
   });
 
-  it.each(["ลิงก์", "YouTube"])("traps Tab and Shift+Tab focus for the %s dialog", async (triggerName) => {
+  it("traps Tab and Shift+Tab focus for the YouTube dialog", async () => {
     const user = userEvent.setup();
     render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
 
-    const trigger = await screen.findByRole("button", { name: triggerName });
+    const trigger = await screen.findByRole("button", { name: "YouTube" });
     await user.click(trigger);
 
     const input = await screen.findByRole("textbox", { name: "URL" });
@@ -64,11 +105,11 @@ describe("DocumentEditor accessibility", () => {
     await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
   });
 
-  it.each(["ลิงก์", "YouTube"])("returns focus to the %s toolbar trigger after Escape closes its dialog", async (triggerName) => {
+  it("returns focus to the YouTube toolbar trigger after Escape closes its dialog", async () => {
     const user = userEvent.setup();
     render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
 
-    const trigger = await screen.findByRole("button", { name: triggerName });
+    const trigger = await screen.findByRole("button", { name: "YouTube" });
     await user.click(trigger);
 
     const input = await screen.findByRole("textbox", { name: "URL" });
