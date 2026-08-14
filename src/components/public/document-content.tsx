@@ -1,5 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 
+import { YouTubePlayer } from "./youtube-player";
+
 type ContentMark = { type?: string; attrs?: { href?: unknown } };
 type ContentNode = {
   type?: string;
@@ -93,7 +95,7 @@ function renderNode(node: ContentNode, headingIds: TocItem[], headingIndex: { va
     case "youtube": {
       const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";
       return src.startsWith("https://www.youtube-nocookie.com/embed/")
-        ? <div className="doc-video"><iframe src={src} title="วิดีโอ YouTube" loading="lazy" allowFullScreen /></div>
+        ? <YouTubePlayer src={src} />
         : null;
     }
     default: return children;

@@ -65,14 +65,15 @@ describe("public document content", () => {
       { type: "table", content: [{ type: "tableRow", content: [{ type: "tableHeader", content: [{ type: "text", text: "header" }] }, { type: "tableCell", content: [{ type: "text", text: "cell" }] }] }] },
       { type: "callout", attrs: { kind: "tip" }, content: [{ type: "paragraph", content: [{ type: "text", text: "tip" }] }] },
       { type: "image", attrs: { src: "https://images.example.test/a.webp", alt: "ภาพตัวอย่าง" } },
-      { type: "youtube", attrs: { src: "https://www.youtube-nocookie.com/embed/video-id" } },
+      { type: "youtube", attrs: { src: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" } },
       { type: "image", attrs: { src: "https://images.example.test/missing-alt.webp" } },
       { type: "youtube", attrs: { src: "https://www.youtube.com/embed/not-allowed" } },
     ] }} />);
     expect(screen.getAllByRole("list")).toHaveLength(2);
     expect(screen.queryByRole("table")).toBeNull();
     expect(screen.getByAltText("ภาพตัวอย่าง")).not.toBeNull();
-    expect(screen.getByTitle("วิดีโอ YouTube")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "เล่นวิดีโอ" })).not.toBeNull();
+    expect(screen.queryByTitle("วิดีโอ YouTube")).toBeNull();
     expect(screen.queryByAltText("")).toBeNull();
   });
 });
