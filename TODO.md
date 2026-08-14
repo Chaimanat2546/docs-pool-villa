@@ -32,7 +32,7 @@
 | งาน | สถานะ | รายละเอียด |
 |---|---|---|
 | Admin File Explorer | Complete — Guest/Admin/non-admin browser smoke ผ่าน | [TODO](docs/todo/admin-file-explorer.md) |
-| Admin-only session termination | Complete — local verification completed; no migration, RLS, or production action occurred | [Plan](.superpowers/sdd/2026-08-14-admin-only-session-termination/plan.md) |
+| Admin-only session termination | Complete — local verification completed; no migration, RLS, or production action occurred | — |
 
 Post-closeout safety migration `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Local gate, dry-run และ apply/verify บน Staging แล้วเมื่อ 13 สิงหาคม 2026; migration parity ตรง, DB lint ไม่มี schema error และ advisor พบ `doc_*` = 0. ไม่มี Production action
 
