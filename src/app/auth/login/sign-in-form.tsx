@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/client";
 
-export function SignInForm() {
+export function SignInForm({ initialErrorMessage }: { initialErrorMessage?: string }) {
   const router = useRouter();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(
+    initialErrorMessage ?? null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const errorMessageRef = useRef<HTMLParagraphElement>(null);
 
