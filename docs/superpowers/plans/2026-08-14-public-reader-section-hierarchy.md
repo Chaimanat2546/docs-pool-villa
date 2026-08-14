@@ -33,7 +33,7 @@
 
 At an `xl` viewport, open a Public document that has root documents and child sections. Record that the root heading shares `text-muted-foreground` and `px-3` alignment with document links, so it looks like another document. Open the mobile drawer and confirm it uses the same tree markup.
 
-- [ ] **Step 2: Apply the minimal class-only implementation**
+- [x] **Step 2: Apply the minimal class-only implementation**
 
 Make exactly these class changes in `reader-navigation.tsx`:
 
@@ -60,7 +60,9 @@ Do not change any other class, state calculation, aria attribute, or JSX structu
 
 Repeat Step 1 at Desktop and Mobile drawer. Confirm the visual sequence is visibly distinct: root heading → root document (one indentation) → child button (one indentation) → child document (border plus deeper indentation). Confirm child disclosure still toggles, active links retain their highlight, and mobile document navigation still closes the drawer.
 
-- [ ] **Step 4: Run regression checks**
+Browser smoke remains pending because no in-app browser instance was available during this execution; automated public tests, lint, and build were run successfully.
+
+- [x] **Step 4: Run regression checks**
 
 Run:
 
@@ -72,7 +74,7 @@ npm run build
 
 Expected: all commands exit 0. Record the existing middleware-to-proxy deprecation warning only if it appears in build output.
 
-- [ ] **Step 5: Commit the task**
+- [x] **Step 5: Commit the task**
 
 ```powershell
 git add -- src/components/public/reader-navigation.tsx
