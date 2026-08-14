@@ -125,14 +125,14 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium hover:bg-muted"
                   >
                     <Pencil className="size-4" aria-hidden="true" />
-                    แก้ไข {document.title}
+                    แก้ไข
                   </GuardedAdminLink>
                   <GuardedAdminLink
                     href={`${documentHref}&stage=review`}
                     className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium hover:bg-muted"
                   >
                     <Eye className="size-4" aria-hidden="true" />
-                    ดูตัวอย่าง {document.title}
+                    ดูตัวอย่าง
                   </GuardedAdminLink>
                 </div>
               </li>

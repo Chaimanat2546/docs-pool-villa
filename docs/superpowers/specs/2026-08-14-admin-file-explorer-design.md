@@ -33,7 +33,7 @@ Requirement baselines:
 - No Cloudflare Worker, R2 protocol, or media lifecycle change.
 - No drag and drop, bulk actions, media library, document reuse, or third section depth.
 - No autosave. Existing explicit save and conflict behavior remains authoritative.
-- No removal of the Editor Sandbox; it remains a secondary testing tool.
+- Removing the `/admin/editor` route is outside this design. The route remains available, but the Editor Sandbox is no longer shown in Admin Sidebar.
 - No Staging or Production deployment without separate approval.
 
 ## Chosen approach
@@ -55,7 +55,7 @@ This direction was chosen after comparing:
 
 The primary Admin navigation item is **จัดการเนื้อหา**. It replaces the two peer navigation items **โครงสร้าง** and **เอกสาร** because both capabilities now live in the same workspace.
 
-The Editor Sandbox remains available as a less prominent secondary navigation item. Existing links for viewing the public website and logging out remain in the Admin shell.
+The Editor Sandbox is not shown in Admin Sidebar. Existing links for viewing the public website and logging out remain in the Admin shell.
 
 ### Routes
 

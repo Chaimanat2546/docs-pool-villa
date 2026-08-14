@@ -30,6 +30,7 @@ vi.mock("next/navigation", () => ({
 
 afterEach(() => {
   cleanup();
+  window.localStorage.removeItem("admin-sidebar-collapsed");
   vi.clearAllMocks();
   pathname.value = "/admin/documents";
   signOut.mockReset();
@@ -53,10 +54,39 @@ it("renders the admin navigation with the current page", () => {
   const contentLink = screen.getByRole("link", { name: "จัดการเนื้อหา" });
   expect(contentLink.getAttribute("href")).toBe("/admin/structure");
   expect(contentLink.getAttribute("aria-current")).toBe("page");
-  expect(screen.getByRole("link", { name: "Editor Sandbox" }).getAttribute("href")).toBe("/admin/editor");
+  expect(screen.queryByRole("link", { name: "Editor Sandbox" })).toBeNull();
   expect(screen.queryByRole("link", { name: "โครงสร้าง" })).toBeNull();
   expect(screen.queryByRole("link", { name: "เอกสาร" })).toBeNull();
   expect(screen.getByRole("link", { name: "กลับหน้าคู่มือ" }).getAttribute("href")).toBe("/");
+});
+
+it("renders the documentation management identity with a house icon in the desktop sidebar", () => {
+  const { container } = render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  expect(screen.getByText("ระบบจัดการคู่มือ")).not.toBeNull();
+  expect(screen.getByText("Baan Pool Villa")).not.toBeNull();
+  expect(container.querySelector("aside svg.lucide-house")).not.toBeNull();
+  expect(screen.queryByText("ผู้ดูแลคู่มือ")).toBeNull();
+});
+
+it("collapses the desktop sidebar to icons and persists the preference", async () => {
+  const user = userEvent.setup();
+  const { container } = render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  await user.click(screen.getByRole("button", { name: "ย่อ Sidebar" }));
+
+  expect(container.querySelector("aside")?.classList.contains("w-20")).toBe(true);
+  expect(screen.getByText("ระบบจัดการคู่มือ").parentElement?.classList.contains("sr-only")).toBe(true);
+  expect(screen.getByRole("link", { name: "จัดการเนื้อหา" }).getAttribute("title")).toBe("จัดการเนื้อหา");
+  expect(window.localStorage.getItem("admin-sidebar-collapsed")).toBe("true");
+});
+
+it("restores the collapsed desktop sidebar preference after mount", async () => {
+  window.localStorage.setItem("admin-sidebar-collapsed", "true");
+  const { container } = render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+
+  await waitFor(() => expect(container.querySelector("aside")?.classList.contains("w-20")).toBe(true));
+  expect(screen.getByRole("button", { name: "ขยาย Sidebar" })).not.toBeNull();
 });
 
 it.each([
@@ -109,8 +139,8 @@ it("closes the mobile drawer when a navigation link is clicked", async () => {
   await user.click(screen.getByRole("button", { name: "เมนูผู้ดูแล" }));
 
   const dialog = screen.getByRole("dialog");
-  const editorLink = within(dialog).getByRole("link", { name: "Editor Sandbox" });
-  await user.click(editorLink);
+  const contentLink = within(dialog).getByRole("link", { name: "จัดการเนื้อหา" });
+  await user.click(contentLink);
 
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
 });
@@ -121,15 +151,15 @@ it("keeps the mobile drawer and dirty navigation trigger mounted when canceling"
 
   await user.click(screen.getByRole("button", { name: "เมนูผู้ดูแล" }));
   const drawer = screen.getByRole("dialog", { name: "เมนูผู้ดูแล" });
-  const editorLink = within(drawer).getByRole("link", { name: "Editor Sandbox" });
+  const contentLink = within(drawer).getByRole("link", { name: "จัดการเนื้อหา" });
 
-  await user.click(editorLink);
+  await user.click(contentLink);
   await user.click(screen.getByRole("button", { name: "แก้ไขต่อ" }));
 
   await waitFor(() => expect(screen.queryByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).toBeNull());
   expect(screen.getByRole("dialog", { name: "เมนูผู้ดูแล" })).toBe(drawer);
-  expect(editorLink.isConnected).toBe(true);
-  await waitFor(() => expect(document.activeElement).toBe(editorLink));
+  expect(contentLink.isConnected).toBe(true);
+  await waitFor(() => expect(document.activeElement).toBe(contentLink));
   expect(push).not.toHaveBeenCalled();
 });
 
@@ -139,14 +169,14 @@ it("closes the mobile drawer only after dirty navigation is confirmed", async ()
 
   await user.click(screen.getByRole("button", { name: "เมนูผู้ดูแล" }));
   const drawer = screen.getByRole("dialog", { name: "เมนูผู้ดูแล" });
-  await user.click(within(drawer).getByRole("link", { name: "Editor Sandbox" }));
+  await user.click(within(drawer).getByRole("link", { name: "จัดการเนื้อหา" }));
 
   expect(drawer.isConnected).toBe(true);
   expect(push).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "ออกโดยไม่บันทึก" }));
 
   await waitFor(() => expect(screen.queryByRole("dialog", { name: "เมนูผู้ดูแล" })).toBeNull());
-  expect(push).toHaveBeenCalledWith("/admin/editor");
+  expect(push).toHaveBeenCalledWith("/admin/structure");
 });
 
 it("provides an internal close control that closes the drawer and returns focus", async () => {
@@ -219,7 +249,7 @@ it("keeps guarding unsaved work when a confirmed logout fails", async () => {
   await screen.findByText("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
   push.mockClear();
 
-  await user.click(screen.getByRole("link", { name: "Editor Sandbox" }));
+  await user.click(screen.getByRole("link", { name: "จัดการเนื้อหา" }));
 
   expect(screen.getByRole("dialog", { name: "ออกจากหน้านี้หรือไม่" })).not.toBeNull();
   expect(push).not.toHaveBeenCalled();

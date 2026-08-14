@@ -1,9 +1,9 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { FolderTree, Menu, PencilLine, X } from "lucide-react";
+import { FolderTree, Home, House, LogOut, Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { createClient } from "@/lib/client";
 
@@ -11,18 +11,38 @@ import { GuardedAdminLink, UnsavedNavigationProvider, useUnsavedNavigation } fro
 
 const adminNavigation = [
   { title: "จัดการเนื้อหา", href: "/admin/structure", matches: ["/admin/structure", "/admin/documents"], icon: FolderTree },
-  { title: "Editor Sandbox", href: "/admin/editor", matches: ["/admin/editor"], icon: PencilLine },
 ] as const;
+
+const sidebarCollapsedStorageKey = "admin-sidebar-collapsed";
+const sidebarPreferenceChangeEvent = "admin-sidebar-preference-change";
+
+function subscribeToSidebarPreference(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  window.addEventListener(sidebarPreferenceChangeEvent, onStoreChange);
+  return () => {
+    window.removeEventListener("storage", onStoreChange);
+    window.removeEventListener(sidebarPreferenceChangeEvent, onStoreChange);
+  };
+}
+
+function getSidebarCollapsedSnapshot() {
+  return window.localStorage.getItem(sidebarCollapsedStorageKey) === "true";
+}
+
+function getServerSidebarCollapsedSnapshot() {
+  return false;
+}
 
 type NavigationLinksProps = {
   pathname: string;
+  isCollapsed?: boolean;
   onNavigate?: () => void;
   firstLinkRef?: React.Ref<HTMLAnchorElement>;
 };
 
-function NavigationLinks({ pathname, onNavigate, firstLinkRef }: NavigationLinksProps) {
+function NavigationLinks({ pathname, isCollapsed = false, onNavigate, firstLinkRef }: NavigationLinksProps) {
   return <>
-    {adminNavigation.map(({ title, href, matches, icon: Icon }, index) => <GuardedAdminLink key={href} href={href} aria-current={matches.some((match) => pathname === match || pathname.startsWith(`${match}/`)) ? "page" : undefined} onNavigate={onNavigate} ref={index === 0 ? firstLinkRef : undefined} className={`flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm text-foreground hover:bg-muted aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground ${title === "Editor Sandbox" ? "font-normal text-muted-foreground" : "font-medium"}`}><Icon size={18} aria-hidden="true" />{title}</GuardedAdminLink>)}
+    {adminNavigation.map(({ title, href, matches, icon: Icon }, index) => <GuardedAdminLink key={href} href={href} title={isCollapsed ? title : undefined} aria-current={matches.some((match) => pathname === match || pathname.startsWith(`${match}/`)) ? "page" : undefined} onNavigate={onNavigate} ref={index === 0 ? firstLinkRef : undefined} className={`flex min-h-11 items-center rounded-lg py-2 text-sm font-medium text-foreground hover:bg-muted aria-[current=page]:bg-primary aria-[current=page]:text-primary-foreground ${isCollapsed ? "justify-center px-2" : "gap-3 px-3"}`}><Icon size={18} aria-hidden="true" /><span className={isCollapsed ? "sr-only" : undefined}>{title}</span></GuardedAdminLink>)}
   </>;
 }
 
@@ -31,18 +51,19 @@ type NavigationContentProps = NavigationLinksProps & {
   onSignOut: () => void;
 };
 
-function NavigationContent({ isSigningOut, onNavigate, onSignOut, pathname, firstLinkRef }: NavigationContentProps) {
+function NavigationContent({ isCollapsed = false, isSigningOut, onNavigate, onSignOut, pathname, firstLinkRef }: NavigationContentProps) {
   const { requestAction } = useUnsavedNavigation();
 
   return <>
-    <NavigationLinks pathname={pathname} onNavigate={onNavigate} firstLinkRef={firstLinkRef} />
-    <GuardedAdminLink href="/" onNavigate={onNavigate} className="mt-auto flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">กลับหน้าคู่มือ</GuardedAdminLink>
+    <NavigationLinks pathname={pathname} isCollapsed={isCollapsed} onNavigate={onNavigate} firstLinkRef={firstLinkRef} />
+    <GuardedAdminLink href="/" title={isCollapsed ? "กลับหน้าคู่มือ" : undefined} onNavigate={onNavigate} className={`mt-auto flex min-h-11 items-center rounded-lg py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground ${isCollapsed ? "justify-center px-2" : "px-3"}`}>{isCollapsed ? <Home size={18} aria-hidden="true" /> : null}<span className={isCollapsed ? "sr-only" : undefined}>กลับหน้าคู่มือ</span></GuardedAdminLink>
     <button
       type="button"
       disabled={isSigningOut}
       onClick={(event) => requestAction(() => { onNavigate?.(); onSignOut(); }, event.currentTarget)}
-      className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
-    >{isSigningOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}</button>
+      title={isCollapsed ? "ออกจากระบบ" : undefined}
+      className={`flex min-h-11 items-center rounded-lg py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 ${isCollapsed ? "justify-center px-2" : "px-3"}`}
+    >{isCollapsed ? <LogOut size={18} aria-hidden="true" /> : null}<span className={isCollapsed ? "sr-only" : undefined}>{isSigningOut ? "กำลังออกจากระบบ..." : "ออกจากระบบ"}</span></button>
   </>;
 }
 
@@ -50,6 +71,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const isSidebarCollapsed = useSyncExternalStore(subscribeToSidebarPreference, getSidebarCollapsedSnapshot, getServerSidebarCollapsedSnapshot);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const firstMobileLinkRef = useRef<HTMLAnchorElement>(null);
@@ -59,6 +81,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     isMountedRef.current = true;
     return () => { isMountedRef.current = false; };
   }, []);
+
+  function toggleSidebar() {
+    const nextCollapsed = !isSidebarCollapsed;
+    window.localStorage.setItem(sidebarCollapsedStorageKey, String(nextCollapsed));
+    window.dispatchEvent(new Event(sidebarPreferenceChangeEvent));
+  }
 
   async function handleSignOut() {
     setLogoutError(null);
@@ -81,9 +109,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   return <UnsavedNavigationProvider><div className="min-h-screen lg:flex">
-    <aside className="hidden w-64 shrink-0 border-r bg-card lg:flex lg:flex-col">
-      <div className="border-b px-5 py-5"><p className="font-semibold">ผู้ดูแลคู่มือ</p></div>
-      <nav aria-label="เมนูผู้ดูแล" className="flex flex-1 flex-col gap-1 p-3"><NavigationContent pathname={pathname} isSigningOut={isSigningOut} onSignOut={handleSignOut} /></nav>
+    <aside className={`hidden shrink-0 border-r bg-card transition-[width] duration-200 lg:flex lg:flex-col ${isSidebarCollapsed ? "w-20" : "w-64"}`}>
+      <div className={`border-b py-5 ${isSidebarCollapsed ? "px-3" : "px-5"}`}><div className={`flex gap-3 ${isSidebarCollapsed ? "flex-col items-center" : "items-center justify-between"}`}><House size={20} aria-hidden="true" /><div className={isSidebarCollapsed ? "sr-only" : undefined}><p className="font-semibold">ระบบจัดการคู่มือ</p><p className="text-sm text-muted-foreground">Baan Pool Villa</p></div><button type="button" onClick={toggleSidebar} aria-label={isSidebarCollapsed ? "ขยาย Sidebar" : "ย่อ Sidebar"} title={isSidebarCollapsed ? "ขยาย Sidebar" : "ย่อ Sidebar"} className="inline-flex size-11 items-center justify-center rounded-lg hover:bg-muted">{isSidebarCollapsed ? <PanelLeftOpen size={18} aria-hidden="true" /> : <PanelLeftClose size={18} aria-hidden="true" />}</button></div></div>
+      <nav aria-label="เมนูผู้ดูแล" className="flex flex-1 flex-col gap-1 p-3"><NavigationContent pathname={pathname} isCollapsed={isSidebarCollapsed} isSigningOut={isSigningOut} onSignOut={handleSignOut} /></nav>
     </aside>
 
     <div className="min-w-0 flex-1">

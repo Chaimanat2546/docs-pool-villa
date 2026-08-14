@@ -107,15 +107,15 @@ describe("DocumentList", () => {
   it("shows only direct documents for a selected section", () => {
     renderList("child");
 
-    expect(screen.getByRole("link", { name: /แก้ไข สร้างการจอง/ })).not.toBeNull();
-    expect(screen.queryByRole("link", { name: /แก้ไข ภาพรวม/ })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(3);
+    expect(screen.queryByRole("link", { name: /แก้ไข สร้างการจอง/ })).toBeNull();
   });
 
   it("shows all documents and their section paths at the virtual root", () => {
     renderList(null);
 
     expect(screen.getAllByText("เริ่มต้น › การจอง")).toHaveLength(3);
-    expect(screen.getByRole("link", { name: /แก้ไข ภาพรวม/ })).not.toBeNull();
+    expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(4);
   });
 
   it("distinguishes an empty folder from empty search results", async () => {
@@ -153,19 +153,19 @@ describe("DocumentList", () => {
     expect(within(list).getByText("เก็บถาวร")).not.toBeNull();
 
     await user.selectOptions(screen.getByRole("combobox", { name: "กรองตามสถานะ" }), "published");
-    expect(screen.getByRole("link", { name: /แก้ไข แก้ไขการจอง/ })).not.toBeNull();
-    expect(screen.queryByRole("link", { name: /แก้ไข สร้างการจอง/ })).toBeNull();
-    expect(screen.queryByRole("link", { name: /แก้ไข วิธีจองแบบเดิม/ })).toBeNull();
+    expect(screen.getByRole("link", { name: "แก้ไข" })).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /แก้ไข แก้ไขการจอง/ })).toBeNull();
   });
 
   it("offers contextual create, edit, and preview actions with 44px targets", () => {
-    renderList("child");
+    renderList("child", [documents[1]]);
 
     expect(screen.getByRole("link", { name: "สร้างเอกสารในหมวดนี้" }).getAttribute("href"))
       .toBe("/admin/documents/new?section=child");
 
-    const edit = screen.getByRole("link", { name: "แก้ไข สร้างการจอง" });
-    const preview = screen.getByRole("link", { name: "ดูตัวอย่าง สร้างการจอง" });
+    const edit = screen.getByRole("link", { name: "แก้ไข" });
+    const preview = screen.getByRole("link", { name: "ดูตัวอย่าง" });
+    expect(screen.queryByRole("link", { name: /สร้างการจอง/ })).toBeNull();
     expect(edit.getAttribute("href")).toBe("/admin/documents/create-booking?section=child");
     expect(preview.getAttribute("href")).toBe("/admin/documents/create-booking?section=child&stage=review");
     expect(preview.getAttribute("target")).toBeNull();

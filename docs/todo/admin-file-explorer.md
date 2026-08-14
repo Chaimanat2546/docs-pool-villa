@@ -73,6 +73,7 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 
 ## ขอบเขตและสถานะ
 
+- Follow-up UX เมื่อ 14 สิงหาคม 2026: นำ **Editor Sandbox** ออกจาก Sidebar เพื่อให้ **จัดการเนื้อหา** เป็นทางเข้างาน Admin เพียงจุดเดียว; route `/admin/editor` ยังอยู่และไม่อยู่ในขอบเขตการลบครั้งนี้
 - ไม่มี Schema, Migration, RLS, Auth, Legacy table, Docs Media Worker, R2 protocol หรือ Production change ใน follow-up นี้
 - การสร้าง/แก้/ลบหมวดและเอกสารยังผ่าน Admin Server Actions, RLS และ lifecycle functions เดิม
 - Unsaved guard ใช้ dialog ของระบบกับลิงก์/การกระทำ/Logout ภายใน Admin และใช้ `beforeunload` สำหรับ refresh, ปิดแท็บ หรือออกจาก document. Browser Back/Forward แบบ same-document จะถูกหน่วงก่อน commit เฉพาะเมื่อ Browser เปิดเผย `NavigationPrecommitController` และ Navigation API ระบุว่า traversal นั้น `canIntercept` และ `cancelable`; Browser ที่ไม่มี precommit support (รวม implementation รุ่นเก่าที่มี `navigation.intercept` เพียงบางส่วน) จะไม่ติดตั้ง traversal handler และใช้พฤติกรรม native โดยไม่ทำ history-bounce หรืออ้างว่ายกเลิก traversal ได้ ส่วน guarded links/actions/Logout และ `beforeunload` ยังทำงานตามเดิม
