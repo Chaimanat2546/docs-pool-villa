@@ -1,5 +1,6 @@
 import { Extension, Node, type Editor, type JSONContent, type Range } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
+import Paragraph from "@tiptap/extension-paragraph";
 import Youtube from "@tiptap/extension-youtube";
 import StarterKit from "@tiptap/starter-kit";
 import Suggestion from "@tiptap/suggestion";
@@ -12,6 +13,33 @@ export const DocsImage = Image.extend({
       ...this.parent?.(),
       pendingId: { default: null, parseHTML: (element) => element.getAttribute("data-pending-id"), renderHTML: (attributes) => attributes.pendingId ? { "data-pending-id": attributes.pendingId } : {} },
       mediaId: { default: null, parseHTML: (element) => element.getAttribute("data-media-id"), renderHTML: (attributes) => attributes.mediaId ? { "data-media-id": attributes.mediaId } : {} },
+    };
+  },
+});
+
+export const DocsParagraph = Paragraph.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      indentLevel: {
+        default: 0,
+        parseHTML: (element) => Number(element.getAttribute("data-indent-level")) || 0,
+        renderHTML: (attributes) => attributes.indentLevel > 0 ? { "data-indent-level": attributes.indentLevel } : {},
+      },
+    };
+  },
+  addKeyboardShortcuts() {
+    const changeIndent = (delta: 1 | -1) => {
+      if (!this.editor.isActive("paragraph")) return false;
+      const current = Number(this.editor.getAttributes("paragraph").indentLevel) || 0;
+      const next = Math.max(0, Math.min(3, current + delta));
+      if (next === current) return true;
+      return this.editor.commands.updateAttributes("paragraph", { indentLevel: next });
+    };
+
+    return {
+      Tab: () => changeIndent(1),
+      "Shift-Tab": () => changeIndent(-1),
     };
   },
 });
@@ -116,6 +144,7 @@ const SlashCommand = Extension.create({
 
 export const docsExtensions = [
   StarterKit.configure({
+    paragraph: false,
     heading: { levels: [2, 3] },
     link: {
       openOnClick: false,
@@ -124,6 +153,7 @@ export const docsExtensions = [
       isAllowedUri: (url, context) => context.defaultValidate(url) && /^(https?:|mailto:)/i.test(url),
     },
   }),
+  DocsParagraph,
   DocsImage.configure({ HTMLAttributes: { class: "doc-image" } }),
   Youtube.configure({ nocookie: true, allowFullscreen: true, HTMLAttributes: { class: "doc-youtube" } }),
   Callout,

@@ -19,6 +19,61 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+function setupEditorGeometry() {
+  const rect = { x: 0, y: 0, width: 0, height: 0, top: 0, right: 0, bottom: 0, left: 0, toJSON: () => ({}) };
+  Object.defineProperty(HTMLElement.prototype, "getClientRects", { configurable: true, value: () => [] });
+  Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+  Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [] });
+  Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+}
+
+describe("DocumentEditor paragraph indent", () => {
+  it("increases a paragraph indent with Tab and limits it to level 3", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "ข้อความ" }] }] }} onChange={onChange} />);
+    const editor = document.querySelector<HTMLElement>(".ProseMirror")!;
+    setupEditorGeometry();
+    editor.focus();
+
+    await user.keyboard("{Tab}{Tab}{Tab}{Tab}");
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      content: expect.arrayContaining([expect.objectContaining({ type: "paragraph", attrs: { indentLevel: 3 } })]),
+    }), []));
+  });
+
+  it("decreases a paragraph indent with Shift+Tab", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [{ type: "paragraph", attrs: { indentLevel: 1 }, content: [{ type: "text", text: "ข้อความ" }] }] }} onChange={onChange} />);
+    const editor = document.querySelector<HTMLElement>(".ProseMirror")!;
+    setupEditorGeometry();
+    editor.focus();
+
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      content: expect.arrayContaining([expect.objectContaining({ type: "paragraph", attrs: { indentLevel: 0 } })]),
+    }), []));
+  });
+
+  it("does not indent a heading when Tab is pressed", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<DocumentEditor content={{ type: "doc", content: [{ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "หัวข้อ" }] }] }} onChange={onChange} />);
+    const editor = document.querySelector<HTMLElement>(".ProseMirror")!;
+    setupEditorGeometry();
+    editor.focus();
+
+    await user.keyboard("{Tab}");
+
+    await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      content: expect.arrayContaining([expect.objectContaining({ type: "heading", attrs: { level: 2 } })]),
+    }), []));
+  });
+});
+
 describe("DocumentEditor accessibility", () => {
   it("styles quotes distinctly inside the editor", () => {
     const css = readFileSync("src/app/globals.css", "utf8");
@@ -53,7 +108,7 @@ describe("DocumentEditor accessibility", () => {
 
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({
       type: "doc",
-      content: expect.arrayContaining([expect.objectContaining({ type: "callout", attrs: { kind: "info" }, content: [{ type: "paragraph", content: [{ type: "text", text: "ข้อความสำคัญ" }] }] })]),
+      content: expect.arrayContaining([expect.objectContaining({ type: "callout", attrs: { kind: "info" }, content: [expect.objectContaining({ type: "paragraph", attrs: { indentLevel: 0 }, content: [{ type: "text", text: "ข้อความสำคัญ" }] })] })]),
     }), []));
   });
 
