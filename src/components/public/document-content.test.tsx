@@ -31,6 +31,25 @@ describe("public document content", () => {
     expect(screen.getByText("ข้อความ").tagName).toBe("STRONG");
   });
 
+  it("omits legacy table headings from the TOC and rendered heading IDs", () => {
+    const legacyTableContent = {
+      type: "doc",
+      content: [
+        { type: "table", content: [{ type: "tableRow", content: [{ type: "tableCell", content: [{ type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "หัวข้อที่ถูกซ่อน" }] }] }] }] },
+        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "หัวข้อปกติ" }] },
+      ],
+    };
+
+    expect(getTableOfContents(legacyTableContent)).toEqual([
+      { id: "หัวข้อปกติ", level: 2, text: "หัวข้อปกติ" },
+    ]);
+
+    render(<DocumentContent content={legacyTableContent} />);
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "หัวข้อที่ถูกซ่อน" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "หัวข้อปกติ" }).id).toBe("หัวข้อปกติ");
+  });
+
   it("does not render unsafe link URLs", () => {
     render(<DocumentContent content={{ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "unsafe", marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }] }] }] }} />);
     expect(screen.queryByRole("link", { name: "unsafe" })).toBeNull();
@@ -51,7 +70,7 @@ describe("public document content", () => {
       { type: "youtube", attrs: { src: "https://www.youtube.com/embed/not-allowed" } },
     ] }} />);
     expect(screen.getAllByRole("list")).toHaveLength(2);
-    expect(screen.getByRole("table")).not.toBeNull();
+    expect(screen.queryByRole("table")).toBeNull();
     expect(screen.getByAltText("ภาพตัวอย่าง")).not.toBeNull();
     expect(screen.getByTitle("วิดีโอ YouTube")).not.toBeNull();
     expect(screen.queryByAltText("")).toBeNull();

@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 
 import type { JSONContent } from "@tiptap/core";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +19,22 @@ afterEach(() => {
 });
 
 describe("DocumentEditor accessibility", () => {
+  it("does not expose table commands in the toolbar or slash menu", async () => {
+    const user = userEvent.setup();
+    render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
+
+    expect(await screen.findByRole("button", { name: "ตัวหนา" })).not.toBeNull();
+    expect(screen.queryByRole("button", { name: "ตาราง" })).toBeNull();
+
+    const editor = document.querySelector<HTMLElement>(".ProseMirror");
+    expect(editor).not.toBeNull();
+    editor!.focus();
+    await user.keyboard("/");
+
+    const slashMenu = await screen.findByRole("listbox");
+    expect(within(slashMenu).queryByRole("option", { name: /^ตาราง/ })).toBeNull();
+  });
+
   it("exposes labelled toolbar controls in keyboard tab order", async () => {
     const user = userEvent.setup();
     render(<div role="toolbar" aria-label="เครื่องมือจัดรูปแบบ"><ToolbarButton label="ตัวหนา" onClick={() => {}}>B</ToolbarButton></div>);

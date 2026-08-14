@@ -19,6 +19,10 @@ describe("document content validation", () => {
     expect(toYouTubeNoCookieUrl("https://example.com/video")).toBeNull();
   });
 
+  it("rejects persisted table content", () => {
+    expect(validateDocumentContent({ type: "doc", content: [{ type: "table", content: [] }] }, "persisted").ok).toBe(false);
+  });
+
   it("accepts the youtube-nocookie embed URL stored by the editor", () => {
     const content = {
       type: "doc",

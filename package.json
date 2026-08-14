@@ -27,7 +27,6 @@
     "@supabase/supabase-js": "^2.112.2",
     "@tiptap/extension-image": "^3.29.2",
     "@tiptap/extension-link": "^3.29.2",
-    "@tiptap/extension-table": "^3.29.2",
     "@tiptap/extension-youtube": "^3.29.2",
     "@tiptap/pm": "^3.29.2",
     "@tiptap/react": "^3.29.2",

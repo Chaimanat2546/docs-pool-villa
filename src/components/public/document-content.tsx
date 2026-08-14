@@ -25,6 +25,7 @@ export function getTableOfContents(content: unknown): TocItem[] {
   const usedIds = new Map<string, number>();
   const headings: TocItem[] = [];
   const visit = (node: ContentNode) => {
+    if (node.type === "table") return;
     if (node.type === "heading" && (node.attrs?.level === 2 || node.attrs?.level === 3)) {
       const text = textFromNode(node).trim();
       if (text) {
@@ -66,6 +67,7 @@ function withMarks(children: ReactNode, marks: ContentMark[] | undefined): React
 }
 
 function renderNode(node: ContentNode, headingIds: TocItem[], headingIndex: { value: number }): ReactNode {
+  if (node.type === "table") return null;
   const children = node.content?.map((child, index) => <Fragment key={index}>{renderNode(child, headingIds, headingIndex)}</Fragment>) ?? [];
   switch (node.type) {
     case "text": return withMarks(node.text ?? "", node.marks);
@@ -80,10 +82,6 @@ function renderNode(node: ContentNode, headingIds: TocItem[], headingIndex: { va
     case "listItem": return <li>{children}</li>;
     case "blockquote": return <blockquote>{children}</blockquote>;
     case "codeBlock": return <pre><code>{children}</code></pre>;
-    case "table": return <div className="doc-table-wrap"><table className="doc-table"><tbody>{children}</tbody></table></div>;
-    case "tableRow": return <tr>{children}</tr>;
-    case "tableHeader": return <th scope="col">{children}</th>;
-    case "tableCell": return <td>{children}</td>;
     case "callout": return <aside className={`doc-callout doc-callout-${node.attrs?.kind === "warning" ? "warning" : node.attrs?.kind === "tip" ? "tip" : "info"}`}>{children}</aside>;
     case "image": {
       const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";

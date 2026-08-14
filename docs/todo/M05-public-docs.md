@@ -89,9 +89,9 @@ Checklist ทุกข้อใน M05 ได้รับหลักฐาน�
 
 - [x] สร้าง Reader route สำหรับเอกสารใน Root Section และ Child Section
 - [x] แสดง Breadcrumb, Title, Excerpt เมื่อมี, Updated date และเนื้อหาโดยคง Heading hierarchy ที่ถูกต้อง
-- [x] เพิ่ม Shared JSON renderer สำหรับ Paragraph, H2/H3, marks, lists, blockquote, code block, table, callout, image และ YouTube
+- [x] เพิ่ม Shared JSON renderer สำหรับ Paragraph, H2/H3, marks, lists, blockquote, code block, callout, image และ YouTube
 - [x] Link ภายนอกใช้ safe attributes; Image ใช้ Alt ที่ผ่าน validation; YouTube ใช้ `youtube-nocookie` พร้อม accessible title และ lazy loading
-- [x] Table/code/long URL ต้อง scroll หรือ wrap โดยไม่ทำให้ทั้งหน้าเกิด horizontal overflow
+- [x] Code/long URL ต้อง scroll หรือ wrap โดยไม่ทำให้ทั้งหน้าเกิด horizontal overflow
 - [x] สร้าง Sidebar tree จาก Published-only structure พร้อม `aria-current` ที่เอกสารปัจจุบัน
 - [x] Flatten navigation tree ชุดเดียวกันเพื่อสร้าง Previous/Next ที่ข้าม Section ได้ตาม `sort_order`
 - [x] สร้าง TOC จาก H2/H3 พร้อม anchor links และ indentation ของ H3; ถ้าไม่มี Heading ให้ซ่อน TOC ไม่ทิ้ง landmark ว่าง

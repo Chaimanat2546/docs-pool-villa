@@ -25,9 +25,6 @@
 .docs-editor-content ol,
 .ProseMirror ol { list-style: decimal; }
 .doc-image { max-width: 100%; height: auto; border-radius: 0.75rem; }
-.doc-table { width: 100%; border-collapse: collapse; }
-.doc-table-wrap { overflow-x: auto; }
-.doc-table td, .doc-table th { border: 1px solid var(--border); padding: 0.5rem; vertical-align: top; }
 .doc-callout { border-left: 4px solid var(--primary); border-radius: 0.5rem; background: var(--muted); padding: 1rem; }
 .doc-callout-warning { border-left-color: #c37d0d; }
 .doc-callout-tip { border-left-color: #00b48a; }

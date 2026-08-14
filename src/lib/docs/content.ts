@@ -13,10 +13,6 @@ const allowedNodes = new Set([
   "hardBreak",
   "blockquote",
   "codeBlock",
-  "table",
-  "tableRow",
-  "tableHeader",
-  "tableCell",
   "image",
   "youtube",
   "callout",
@@ -30,18 +26,14 @@ const maxNodeCount = 20_000;
 const maxDepth = 64;
 
 const allowedChildren: Record<string, ReadonlySet<string>> = {
-  doc: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "table", "image", "youtube", "callout"]),
+  doc: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
   paragraph: new Set(["text", "hardBreak"]),
   heading: new Set(["text", "hardBreak"]),
   bulletList: new Set(["listItem"]),
   orderedList: new Set(["listItem"]),
-  listItem: new Set(["paragraph", "bulletList", "orderedList", "blockquote", "codeBlock", "table", "image", "youtube", "callout"]),
-  blockquote: new Set(["paragraph", "heading", "bulletList", "orderedList", "codeBlock", "table", "image", "youtube", "callout"]),
+  listItem: new Set(["paragraph", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
+  blockquote: new Set(["paragraph", "heading", "bulletList", "orderedList", "codeBlock", "image", "youtube", "callout"]),
   codeBlock: new Set(["text", "hardBreak"]),
-  table: new Set(["tableRow"]),
-  tableRow: new Set(["tableHeader", "tableCell"]),
-  tableHeader: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
-  tableCell: new Set(["paragraph", "heading", "bulletList", "orderedList", "blockquote", "codeBlock", "image", "youtube", "callout"]),
 };
 
 export type ContentValidationResult =

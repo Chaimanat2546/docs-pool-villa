@@ -6,10 +6,12 @@
 
 **Post-M04 correction:** เปลี่ยน native `window.prompt()` ของ Alt text, Link และ YouTube เป็น accessible in-page dialog เพื่อรองรับ browser ที่ไม่รองรับ native prompt; TypeScript, content tests และ lint ผ่าน
 
+**Post-closeout note (14 August 2026):** Tables were removed completely from the editor, validation, and reader by approved user decision.
+
 ## Scope
 
 - [x] Tiptap schema, Toolbar และ Slash Command
-- [x] Node: text/headings/lists/link/table/code/callout/image/YouTube
+- [x] Node: text/headings/lists/link/code/callout/image/YouTube
 - [x] Shared validation/style ระหว่าง Editor และ Viewer
 - [x] Preview unsaved state
 - [x] Clipboard paste และ Upload ใช้ Flow เดียวกัน

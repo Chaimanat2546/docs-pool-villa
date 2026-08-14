@@ -29,7 +29,7 @@
 - หมวดหลักและหมวดย่อยรวมสูงสุด 2 ระดับ
 - จัดการหมวด เอกสาร ลำดับ Slug, Redirect, Draft, Published, Archived และ Preview
 - Tiptap Editor พร้อม Toolbar และ Slash Command
-- Paragraph, Heading, List, Link, Table, Code block, Callout, Image และ YouTube Embed
+- Paragraph, Heading, List, Link, Code block, Callout, Image และ YouTube Embed
 - อัปโหลดรูปด้วยปุ่ม Upload และวางรูปจาก Clipboard
 - จัดการวงจรชีวิตรูปตามเอกสาร โดยไม่มี Media Library
 - Supabase Auth, PostgreSQL, Docs-only RLS และ `pg_trgm` Search
@@ -176,7 +176,7 @@
 ### 7.4 Tiptap Content
 
 - เก็บ Content เป็น Tiptap JSONB ที่ผ่าน Schema validation
-- รองรับ Paragraph, Heading, List, Link, Table, Code block, Callout, Image และ YouTube
+- รองรับ Paragraph, Heading, List, Link, Code block, Callout, Image และ YouTube
 - มี Toolbar และ Slash Command ที่ใช้งานด้วย Keyboard ได้
 - Editor และ Viewer ใช้ Node styling และ validation ชุดเดียวกัน
 - ไม่รองรับ Raw HTML

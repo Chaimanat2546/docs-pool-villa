@@ -3,7 +3,7 @@
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import type { JSONContent } from "@tiptap/core";
 import { Dialog } from "@base-ui/react/dialog";
-import { Bold, Code2, ImagePlus, Italic, Link2, List, ListOrdered, Quote, Table2, Undo2, Redo2, Video } from "lucide-react";
+import { Bold, Code2, ImagePlus, Italic, Link2, List, ListOrdered, Quote, Undo2, Redo2, Video } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { docsExtensions } from "./extensions";
@@ -181,7 +181,6 @@ export function DocumentEditor({ content, contentRevision, onChange }: DocumentE
         </Dialog.Root>
         <ToolbarButton label="Quote" onClick={() => editor.chain().focus().toggleBlockquote().run()}><Quote size={16} /></ToolbarButton>
         <ToolbarButton label="Code block" active={toolbarState.codeBlock} onClick={() => editor.chain().focus().toggleCodeBlock().run()}><Code2 size={16} /></ToolbarButton>
-        <ToolbarButton label="ตาราง" onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}><Table2 size={16} /></ToolbarButton>
         <Dialog.Root open={dialog === "youtube"} onOpenChange={(open) => setDialogOpen("youtube", open)}>
           <Dialog.Trigger aria-label="YouTube" className="inline-flex size-10 items-center justify-center rounded-md hover:bg-muted"><Video size={16} /></Dialog.Trigger>
           {renderDialog("youtube")}

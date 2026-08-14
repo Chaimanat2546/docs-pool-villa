@@ -1,6 +1,5 @@
 import { Extension, Node, type Editor, type JSONContent, type Range } from "@tiptap/core";
 import Image from "@tiptap/extension-image";
-import { TableKit } from "@tiptap/extension-table";
 import Youtube from "@tiptap/extension-youtube";
 import StarterKit from "@tiptap/starter-kit";
 import Suggestion from "@tiptap/suggestion";
@@ -42,7 +41,6 @@ const slashItems: SlashItem[] = [
   { title: "รายการตัวเลข", description: "เพิ่ม Ordered list", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run() },
   { title: "กล่องข้อมูล", description: "เพิ่ม Callout", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).insertContent({ type: "callout", attrs: { kind: "info" }, content: [{ type: "paragraph" }] }).run() },
   { title: "โค้ด", description: "เพิ่ม Code block", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run() },
-  { title: "ตาราง", description: "เพิ่มตาราง 3 × 3", command: ({ editor, range }) => editor.chain().focus().deleteRange(range).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
 ];
 
 const SlashCommand = Extension.create({
@@ -114,7 +112,6 @@ export const docsExtensions = [
       isAllowedUri: (url, context) => context.defaultValidate(url) && /^(https?:|mailto:)/i.test(url),
     },
   }),
-  TableKit.configure({ table: { resizable: true, HTMLAttributes: { class: "doc-table" } } }),
   DocsImage.configure({ HTMLAttributes: { class: "doc-image" } }),
   Youtube.configure({ nocookie: true, allowFullscreen: true, HTMLAttributes: { class: "doc-youtube" } }),
   Callout,
