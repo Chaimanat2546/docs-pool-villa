@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 
@@ -46,6 +46,37 @@ describe("reader navigation", () => {
     await user.click(other);
     expect(other.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByRole("button", { name: "ตั้งค่า" }).getAttribute("aria-expanded")).toBe("true");
+    await user.click(screen.getByRole("button", { name: "ตั้งค่า" }));
+    expect(screen.getByRole("button", { name: "ตั้งค่า" }).getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("link", { name: "ตั้งค่าบัญชี" })).toBeNull();
+  });
+
+  it("keeps mobile expanded sections after navigation closes and reopens the drawer", async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(<ReaderNavigation currentPath="/guides/start" sections={nestedSections} toc={[]}><article>เนื้อหา</article></ReaderNavigation>);
+    const trigger = screen.getByRole("button", { name: "เมนูคู่มือ" });
+    await user.click(trigger);
+    const drawer = within(screen.getByRole("dialog", { name: "คู่มือ" }));
+    await user.click(drawer.getByRole("button", { name: "ตั้งค่า" }));
+    await user.click(drawer.getByRole("button", { name: "การใช้งาน" }));
+    const activeDocument = drawer.getByRole("link", { name: "ตั้งค่าบัญชี" });
+    activeDocument.addEventListener("click", (event) => event.preventDefault());
+    await user.click(activeDocument);
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "คู่มือ" })).toBeNull());
+    rerender(<ReaderNavigation currentPath="/guides/configuration/account" sections={nestedSections} toc={[]}><article>เนื้อหา</article></ReaderNavigation>);
+    await user.click(trigger);
+    const reopenedDrawer = within(screen.getByRole("dialog", { name: "คู่มือ" }));
+    expect(reopenedDrawer.getByRole("button", { name: "ตั้งค่า" }).getAttribute("aria-expanded")).toBe("true");
+    expect(reopenedDrawer.getByRole("button", { name: "การใช้งาน" }).getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("uses distinct document panel IDs for desktop and mobile navigation", async () => {
+    const user = userEvent.setup();
+    render(<ReaderNavigation currentPath="/guides/start" sections={nestedSections} toc={[]}><article>เนื้อหา</article></ReaderNavigation>);
+    await user.click(screen.getByRole("button", { name: "เมนูคู่มือ" }));
+    const subsectionButtons = screen.getAllByRole("button", { name: "ตั้งค่า", hidden: true });
+    expect(subsectionButtons).toHaveLength(2);
+    expect(subsectionButtons[0].getAttribute("aria-controls")).not.toBe(subsectionButtons[1].getAttribute("aria-controls"));
   });
 
   it("opens an accessible mobile drawer, exposes a mobile TOC, and returns focus after Escape", async () => {
