@@ -60,6 +60,39 @@ describe("DocumentEditor paragraph indent", () => {
     }), []));
   });
 
+  it("lets Tab and Shift+Tab leave top-level paragraphs at their indent boundaries", async () => {
+    const user = userEvent.setup();
+    const previousControl = document.createElement("button");
+    previousControl.textContent = "ก่อนหน้า";
+    const editorMount = document.createElement("div");
+    const nextControl = document.createElement("button");
+    nextControl.textContent = "ถัดไป";
+    document.body.append(previousControl, editorMount, nextControl);
+    const editor = new Editor({
+      element: editorMount,
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "paragraph", attrs: { indentLevel: 3 }, content: [{ type: "text", text: "ย่อหน้าสูงสุด" }] }] },
+    });
+    setupEditorGeometry();
+
+    editor.view.dom.focus();
+    await user.keyboard("{Tab}");
+
+    expect(document.activeElement).toBe(nextControl);
+    expect(editor.getJSON().content?.[0]?.attrs?.indentLevel).toBe(3);
+
+    editor.commands.updateAttributes("paragraph", { indentLevel: 0 });
+    editor.view.dom.focus();
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+
+    expect(document.activeElement).toBe(previousControl);
+    expect(editor.getJSON().content?.[0]?.attrs?.indentLevel).toBe(0);
+    editor.destroy();
+    editorMount.remove();
+    previousControl.remove();
+    nextControl.remove();
+  });
+
   it("does not indent a heading when Tab is pressed", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

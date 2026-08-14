@@ -38,7 +38,7 @@ export const DocsParagraph = Paragraph.extend({
       if (!selection.empty || $from.depth !== 1 || $from.parent.type.name !== "paragraph") return false;
       const current = normalizeIndentLevel(String($from.parent.attrs.indentLevel));
       const next = Math.max(0, Math.min(3, current + delta));
-      if (next === current) return true;
+      if (next === current) return false;
       return this.editor.commands.command(({ state, tr }) => {
         const { $from: currentPosition } = state.selection;
         tr.setNodeMarkup(currentPosition.before(), currentPosition.parent.type, { ...currentPosition.parent.attrs, indentLevel: next });
