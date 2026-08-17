@@ -56,7 +56,7 @@ export type DocumentRecord = {
 type FormState = Omit<DocumentRecord, "id" | "version" | "content">;
 type DocumentStage = "content" | "review";
 type FieldErrors = Partial<
-  Record<"title" | "slug" | "sectionId" | "sortOrder", string>
+  Record<"title" | "slug" | "sectionId", string>
 >;
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -128,7 +128,6 @@ export function DocumentForm({
   const titleInputRef = useRef<HTMLInputElement>(null);
   const slugInputRef = useRef<HTMLInputElement>(null);
   const sectionInputRef = useRef<HTMLSelectElement>(null);
-  const sortOrderInputRef = useRef<HTMLInputElement>(null);
   const [savedSnapshot, setSavedSnapshot] = useState(() =>
     snapshot(
       {
@@ -198,8 +197,6 @@ export function DocumentForm({
       errors.slug = "Slug ใช้ตัวพิมพ์เล็ก ตัวเลข และขีดกลางเท่านั้น";
     if (!sections.some((section) => section.id === form.sectionId))
       errors.sectionId = "กรุณาเลือกหมวดที่ถูกต้อง";
-    if (!Number.isInteger(form.sortOrder) || form.sortOrder < 0)
-      errors.sortOrder = "ลำดับต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป";
     setFieldErrors(errors);
 
     const firstInvalid = errors.title
@@ -208,8 +205,6 @@ export function DocumentForm({
       ? slugInputRef.current
       : errors.sectionId
       ? sectionInputRef.current
-      : errors.sortOrder
-      ? sortOrderInputRef.current
       : null;
     firstInvalid?.focus();
     return Object.keys(errors).length === 0;
@@ -475,38 +470,6 @@ export function DocumentForm({
                     className="mt-1 block text-xs text-destructive"
                   >
                     {fieldErrors.sectionId}
-                  </span>
-                )}
-              </label>
-              <label
-                className="text-sm font-medium"
-                htmlFor="document-sort-order"
-              >
-                ลำดับ
-                <input
-                  ref={sortOrderInputRef}
-                  id="document-sort-order"
-                  type="number"
-                  min="0"
-                  step="1"
-                  aria-invalid={fieldErrors.sortOrder ? "true" : undefined}
-                  aria-describedby={
-                    fieldErrors.sortOrder
-                      ? "document-sort-order-error"
-                      : undefined
-                  }
-                  value={form.sortOrder}
-                  onChange={(event) =>
-                    setForm({ ...form, sortOrder: Number(event.target.value) })
-                  }
-                  className="mt-1 h-11 w-full rounded-md border bg-background px-3"
-                />
-                {fieldErrors.sortOrder && (
-                  <span
-                    id="document-sort-order-error"
-                    className="mt-1 block text-xs text-destructive"
-                  >
-                    {fieldErrors.sortOrder}
                   </span>
                 )}
               </label>

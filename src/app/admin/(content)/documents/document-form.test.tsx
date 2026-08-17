@@ -157,16 +157,19 @@ it("shows inline field errors and focuses the first invalid field before saving"
 it("submits valid staged fields through their semantic form", async () => {
   actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
   const user = userEvent.setup();
-  renderForm();
+  const orderedDocument = { ...document, sortOrder: 4 };
+  renderForm({ record: orderedDocument });
   const title = screen.getByRole("textbox", { name: "ชื่อเอกสาร" });
   const submit = screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }) as HTMLButtonElement;
 
   expect(title.closest("form")).toBe(submit.closest("form"));
   expect(submit.type).toBe("submit");
+  expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
   title.focus();
   await user.keyboard("{Enter}");
 
   await waitFor(() => expect(actions.saveDocument).toHaveBeenCalledTimes(1));
+  expect(actions.saveDocument).toHaveBeenCalledWith(expect.objectContaining({ sortOrder: orderedDocument.sortOrder }));
 });
 
 it("chooses status in review and final save returns to the selected folder", async () => {
