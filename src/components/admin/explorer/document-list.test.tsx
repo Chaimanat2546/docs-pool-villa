@@ -13,6 +13,24 @@ const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
+vi.mock("./document-reorder-list", () => ({
+  DocumentReorderList: ({
+    documents: reorderedDocuments,
+    onCancel,
+    onSaved,
+  }: {
+    documents: AdminExplorerDocument[];
+    onCancel: () => void;
+    onSaved: () => void;
+  }) => (
+    <div>
+      <p data-testid="reorder-document-ids">{reorderedDocuments.map((document) => document.id).join(",")}</p>
+      <button type="button" onClick={onCancel}>ยกเลิกการจัดลำดับจำลอง</button>
+      <button type="button" onClick={onSaved}>บันทึกลำดับจำลอง</button>
+    </div>
+  ),
+}));
+
 const sections: AdminExplorerSection[] = [
   {
     id: "root",
@@ -86,6 +104,15 @@ const documents: AdminExplorerDocument[] = [
   },
 ];
 
+const sevenBookingDocuments: AdminExplorerDocument[] = Array.from({ length: 7 }, (_, index) => ({
+  ...documents[1],
+  id: `booking-${index + 1}`,
+  title: `เอกสารการจอง ${index + 1}`,
+  slug: `booking-${index + 1}`,
+  sortOrder: index,
+  status: index === 6 ? "published" : "draft",
+}));
+
 function renderList(selectedSectionId: string | null, sourceDocuments = documents) {
   return render(
     <UnsavedNavigationProvider>
@@ -156,15 +183,7 @@ describe("DocumentList", () => {
 
   it("paginates filtered documents four at a time and returns to the first page when filters change", async () => {
     const user = userEvent.setup();
-    const paginatedDocuments = Array.from({ length: 7 }, (_, index) => ({
-      ...documents[1],
-      id: `booking-${index + 1}`,
-      title: `เอกสารการจอง ${index + 1}`,
-      slug: `booking-${index + 1}`,
-      sortOrder: index,
-      status: index === 6 ? "published" as const : "draft" as const,
-    }));
-    renderList("child", paginatedDocuments);
+    renderList("child", sevenBookingDocuments);
 
     expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(4);
     expect(screen.getByText("หน้า 1 จาก 2")).not.toBeNull();
@@ -179,6 +198,63 @@ describe("DocumentList", () => {
     expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(4);
     expect(screen.getByText("หน้า 1 จาก 2")).not.toBeNull();
     expect(screen.queryByText("เอกสารการจอง 6")).toBeNull();
+  });
+
+  it("enters reorder mode with every direct document while normal mode remains paginated", async () => {
+    const user = userEvent.setup();
+    renderList("child", sevenBookingDocuments);
+
+    expect(screen.getAllByRole("link", { name: "แก้ไข" })).toHaveLength(4);
+    expect(screen.getByText("หน้า 1 จาก 2")).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "จัดลำดับเอกสาร" }));
+
+    expect(screen.getByTestId("reorder-document-ids").textContent).toBe(
+      "booking-1,booking-2,booking-3,booking-4,booking-5,booking-6,booking-7",
+    );
+    expect(screen.queryByRole("navigation", { name: "แบ่งหน้าเอกสาร" })).toBeNull();
+  });
+
+  it("does not offer reorder at the virtual root", () => {
+    renderList(null, sevenBookingDocuments);
+
+    expect(screen.queryByRole("button", { name: "จัดลำดับเอกสาร" })).toBeNull();
+  });
+
+  it("disables reorder while filtering and explains why", async () => {
+    const user = userEvent.setup();
+    renderList("child", sevenBookingDocuments);
+
+    await user.type(screen.getByRole("searchbox", { name: "ค้นหาเอกสารในหมวดนี้" }), "1");
+    expect((screen.getByRole("button", { name: "จัดลำดับเอกสาร" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("ล้างการค้นหาหรือตัวกรองก่อนจัดลำดับเอกสาร")).not.toBeNull();
+
+    await user.clear(screen.getByRole("searchbox", { name: "ค้นหาเอกสารในหมวดนี้" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: "กรองตามสถานะ" }), "draft");
+    expect((screen.getByRole("button", { name: "จัดลำดับเอกสาร" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("ล้างการค้นหาหรือตัวกรองก่อนจัดลำดับเอกสาร")).not.toBeNull();
+  });
+
+  it("disables reorder when the selected section has fewer than two documents", () => {
+    renderList("child", [documents[1]]);
+
+    expect((screen.getByRole("button", { name: "จัดลำดับเอกสาร" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("หมวดนี้ต้องมีเอกสารอย่างน้อย 2 รายการจึงจะจัดลำดับได้")).not.toBeNull();
+  });
+
+  it("restores the existing page when reorder is cancelled or saved", async () => {
+    const user = userEvent.setup();
+    renderList("child", sevenBookingDocuments);
+
+    await user.click(screen.getByRole("button", { name: "หน้าถัดไป" }));
+    expect(screen.getByText("หน้า 2 จาก 2")).not.toBeNull();
+    await user.click(screen.getByRole("button", { name: "จัดลำดับเอกสาร" }));
+    await user.click(screen.getByRole("button", { name: "ยกเลิกการจัดลำดับจำลอง" }));
+    expect(screen.getByText("หน้า 2 จาก 2")).not.toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "จัดลำดับเอกสาร" }));
+    await user.click(screen.getByRole("button", { name: "บันทึกลำดับจำลอง" }));
+    expect(screen.getByText("หน้า 2 จาก 2")).not.toBeNull();
   });
 
   it("offers contextual create, edit, and status actions with 44px targets", () => {
