@@ -27,6 +27,12 @@ Production มี Auth UID หนึ่งรายการที่อ้า�
 - RLS ของ `doc_sections`, `doc_documents`, `doc_media` และ `doc_route_redirects` เปิดใช้งานแล้วใน migration local
 - Public read ได้เฉพาะเอกสาร Published และโครงสร้าง/รูปที่จำเป็นต่อเอกสารนั้น; สิทธิ์ Admin แยกตาม operation พร้อม `USING` และ `WITH CHECK`
 
+## Pre-M04 remediation
+
+- `doc_private.doc_document_is_public()` ยืนยันทั้ง `document.status = 'published'`, Section Published และ Parent Section Published ก่อนอนุญาต Public read ของ document/media
+- Section structural writes ใช้ transaction-level advisory lock และปฏิเสธการย้ายหมวดที่มีลูกไปอยู่ใต้หมวดอื่น เพื่อคงความลึกสูงสุด 2 ระดับ
+- `public.doc_delete_section(uuid, text)` ตรวจชื่อยืนยันหลัง lock แถว Section ภายใน transaction เดียวกับการลบ
+
 ## Safety
 
 การเปลี่ยน RLS ของระบบเก่าเป็นงานนอกขอบเขต ต้อง Audit และขออนุมัติแยก
