@@ -2,7 +2,7 @@
 
 import {
   DndContext,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -49,7 +49,7 @@ export function DocumentReorderList({
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
   );
 
@@ -97,7 +97,33 @@ export function DocumentReorderList({
         </p>
       )}
 
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <DndContext
+        sensors={sensors}
+        onDragEnd={handleDragEnd}
+        accessibility={{
+          screenReaderInstructions: {
+            draggable: "ใช้เมาส์หรือนิ้วลากปุ่มจับเพื่อเปลี่ยนลำดับเอกสาร",
+          },
+          announcements: {
+            onDragStart({ active }) {
+              return `เริ่มลาก ${orderedDocuments.find((document) => document.id === active.id)?.title ?? "เอกสาร"}`;
+            },
+            onDragOver({ active, over }) {
+              const activeTitle = orderedDocuments.find((document) => document.id === active.id)?.title ?? "เอกสาร";
+              const overTitle = orderedDocuments.find((document) => document.id === over?.id)?.title;
+              return overTitle ? `กำลังลาก ${activeTitle} ไปที่ ${overTitle}` : `กำลังลาก ${activeTitle}`;
+            },
+            onDragEnd({ active, over }) {
+              const activeTitle = orderedDocuments.find((document) => document.id === active.id)?.title ?? "เอกสาร";
+              const overTitle = orderedDocuments.find((document) => document.id === over?.id)?.title;
+              return overTitle ? `วาง ${activeTitle} ที่ ${overTitle}` : `วาง ${activeTitle}`;
+            },
+            onDragCancel({ active }) {
+              return `ยกเลิกการลาก ${orderedDocuments.find((document) => document.id === active.id)?.title ?? "เอกสาร"}`;
+            },
+          },
+        }}
+      >
         <SortableContext items={orderedDocuments.map(({ id }) => id)} strategy={verticalListSortingStrategy}>
           <ul aria-label="เรียงลำดับเอกสาร" className="divide-y">
             {orderedDocuments.map((document) => (
@@ -142,6 +168,7 @@ function SortableDocumentRow({ document, disabled }: { document: AdminExplorerDo
         type="button"
         aria-label={`ลาก ${document.title}`}
         disabled={disabled}
+        style={{ touchAction: "none" }}
         className="inline-flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         {...attributes}
         {...listeners}

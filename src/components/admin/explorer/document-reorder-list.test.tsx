@@ -13,8 +13,26 @@ const { reorderDocuments } = vi.hoisted(() => ({ reorderDocuments: vi.fn() }));
 vi.mock("@/app/admin/(content)/documents/actions", () => ({ reorderDocuments }));
 
 vi.mock("@dnd-kit/core", () => ({
-  DndContext: ({ children, onDragEnd }: { children: React.ReactNode; onDragEnd: (event: unknown) => void }) => (
+  DndContext: ({
+    accessibility,
+    children,
+    onDragEnd,
+    sensors,
+  }: {
+    accessibility?: {
+      announcements?: { onDragStart?: (event: { active: { id: string; data: { current: { title: string } } } }) => string };
+      screenReaderInstructions?: { draggable?: string };
+    };
+    children: React.ReactNode;
+    onDragEnd: (event: unknown) => void;
+    sensors: unknown;
+  }) => (
     <>
+      <output data-testid="dnd-sensors">{JSON.stringify(sensors)}</output>
+      <output data-testid="dnd-screen-reader-instructions">{accessibility?.screenReaderInstructions?.draggable}</output>
+      <output data-testid="dnd-start-announcement">
+        {accessibility?.announcements?.onDragStart?.({ active: { id: "doc-a", data: { current: { title: "เอกสาร A" } } } })}
+      </output>
       <button
         type="button"
         onClick={() => onDragEnd({ active: { id: "doc-a" }, over: { id: "doc-c" } })}
@@ -24,10 +42,11 @@ vi.mock("@dnd-kit/core", () => ({
       {children}
     </>
   ),
+  MouseSensor: class MouseSensor {},
   PointerSensor: class PointerSensor {},
   TouchSensor: class TouchSensor {},
-  useSensor: vi.fn(),
-  useSensors: vi.fn(() => []),
+  useSensor: vi.fn((Sensor, configuration) => ({ name: Sensor.name, configuration })),
+  useSensors: vi.fn((...sensors) => sensors),
 }));
 
 vi.mock("@dnd-kit/sortable", () => ({
@@ -189,5 +208,22 @@ describe("DocumentReorderList", () => {
     }
     expect(screen.queryByRole("button", { name: "เลื่อนขึ้น" })).toBeNull();
     expect(screen.queryByRole("button", { name: "เลื่อนลง" })).toBeNull();
+  });
+
+  it("uses separate mouse and touch sensors, touch-safe handles, and Thai pointer-only assistance", () => {
+    renderList();
+
+    const sensors = screen.getByTestId("dnd-sensors").textContent;
+    expect(sensors).toContain("MouseSensor");
+    expect(sensors).toContain("TouchSensor");
+    expect(sensors).not.toContain("PointerSensor");
+    expect(sensors).toContain("delay");
+    expect(sensors).toContain("180");
+    expect(sensors).toContain("tolerance");
+    expect(sensors).toContain("8");
+    expect(screen.getByTestId("dnd-screen-reader-instructions").textContent).toContain("ใช้เมาส์หรือนิ้วลาก");
+    expect(screen.getByTestId("dnd-screen-reader-instructions").textContent).not.toContain("keyboard");
+    expect(screen.getByTestId("dnd-start-announcement").textContent).toContain("เริ่มลาก เอกสาร A");
+    expect(screen.getByRole("button", { name: "ลาก เอกสาร A" }).style.touchAction).toBe("none");
   });
 });
