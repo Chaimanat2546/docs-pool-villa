@@ -72,6 +72,7 @@
 .ProseMirror blockquote,
 .docs-content blockquote { border-left: 3px solid var(--border); padding-left: 1rem; color: var(--muted-foreground); }
 .doc-video { overflow: hidden; border-radius: 0.75rem; background: var(--muted); }
+.doc-youtube-responsive { display: block; width: 100%; max-width: 100%; height: auto; aspect-ratio: 16 / 9; }
 .doc-video-frame { position: relative; aspect-ratio: 16 / 9; }
 .doc-video-player,
 .doc-video-overlay,

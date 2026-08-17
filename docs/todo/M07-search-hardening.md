@@ -13,6 +13,11 @@
 - [x] แสดงคำเกริ่นของเอกสารใน command palette เพียง 1 บรรทัดพร้อม ellipsis; แถวหัวข้อไม่แสดงคำเกริ่น (Local)
 - [x] ลบหน้าและลิงก์ `/search` แบบเดิม; การเข้าถึง `/search` ตอบ 404 และ command palette/API search ยังคงใช้งาน (Local)
 - [x] ใช้ command palette เดียวกันเป็น search trigger ขนาดใหญ่บนหน้าแรก แทน form ที่เคยส่งไป `/search` (Local)
+- [x] ปิด command palette เมื่อคลิกผลการค้นหา แม้ผลลัพธ์จะอยู่หน้าเดิมหรือใช้ anchor เดิม (Local)
+- [x] ทำ Tiptap formatting toolbar ให้ติดตาม viewport ระหว่างเลื่อนเนื้อหา (Local)
+- [x] จำกัดความกว้าง Tiptap YouTube embed ให้ responsive บน mobile และรักษาสัดส่วน 16:9 (Local)
+- [x] เมื่อเปลี่ยนหน้ารายการเอกสารใน Admin ให้เลื่อนไปที่ด้านบนของส่วนรายการเอกสาร พร้อม regression test (Local)
+- [x] ปรับ action bar บน mobile ให้ชิดขอบล่าง viewport (`bottom-0`) และคงระยะห่างบนจอใหญ่ (Local)
 - [x] Apply/verify title-search migration บน Staging โดยไม่มี seed/role change
 - [x] ไม่สร้าง `search_text`; ใช้ runtime H2/H3 extraction เท่านั้น และยังไม่ค้น Excerpt/paragraph/content, typo/fuzzy search
 - [ ] Performance tests ตาม p75/p95 และ Capacity baseline

@@ -258,6 +258,36 @@ describe("PublicSearchPalette", () => {
     expect(push).toHaveBeenLastCalledWith("/guides/account");
   });
 
+  it("closes when a document result is clicked", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          items: [
+            {
+              id: "doc",
+              href: "/guides/account",
+              title: "บัญชี",
+              sectionTitle: "คู่มือ",
+              parentTitle: null,
+              kind: "document",
+            },
+          ],
+        }),
+      })
+    );
+    render(<PublicSearchPalette />);
+    fireEvent.click(screen.getByRole("button", { name: "ค้นหาคู่มือ" }));
+    const result = await screen.findByTestId("document-result");
+
+    fireEvent.click(result);
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "ค้นหาคู่มือ" })).toBeNull()
+    );
+  });
+
   it("shows a recoverable error when live search fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false }));
     render(<PublicSearchPalette />);

@@ -204,6 +204,17 @@ it("shows completed, current, and upcoming document steps", () => {
   expect(container.querySelectorAll("[data-step-connector]")).toHaveLength(2);
 });
 
+it("keeps content actions visible while editing long documents", () => {
+  renderForm();
+
+  const saveButton = screen.getByRole("button", { name: "บันทึกและตรวจต่อ" });
+  const actionBar = saveButton.parentElement;
+
+  expect(actionBar?.className).toContain("sticky");
+  expect(actionBar?.className).toContain("bottom-0");
+  expect(actionBar?.className).toContain("sm:bottom-4");
+});
+
 it("marks the first two steps complete when reviewing", () => {
   renderForm({ stage: "review" });
   const stepper = screen.getByRole("list", { name: "ขั้นตอนจัดทำเอกสาร" });

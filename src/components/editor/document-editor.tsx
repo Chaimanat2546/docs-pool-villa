@@ -290,7 +290,7 @@ export function DocumentEditor({
         ใช้ Toolbar หรือพิมพ์เครื่องหมายทับเพื่อเพิ่มเนื้อหา
       </p>
       <div
-        className="flex flex-wrap gap-1 border-b p-2"
+        className="sticky top-0 z-20 flex flex-wrap gap-1 border-b bg-card/95 p-2 backdrop-blur"
         role="toolbar"
         aria-label="เครื่องมือจัดรูปแบบ"
       >

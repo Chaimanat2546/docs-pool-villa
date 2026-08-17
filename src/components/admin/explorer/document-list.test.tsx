@@ -200,6 +200,19 @@ describe("DocumentList", () => {
     expect(screen.queryByText("เอกสารการจอง 6")).toBeNull();
   });
 
+  it("scrolls to the document list when changing pages", async () => {
+    const user = userEvent.setup();
+    renderList("child", sevenBookingDocuments);
+    const documentList = screen.getByRole("region", { name: "เอกสารในหมวด" });
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(documentList, "scrollIntoView", { value: scrollIntoView });
+
+    await user.click(screen.getByRole("button", { name: "หน้าถัดไป" }));
+
+    expect(screen.getByText("หน้า 2 จาก 2")).not.toBeNull();
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "start" });
+  });
+
   it("enters reorder mode with every direct document while normal mode remains paginated", async () => {
     const user = userEvent.setup();
     renderList("child", sevenBookingDocuments);

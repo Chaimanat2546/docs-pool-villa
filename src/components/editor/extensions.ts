@@ -177,7 +177,7 @@ export const docsExtensions = [
   }),
   DocsParagraph,
   DocsImage.configure({ HTMLAttributes: { class: "doc-image" } }),
-  Youtube.configure({ nocookie: true, allowFullscreen: true, HTMLAttributes: { class: "doc-youtube" } }),
+  Youtube.configure({ nocookie: true, allowFullscreen: true, HTMLAttributes: { class: "doc-youtube doc-youtube-responsive" } }),
   Callout,
   SlashCommand,
 ];

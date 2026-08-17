@@ -1,7 +1,7 @@
 "use client";
 
 import { FilePlus2, Pencil, Power } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { GuardedAdminLink } from "@/components/admin/unsaved-navigation";
 import {
@@ -40,6 +40,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
   const [status, setStatus] = useState<AdminDocumentStatus | "all">("all");
   const [page, setPage] = useState(1);
   const [isReordering, setIsReordering] = useState(false);
+  const documentListRef = useRef<HTMLElement | null>(null);
   const directSectionDocuments = selectedSectionId === null
     ? []
     : documents.filter((document) => document.sectionId === selectedSectionId);
@@ -60,8 +61,15 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
     setPage(1);
   }
 
+  function changePage(nextPage: number) {
+    setPage(nextPage);
+    if (typeof documentListRef.current?.scrollIntoView === "function") {
+      documentListRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
   return (
-    <section aria-labelledby="document-list-title" className="min-w-0 w-full rounded-xl border bg-card shadow-sm">
+    <section ref={documentListRef} aria-labelledby="document-list-title" className="scroll-mt-20 min-w-0 w-full rounded-xl border bg-card shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b p-5">
         <div>
           <h2 id="document-list-title" className="text-lg font-semibold">เอกสารในหมวด</h2>
@@ -185,7 +193,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
             <nav aria-label="แบ่งหน้าเอกสาร" className="flex items-center justify-between gap-3 border-t p-4">
               <button
                 type="button"
-                onClick={() => setPage((current) => Math.max(1, current - 1))}
+                onClick={() => changePage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -196,7 +204,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
               </p>
               <button
                 type="button"
-                onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                onClick={() => changePage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
               >

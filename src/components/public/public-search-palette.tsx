@@ -194,6 +194,7 @@ export function PublicSearchPalette({ variant = "header" }: { variant?: "header"
                   <a
                     data-testid="document-result"
                     href={group.document.href}
+                    onClick={() => handleOpenChange(false)}
                     aria-selected={
                       selectableItems[selectedIndex]?.href ===
                       group.document.href
@@ -229,6 +230,7 @@ export function PublicSearchPalette({ variant = "header" }: { variant?: "header"
                       key={`${heading.id}-${heading.href}`}
                       data-testid="heading-result"
                       href={heading.href}
+                      onClick={() => handleOpenChange(false)}
                       aria-selected={
                         selectableItems[selectedIndex]?.href === heading.href
                       }

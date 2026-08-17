@@ -409,6 +409,37 @@ describe("DocumentEditor accessibility", () => {
     expect((slashMenu as HTMLElement).style.left).not.toBe("");
   });
 
+  it("keeps the formatting toolbar visible while editing long content", async () => {
+    render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
+
+    const toolbar = await screen.findByRole("toolbar", { name: "เครื่องมือจัดรูปแบบ" });
+
+    expect(toolbar.className).toContain("sticky");
+    expect(toolbar.className).toContain("top-0");
+  });
+
+  it("marks YouTube embeds for responsive sizing", async () => {
+    const view = render(
+      <DocumentEditor
+        content={{
+          type: "doc",
+          content: [
+            {
+              type: "youtube",
+              attrs: { src: "https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ" },
+            },
+          ],
+        }}
+        onChange={() => {}}
+      />,
+    );
+
+    await waitFor(() => expect(view.container.querySelector("iframe")).not.toBeNull());
+    const iframe = view.container.querySelector("iframe");
+
+    expect(iframe?.className).toContain("doc-youtube-responsive");
+  });
+
   it("exposes labelled toolbar controls in keyboard tab order", async () => {
     const user = userEvent.setup();
     render(<div role="toolbar" aria-label="เครื่องมือจัดรูปแบบ"><ToolbarButton label="ตัวหนา" onClick={() => {}}>B</ToolbarButton></div>);

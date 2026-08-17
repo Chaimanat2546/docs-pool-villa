@@ -1,5 +1,5 @@
 begin;
-select plan(34);
+select plan(35);
 
 insert into public.roles (id, name) values
   (1, '{"th":"Administrator"}'::json),
@@ -138,9 +138,14 @@ select throws_ok(
 select lives_ok(
   $$select * from public.doc_save_document(
     'a2000000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000002', 'อีกเรื่อง', 'second', null,
-    '{"type":"doc","content":[]}'::jsonb, 'draft', 1, null, '[]'::jsonb
+    '{"type":"doc","content":[]}'::jsonb, 'draft', 0, null, '[]'::jsonb
   )$$,
   'A different document can be created in the same section'
+);
+select is(
+  (select sort_order from public.doc_documents where id = 'a2000000-0000-0000-0000-000000000002'),
+  1,
+  'A new document appends after existing documents in its section'
 );
 select lives_ok(
   $$select public.doc_reorder_documents('a1000000-0000-0000-0000-000000000002', array['a2000000-0000-0000-0000-000000000002'::uuid, 'a2000000-0000-0000-0000-000000000001'::uuid])$$,

@@ -495,7 +495,7 @@ export function DocumentForm({
               }}
             />
             <MediaProgressList images={pendingImages} />
-            <div className="mt-6 flex flex-wrap justify-end gap-2">
+            <div className="sticky bottom-0 z-10 mt-6 flex flex-wrap justify-end gap-2 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur sm:bottom-4 sm:p-3">
               <button
                 type="button"
                 onClick={() => requestNavigation(savedReturnHref)}
