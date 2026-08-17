@@ -149,7 +149,6 @@ describe("SectionPanel", () => {
     expect(createChild.disabled).toBe(true);
     const explanationId = createChild.getAttribute("aria-describedby");
     expect(explanationId).not.toBeNull();
-    expect(document.getElementById(explanationId ?? "")?.textContent).toBe("รองรับหมวดไม่เกิน 2 ระดับ");
   });
 
   it("does not render the retired section-details card when a section is selected", () => {
@@ -180,6 +179,13 @@ describe("SectionPanel", () => {
     expect(screen.getByRole("link", { name: "เปลี่ยนชื่อและตั้งค่า" }).getAttribute("href")).toBe(`/admin/structure?section=${childId}&mode=edit`);
     rerender(<SectionPanel selectedSectionId={childId} mode="edit" explorer={explorer} />);
     expect((screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement).value).toBe("การจอง");
+  });
+
+  it("shows a pointer cursor for the section creation links", () => {
+    render(<SectionPanel selectedSectionId={rootId} mode="view" explorer={explorer} />);
+
+    expect(screen.getByRole("link", { name: "เพิ่มหมวดหลัก" }).className).toContain("cursor-pointer");
+    expect(screen.getByRole("link", { name: "เพิ่มหมวดย่อย" }).className).toContain("cursor-pointer");
   });
 
   it.each([

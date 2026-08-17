@@ -111,6 +111,18 @@ it("uses secondary visual treatment for child actions and hides zero document co
   expect(screen.getByRole("button", { name: "สร้างหมวดหลัก" }).parentElement?.className).toContain("border-t");
 });
 
+it("shows a pointer cursor for section creation buttons", async () => {
+  const navigate = vi.fn();
+  const user = userEvent.setup();
+  render(<FolderTree sections={sections} selectedSectionId={null} onNavigate={navigate} />);
+
+  const root = screen.getByRole("treeitem", { name: /เริ่มต้น/ });
+  await user.click(root.querySelector<HTMLElement>("[data-tree-disclosure]")!);
+
+  expect(screen.getByRole("button", { name: "สร้างหมวดหลัก" }).className).toContain("cursor-pointer");
+  expect(screen.getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" }).className).toContain("cursor-pointer");
+});
+
 it("prevents pointer drags on a folder row from selecting its label", () => {
   const navigate = vi.fn();
   render(<FolderTree sections={sections} selectedSectionId="root" onNavigate={navigate} />);

@@ -57,6 +57,19 @@ afterEach(() => {
 });
 
 describe("DocumentSetupForm", () => {
+  it("shows the three-step document workflow with setup as the current step", () => {
+    render(<DocumentSetupForm sections={sections} selectedSectionId={sectionId} />);
+
+    const workflow = screen.getByRole("list", { name: "ขั้นตอนจัดทำเอกสาร" });
+    const page = screen.getByRole("main");
+    expect(workflow.textContent).toContain("1. ข้อมูลเอกสาร");
+    expect(workflow.textContent).toContain("2. เขียนเนื้อหา");
+    expect(workflow.textContent).toContain("3. ตรวจและเผยแพร่");
+    expect(screen.getByText("1. ข้อมูลเอกสาร").closest("li")?.getAttribute("aria-current")).toBe("step");
+    expect(page.className).toContain("max-w-6xl");
+    expect(page.className).toContain("py-8");
+  });
+
   it("shows the explicit section path and focuses the title field", async () => {
     render(<DocumentSetupForm sections={sections} selectedSectionId={sectionId} />);
 
@@ -126,9 +139,9 @@ describe("DocumentSetupForm", () => {
       />,
     );
 
-    const formPane = screen.getByRole("heading", { name: "สร้างเอกสาร" }).closest("section");
-    expect(formPane?.className).toContain("min-w-0");
-    expect(formPane?.className).toContain("w-full");
+    const page = screen.getByRole("main");
+    expect(page.className).toContain("min-w-0");
+    expect(page.className).toContain("w-full");
     expect(screen.getByText(`เริ่มต้น › ${longTitle}`, { selector: "span" }).className).toContain("break-words");
     expect(screen.getByRole("link", { name: "ยกเลิก" }).className).toContain("min-h-11");
     expect(screen.getByRole("button", { name: "สร้างฉบับร่างและเขียนต่อ" }).className).toContain("min-h-11");

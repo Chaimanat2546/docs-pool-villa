@@ -170,7 +170,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
 
   return (
     <div className="space-y-1">
-      <p className="px-3 py-2 text-sm font-medium text-muted-foreground">คู่มือทั้งหมด · {totalDocumentCount} เอกสาร</p>
+      <p className="px-3 py-2 text-sm font-medium text-muted-foreground">คู่มือทั้งหมด</p>
       <div
         role="tree"
         aria-label="หมวดคู่มือ"
@@ -244,7 +244,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
                 disabled={creationBlocked}
                 title={creationBlocked ? creationBlockMessage : undefined}
                 onClick={() => onNavigate(`/admin/structure?section=${encodeURIComponent(creationRoot.sectionId!)}&mode=create-child`)}
-                className="flex min-h-11 w-full items-center border-l border-border px-3 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-11 w-full cursor-pointer items-center border-l border-border px-3 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
                 style={{ paddingInlineStart: "60px" }}
               >
                 ＋ เพิ่มหมวดย่อย
@@ -261,7 +261,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
           disabled={creationBlocked}
           title={creationBlocked ? creationBlockMessage : undefined}
           onClick={() => onNavigate("/admin/structure?mode=create-root")}
-          className="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex min-h-11 w-full cursor-pointer items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           style={{ paddingInlineStart: "28px" }}
         >
           ＋ สร้างหมวดหลัก
