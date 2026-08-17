@@ -24,6 +24,9 @@ vi.mock("@/app/admin/(content)/structure/actions", () => ({
   retrySectionMediaOperation,
   saveSection,
 }));
+vi.mock("@/components/admin/admin-toast", () => ({
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+}));
 
 const rootId = "11111111-1111-4111-8111-111111111111";
 const childId = "22222222-2222-4222-8222-222222222222";
@@ -261,7 +264,7 @@ describe("SectionPanel", () => {
     await user.type(within(dialog).getByRole("textbox", { name: /พิมพ์.*การจอง.*เพื่อยืนยัน/ }), "การจอง");
     await user.click(within(dialog).getByRole("button", { name: "ลบถาวร" }));
 
-    expect((await within(dialog).findByRole("alert")).textContent).toContain("ลบหมวดไม่สำเร็จ กรุณาลองอีกครั้ง");
+    expect(within(dialog).queryByRole("alert")).toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "ยกเลิก" }));
     expect(screen.getByRole("heading", { name: "การจอง" })).not.toBeNull();
     expect(replace).not.toHaveBeenCalled();

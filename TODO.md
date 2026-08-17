@@ -10,6 +10,7 @@
 - [x] M06 post-closeout safety remediation: apply/verify Staging สำเร็จ
 - [x] Admin File Explorer cross-module follow-up: Local gate และ Staging App/Admin smoke เสร็จแล้ว ([รายละเอียด](docs/todo/admin-file-explorer.md))
 - [x] Admin File Explorer: non-admin browser smoke ผ่าน; ไม่มี Migration หรือ Media Worker deploy
+- [x] Admin document-management status: ใช้ toast กลางบน; Success ปิดอัตโนมัติ 3 วินาที และ Error ค้างจนกดกากบาทปิด
 - [x] Approved cross-module follow-up: removed the unused section description field; Local tests and Staging migration-history/DB-lint verification complete, Production migration remains pending separate approval
 - [ ] M07 กำลังดำเนินการ: Search Title/H2/H3 และ command palette ผ่าน focused Local tests; browser/performance hardening ค้าง
 

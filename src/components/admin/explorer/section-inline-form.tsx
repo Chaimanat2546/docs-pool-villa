@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { saveSection } from "@/app/admin/(content)/structure/actions";
+import { useAdminToast } from "@/components/admin/admin-toast";
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
 import type { SectionMode } from "./section-mode";
@@ -55,9 +56,9 @@ function modeLabel(mode: EditableSectionMode): string {
 
 export function SectionInlineForm({ mode, section, parent, rootSections, initialSortOrder, onCancel }: SectionInlineFormProps) {
   const router = useRouter();
+  const { showError, showSuccess } = useAdminToast();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState(() => initialFormState(mode, section, parent, initialSortOrder));
-  const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const label = modeLabel(mode);
   useEffect(() => {
@@ -66,7 +67,6 @@ export function SectionInlineForm({ mode, section, parent, rootSections, initial
 
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage(null);
     startTransition(async () => {
       const result = await saveSection({
         id: mode === "edit" ? section?.id : undefined,
@@ -78,10 +78,11 @@ export function SectionInlineForm({ mode, section, parent, rootSections, initial
       });
 
       if ("error" in result) {
-        setMessage(result.error);
+        showError(result.error);
         return;
       }
 
+      showSuccess("บันทึกหมวดสำเร็จ");
       router.replace(`/admin/structure?section=${encodeURIComponent(result.id)}`);
       router.refresh();
     });
@@ -131,7 +132,6 @@ export function SectionInlineForm({ mode, section, parent, rootSections, initial
       {mode === "create-child" && parent && (
         <p className="mt-1 text-sm text-muted-foreground">หมวดแม่: <span className="font-medium text-foreground">{parent.title}</span></p>
       )}
-      {message && <p role="alert" className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{message}</p>}
       <div className="mt-5 space-y-4">
         <Field label="ชื่อหมวด" htmlFor="section-title">
           <input

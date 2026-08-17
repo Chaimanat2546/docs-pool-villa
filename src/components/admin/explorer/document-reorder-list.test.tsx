@@ -11,6 +11,9 @@ import { DocumentReorderList } from "./document-reorder-list";
 const { reorderDocuments } = vi.hoisted(() => ({ reorderDocuments: vi.fn() }));
 
 vi.mock("@/app/admin/(content)/documents/actions", () => ({ reorderDocuments }));
+vi.mock("@/components/admin/admin-toast", () => ({
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+}));
 
 vi.mock("@dnd-kit/core", () => ({
   DndContext: ({
@@ -186,7 +189,7 @@ describe("DocumentReorderList", () => {
     await user.click(screen.getByRole("button", { name: "จำลองการลาก" }));
     await user.click(screen.getByRole("button", { name: "บันทึกลำดับ" }));
 
-    expect((await screen.findByRole("alert")).textContent).toContain("บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง");
+    expect(screen.queryByRole("alert")).toBeNull();
     expect(listTitles()).toEqual(["เอกสาร B", "เอกสาร C", "เอกสาร A"]);
   });
 

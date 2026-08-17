@@ -13,6 +13,7 @@ import {
   type DeletePreview,
 } from "@/app/admin/(content)/structure/actions";
 import { MediaOperationBanner } from "@/components/admin/media-operation-banner";
+import { useAdminToast } from "@/components/admin/admin-toast";
 import {
   getAdminSectionPath,
   type AdminExplorerSection,
@@ -46,7 +47,7 @@ export function SectionPanel({
   explorer,
 }: SectionPanelProps) {
   const router = useRouter();
-  const [message, setMessage] = useState<string | null>(null);
+  const { showError, showSuccess } = useAdminToast();
   const [operations, setOperations] = useState(
     explorer.pendingSectionOperations
   );
@@ -108,11 +109,10 @@ export function SectionPanel({
 
   function requestDelete() {
     if (!selectedSection || mutationsBlocked) return;
-    setMessage(null);
     startTransition(async () => {
       const result = await getDeletePreview(selectedSection.id);
       if (!("childSectionCount" in result)) {
-        setMessage(result.error);
+        showError(result.error);
         return;
       }
       setDeleteTarget(selectedSection);
@@ -123,11 +123,10 @@ export function SectionPanel({
 
   function confirmDelete() {
     if (!deleteTarget || confirmedName !== deleteTarget.title) return;
-    setMessage(null);
     startTransition(async () => {
       const result = await deleteSection(deleteTarget.id, confirmedName);
       if ("error" in result) {
-        setMessage(result.error);
+        showError(result.error);
         return;
       }
       if ("pending" in result) {
@@ -144,17 +143,17 @@ export function SectionPanel({
       }
 
       closeDeleteDialog();
+      showSuccess("ลบหมวดสำเร็จ");
       router.replace("/admin/structure");
       router.refresh();
     });
   }
 
   function retryOperation(operation: MediaOperationView) {
-    setMessage(null);
     startTransition(async () => {
       const result = await retrySectionMediaOperation(operation.operationId);
       if ("error" in result) {
-        setMessage(result.error);
+        showError(result.error);
         return;
       }
       if ("pending" in result) {
@@ -304,14 +303,6 @@ export function SectionPanel({
           จัดการหมวดต่อได้หลังงานลบรูปเสร็จสมบูรณ์
         </p>
       )}
-      {message && (
-        <p
-          role="alert"
-          className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          {message}
-        </p>
-      )}
 
       {operations.length > 0 && (
         <section aria-label="งานลบรูปที่รอดำเนินการ" className="mt-5">
@@ -370,14 +361,6 @@ export function SectionPanel({
                   </ul>
                 )}
               </div>
-            )}
-            {message && (
-              <p
-                role="alert"
-                className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-              >
-                {message}
-              </p>
             )}
             <label
               className="mt-5 block text-sm font-medium"

@@ -27,6 +27,9 @@ vi.mock("@/app/admin/editor/actions", () => ({ createMediaUploadTicket: vi.fn() 
 vi.mock("@/components/admin/unsaved-navigation", () => ({
   useUnsavedNavigation: () => ({ dirty: false, ...unsavedNavigation }),
 }));
+vi.mock("@/components/admin/admin-toast", () => ({
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+}));
 vi.mock("@/components/editor/document-editor", () => ({
   DocumentEditor: ({ content, onChange }: { content: unknown; onChange: (content: unknown, pendingImages: unknown[]) => void }) => (
     <>
@@ -128,7 +131,7 @@ it("keeps content stage and values when save fails", async () => {
   await user.type(title, "ชื่อที่ยังไม่บันทึก");
   await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
 
-  expect((await screen.findByRole("alert")).textContent).toContain("Version conflict กรุณา Reload");
+  expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
   expect((title as HTMLInputElement).value).toBe("ชื่อที่ยังไม่บันทึก");
   expect(navigation.replace).not.toHaveBeenCalled();
@@ -288,7 +291,7 @@ it("keeps the original route context when a section move fails", async () => {
   await user.selectOptions(screen.getByRole("combobox", { name: "หมวด" }), childSectionId);
   await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
 
-  expect((await screen.findByRole("alert")).textContent).toContain("ย้ายหมวดไม่สำเร็จ");
+  expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
   expect(navigation.replace).not.toHaveBeenCalled();
   expect(unsavedNavigation.requestNavigation).not.toHaveBeenCalled();

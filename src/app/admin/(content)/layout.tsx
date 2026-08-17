@@ -5,6 +5,7 @@ import {
   AdminExplorerShell,
   AdminExplorerTree,
 } from "@/components/admin/explorer/admin-explorer-shell";
+import { AdminToastProvider } from "@/components/admin/admin-toast";
 import { loadAdminExplorerData } from "@/lib/docs/admin-explorer-server";
 
 import { ContentLoadError } from "./content-load-error";
@@ -39,7 +40,7 @@ export async function AdminExplorerContent({ children }: { children: React.React
     return <ContentLoadError />;
   }
 
-  return children;
+  return <AdminToastProvider>{children}</AdminToastProvider>;
 }
 
 export async function LoadedAdminExplorerTree({ closeDrawer = false }: { closeDrawer?: boolean }) {

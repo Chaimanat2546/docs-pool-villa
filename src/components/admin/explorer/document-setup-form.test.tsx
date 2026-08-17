@@ -13,6 +13,9 @@ const { createDocumentDraft, replace } = vi.hoisted(() => ({
 
 vi.mock("@/app/admin/(content)/documents/actions", () => ({ createDocumentDraft }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+vi.mock("@/components/admin/admin-toast", () => ({
+  useAdminToast: () => ({ showError: vi.fn() }),
+}));
 
 import { DocumentSetupForm } from "./document-setup-form";
 
@@ -123,7 +126,7 @@ describe("DocumentSetupForm", () => {
     await user.type(screen.getByRole("textbox", { name: "Slug" }), "new-doc");
     await user.click(screen.getByRole("button", { name: "สร้างฉบับร่างและเขียนต่อ" }));
 
-    expect((await screen.findByRole("alert")).textContent).toContain("Slug นี้ถูกใช้แล้ว");
+    expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.getByRole<HTMLInputElement>("textbox", { name: "ชื่อเอกสาร" }).value).toBe("เอกสารใหม่");
     expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Slug" }).value).toBe("new-doc");
     expect(screen.getByRole<HTMLSelectElement>("combobox", { name: "หมวดเอกสาร" }).value).toBe(sectionId);

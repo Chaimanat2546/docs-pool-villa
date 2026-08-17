@@ -18,6 +18,7 @@ import { GripVertical } from "lucide-react";
 import { useState, useTransition } from "react";
 
 import { reorderDocuments } from "@/app/admin/(content)/documents/actions";
+import { useAdminToast } from "@/components/admin/admin-toast";
 import type { AdminDocumentStatus, AdminExplorerDocument } from "@/lib/docs/admin-explorer";
 
 type DocumentReorderListProps = {
@@ -46,7 +47,7 @@ export function DocumentReorderList({
   onSaved,
 }: DocumentReorderListProps) {
   const [orderedDocuments, setOrderedDocuments] = useState(() => [...documents]);
-  const [message, setMessage] = useState<string | null>(null);
+  const { showError, showSuccess } = useAdminToast();
   const [isPending, startTransition] = useTransition();
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -61,12 +62,10 @@ export function DocumentReorderList({
     const overIndex = orderedDocuments.findIndex((document) => document.id === over.id);
     if (activeIndex < 0 || overIndex < 0) return;
 
-    setMessage(null);
     setOrderedDocuments((current) => arrayMove(current, activeIndex, overIndex));
   }
 
   function saveOrder() {
-    setMessage(null);
     startTransition(async () => {
       try {
         const result = await reorderDocuments({
@@ -74,12 +73,13 @@ export function DocumentReorderList({
           documentIds: orderedDocuments.map(({ id }) => id),
         });
         if ("error" in result) {
-          setMessage(result.error);
+          showError(result.error);
           return;
         }
+        showSuccess("บันทึกลำดับเอกสารสำเร็จ");
         onSaved();
       } catch {
-        setMessage("บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง");
+        showError("บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง");
       }
     });
   }
@@ -91,11 +91,6 @@ export function DocumentReorderList({
         <p className="mt-1 text-sm text-muted-foreground">ลากเอกสารเพื่อเปลี่ยนลำดับภายในหมวดนี้</p>
       </div>
 
-      {message && (
-        <p role="alert" className="m-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-          {message}
-        </p>
-      )}
 
       <DndContext
         sensors={sensors}

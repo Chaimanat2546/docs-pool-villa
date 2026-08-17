@@ -23,6 +23,7 @@ import { HardDeleteDialog } from "@/components/admin/hard-delete-dialog";
 import { DocumentProgressStepper } from "@/components/admin/document-progress-stepper";
 import { MediaOperationBanner } from "@/components/admin/media-operation-banner";
 import { MediaProgressList } from "@/components/admin/media-progress-list";
+import { useAdminToast } from "@/components/admin/admin-toast";
 import { useUnsavedNavigation } from "@/components/admin/unsaved-navigation";
 import { createMediaUploadTicket } from "@/app/admin/editor/actions";
 import { replacePendingImages } from "@/lib/media/content-media";
@@ -99,6 +100,7 @@ export function DocumentForm({
   hardDeleteFiles?: string[];
 }) {
   const router = useRouter();
+  const { showError, showSuccess } = useAdminToast();
   const { registerDirty, requestNavigation } = useUnsavedNavigation();
   const idRef = useRef(document.id);
   const [stage, setStage] = useState<DocumentStage>(initialStage);
@@ -115,7 +117,6 @@ export function DocumentForm({
   const [version, setVersion] = useState<number>(document.version);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
   const [operation, setOperation] = useState<MediaOperationView | null>(
@@ -169,9 +170,9 @@ export function DocumentForm({
               router.refresh();
             }
           } else if ("pending" in result) setOperation(result.operation);
-          else setMessage(result.error);
+          else showError(result.error);
         } catch (error) {
-          setMessage(
+          showError(
             error instanceof Error ? error.message : "ไม่สามารถลองลบรูปอีกครั้ง"
           );
         } finally {
@@ -180,7 +181,7 @@ export function DocumentForm({
         }
       });
     },
-    [registerDirty, requestNavigation, returnHref, router, startRetry]
+    [registerDirty, requestNavigation, returnHref, router, showError, startRetry]
   );
 
   useEffect(() => {
@@ -213,7 +214,6 @@ export function DocumentForm({
   async function persist(): Promise<boolean> {
     if (saving || operation || !validateFields()) return false;
     setSaving(true);
-    setMessage(null);
     const uploaded = new Map<string, UploadedPendingImage>();
     let saveSubmitted = false;
     try {
@@ -261,7 +261,7 @@ export function DocumentForm({
         media: [...uploaded.values()],
       });
       if ("error" in result) {
-        setMessage(result.error);
+        showError(result.error);
         return false;
       }
       if ("pending" in result) {
@@ -275,7 +275,7 @@ export function DocumentForm({
       setSavedSnapshot(snapshot(form, persistedContent));
       setSavedSectionId(form.sectionId);
       registerDirty(false);
-      setMessage("บันทึกเอกสารสำเร็จ");
+      showSuccess("บันทึกเอกสารสำเร็จ");
       return true;
     } catch (error) {
       if (!saveSubmitted && uploaded.size > 0)
@@ -286,7 +286,7 @@ export function DocumentForm({
             displayLabel: `${item.mediaId}.webp`,
           }))
         );
-      setMessage(
+      showError(
         error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ"
       );
       return false;
@@ -325,11 +325,10 @@ export function DocumentForm({
   async function remove() {
     if (saving || operation) return;
     setSaving(true);
-    setMessage(null);
     const result = await deleteDocument(document.id, version);
     setSaving(false);
     if ("error" in result) {
-      setMessage(result.error);
+      showError(result.error);
       return;
     }
     if ("pending" in result) {
@@ -358,14 +357,6 @@ export function DocumentForm({
 
       <DocumentProgressStepper currentStep={stage} />
 
-      {message && (
-        <p
-          role="alert"
-          className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          {message}
-        </p>
-      )}
       {operation && (
         <MediaOperationBanner
           operation={operation}

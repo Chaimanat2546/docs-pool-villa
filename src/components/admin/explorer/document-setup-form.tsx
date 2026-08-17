@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { createDocumentDraft } from "@/app/admin/(content)/documents/actions";
 import { DocumentProgressStepper } from "@/components/admin/document-progress-stepper";
+import { useAdminToast } from "@/components/admin/admin-toast";
 import {
   getAdminSectionPath,
   type AdminExplorerSection,
@@ -21,13 +22,13 @@ export function DocumentSetupForm({
   selectedSectionId,
 }: DocumentSetupFormProps) {
   const router = useRouter();
+  const { showError } = useAdminToast();
   const documentIdRef = useRef(crypto.randomUUID());
   const titleInputRef = useRef<HTMLInputElement>(null);
   const submittingRef = useRef(false);
   const [sectionId, setSectionId] = useState(selectedSectionId);
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const selectedPath = getAdminSectionPath(sections, sectionId);
 
@@ -41,7 +42,6 @@ export function DocumentSetupForm({
 
     submittingRef.current = true;
     setIsPending(true);
-    setMessage(null);
     try {
       const result = await createDocumentDraft({
         id: documentIdRef.current,
@@ -51,11 +51,11 @@ export function DocumentSetupForm({
       });
 
       if ("error" in result) {
-        setMessage(result.error);
+        showError(result.error);
         return;
       }
       if ("pending" in result) {
-        setMessage(result.operation.message);
+        showError(result.operation.message);
         return;
       }
 
@@ -65,7 +65,7 @@ export function DocumentSetupForm({
         )}&stage=content`
       );
     } catch (error) {
-      setMessage(
+      showError(
         error instanceof Error ? error.message : "ไม่สามารถสร้างฉบับร่างได้"
       );
     } finally {
@@ -91,14 +91,6 @@ export function DocumentSetupForm({
       <DocumentProgressStepper currentStep="setup" />
 
       <section aria-labelledby="document-setup-heading">
-        {message && (
-          <p
-            role="alert"
-            className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-          >
-            {message}
-          </p>
-        )}
         <form aria-label="ข้อมูลเอกสาร" className="space-y-5" onSubmit={submit}>
           <div className="mb-6">
             <h2 id="document-setup-heading" className="text-xl font-semibold">

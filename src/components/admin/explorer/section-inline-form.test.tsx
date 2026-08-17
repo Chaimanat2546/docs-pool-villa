@@ -16,6 +16,9 @@ const { refresh, replace, saveSection } = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, replace }) }));
 vi.mock("@/app/admin/(content)/structure/actions", () => ({ saveSection }));
+vi.mock("@/components/admin/admin-toast", () => ({
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+}));
 
 const root: AdminExplorerSection = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -58,7 +61,7 @@ describe("SectionInlineForm", () => {
     await user.click(screen.getByRole("button", { name: "บันทึกหมวด" }));
 
     const form = screen.getByRole("form", { name: "สร้างหมวดหลัก" });
-    expect(within(form).getByRole("alert").textContent).toContain("Slug หรือ Route นี้ถูกใช้งานแล้ว");
+    expect(within(form).queryByRole("alert")).toBeNull();
     expect(title.value).toBe("การชำระเงิน");
     expect((screen.getByRole("textbox", { name: "Slug" }) as HTMLInputElement).value).toBe("payment");
   });
