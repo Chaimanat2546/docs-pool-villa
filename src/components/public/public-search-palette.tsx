@@ -231,7 +231,7 @@ export function PublicSearchPalette() {
                         selectableItems[selectedIndex]?.href === heading.href
                       }
                       role="option"
-                      className={`flex min-h-11 items-start gap-2 rounded-md py-2 pl-8 pr-3 text-sm ${
+                      className={`flex min-h-11 items-center gap-2 rounded-md py-2 pl-8 pr-3 text-sm ${
                         selectableItems[selectedIndex]?.href === heading.href
                           ? "bg-muted"
                           : "hover:bg-muted"
@@ -241,7 +241,7 @@ export function PublicSearchPalette() {
                         data-testid="heading-icon"
                         size={16}
                         aria-hidden="true"
-                        className="mt-0.5 shrink-0"
+                        className="shrink-0"
                       />
                       <span>{heading.heading}</span>
                     </a>

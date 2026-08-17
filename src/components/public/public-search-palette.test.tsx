@@ -123,6 +123,12 @@ describe("PublicSearchPalette", () => {
     expect(screen.getAllByTestId("document-icon")).toHaveLength(2);
     expect(screen.getAllByTestId("heading-result")).toHaveLength(3);
     expect(screen.getAllByTestId("heading-icon")).toHaveLength(3);
+    expect(screen.getAllByTestId("heading-result")[0].className).toContain(
+      "items-center"
+    );
+    expect(screen.getAllByTestId("heading-icon")[0].className).not.toContain(
+      "mt-0.5"
+    );
     expect(screen.getAllByTestId("document-result")[0].textContent).toContain(
       "บัญชี"
     );
