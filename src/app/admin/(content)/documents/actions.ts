@@ -58,7 +58,7 @@ function parseReorderDocumentsInput(value: unknown): ReorderDocumentsInput | nul
   if (!isRecord(value) || typeof value.sectionId !== "string" || !uuidPattern.test(value.sectionId)) return null;
   if (!Array.isArray(value.documentIds) || value.documentIds.length === 0) return null;
   if (value.documentIds.some((id) => typeof id !== "string" || !uuidPattern.test(id))) return null;
-  return new Set(value.documentIds).size === value.documentIds.length
+  return new Set(value.documentIds.map((id) => id.toLowerCase())).size === value.documentIds.length
     ? { sectionId: value.sectionId, documentIds: value.documentIds }
     : null;
 }

@@ -31,6 +31,7 @@ const documentId = "11111111-1111-4111-8111-111111111111";
 const sectionId = "22222222-2222-4222-8222-222222222222";
 const mediaId = "33333333-3333-4333-8333-333333333333";
 const secondDocumentId = "44444444-4444-4444-8444-444444444444";
+const caseDocumentId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 
 describe("saveDocument", () => {
   beforeEach(() => {
@@ -200,8 +201,23 @@ describe("reorderDocuments", () => {
     [{ sectionId, documentIds: [] }],
     [{ sectionId, documentIds: ["invalid", secondDocumentId] }],
     [{ sectionId, documentIds: [documentId, documentId] }],
+    [{ sectionId, documentIds: [caseDocumentId, caseDocumentId.toUpperCase()] }],
   ])("rejects malformed reorder input without calling the RPC", async (input) => {
     await expect(reorderDocuments(input)).resolves.toEqual({ error: "ข้อมูลลำดับเอกสารไม่ถูกต้อง" });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidatePublicDocs).not.toHaveBeenCalled();
+  });
+
+  it("does not create a client or call the RPC when admin access rejects", async () => {
+    const redirectError = Object.assign(new Error("NEXT_REDIRECT"), {
+      digest: "NEXT_REDIRECT;/auth/admin-only",
+    });
+    requireAdmin.mockRejectedValue(redirectError);
+
+    await expect(reorderDocuments({ sectionId, documentIds: [documentId, secondDocumentId] })).rejects.toBe(redirectError);
+
+    expect(createClient).not.toHaveBeenCalled();
     expect(rpc).not.toHaveBeenCalled();
   });
 
