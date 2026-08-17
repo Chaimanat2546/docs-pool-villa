@@ -11,7 +11,7 @@
 - [x] Admin File Explorer cross-module follow-up: Local gate และ Staging App/Admin smoke เสร็จแล้ว ([รายละเอียด](docs/todo/admin-file-explorer.md))
 - [x] Admin File Explorer: non-admin browser smoke ผ่าน; ไม่มี Migration หรือ Media Worker deploy
 - [x] Approved cross-module follow-up: removed the unused section description field; Local tests and Staging migration-history/DB-lint verification complete, Production migration remains pending separate approval
-- [ ] M07 กำลังดำเนินการ: Title-only Search ผ่าน Local automated checks; browser/performance hardening ค้าง
+- [ ] M07 กำลังดำเนินการ: Search Title และหัวข้อ H2/H3 ผ่าน focused Local tests; browser/performance hardening ค้าง
 
 ## Module progress
 
@@ -25,7 +25,7 @@
 | M04 Documents | Complete — verified Local/Staging work closed | [TODO](docs/todo/M04-documents.md) |
 | M05 Public Docs | Complete — verified Local/Staging work closed | [TODO](docs/todo/M05-public-docs.md) |
 | M06 Media Lifecycle | Complete — historical lifecycle และ post-closeout safety remediation verified on Staging | [TODO](docs/todo/M06-media-management.md) |
-| M07 Search/Hardening | In progress — Title-only Search ผ่าน Local automated checks; browser/performance hardening ค้าง | [TODO](docs/todo/M07-search-hardening.md) |
+| M07 Search/Hardening | In progress — Search Title และหัวข้อ H2/H3 ผ่าน focused Local tests; browser/performance hardening ค้าง | [TODO](docs/todo/M07-search-hardening.md) |
 
 ## Approved cross-module follow-up
 

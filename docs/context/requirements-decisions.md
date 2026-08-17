@@ -17,7 +17,7 @@
 - Admin ใช้ `EXISTS(uid = auth.uid() AND role_id = 1)`
 - ห้ามแก้ Legacy tables/RLS/functions
 - Search ใช้ `pg_trgm` เฉพาะ Docs
-- Search รอบแรกค้นหาเฉพาะ Title ของ Published documents; query ว่างแสดงรายการทั้งหมดแบบ 10 รายการต่อหน้า และไม่ค้น Excerpt/Content, typo หรือ autocomplete
+- Search รอบนี้ค้นหา Title และหัวข้อ H2/H3 ของ Published documents แบบ partial match; heading result ลิงก์ไป anchor เดิมของหน้า reader, query ว่างแสดงเอกสารทั้งหมดแบบ 10 รายการต่อหน้า และไม่ค้น Excerpt/paragraph/content, typo หรือ autocomplete; ไม่สร้าง `search_text` หรือข้อมูลหัวข้อซ้ำ
 - Public Search ใช้ `Ctrl+K`/`⌘K` เพื่อไปหรือโฟกัสช่องค้นหา; Enter ส่ง native GET form
 - Homepage สร้างอัตโนมัติ ไม่มี Admin configuration
 - Staging/Production แยก Cloudflare/Supabase ทั้งหมด
