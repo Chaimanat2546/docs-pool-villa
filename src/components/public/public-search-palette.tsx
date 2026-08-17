@@ -1,11 +1,34 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { Search } from "lucide-react";
+import { FileText, List, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type SearchItem = { id: string; href: string; title: string; sectionTitle: string; parentTitle: string | null; kind: "document" | "heading"; heading?: string };
+type GroupedSearchResult = { document: SearchItem; headings: SearchItem[] };
+
+function getGroupedSearchResults(items: SearchItem[]): GroupedSearchResult[] {
+  const groups = new Map<string, GroupedSearchResult>();
+
+  for (const item of items) {
+    const documentHref = item.kind === "document" ? item.href : item.href.split("#", 1)[0];
+    const group = groups.get(documentHref);
+
+    if (item.kind === "document") {
+      groups.set(documentHref, { document: item, headings: group?.headings ?? [] });
+    } else if (group) {
+      group.headings.push(item);
+    } else {
+      groups.set(documentHref, {
+        document: { ...item, href: documentHref, kind: "document" },
+        headings: [item],
+      });
+    }
+  }
+
+  return [...groups.values()];
+}
 
 export function PublicSearchPalette() {
   const [open, setOpen] = useState(false);
@@ -15,6 +38,8 @@ export function PublicSearchPalette() {
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const groupedItems = getGroupedSearchResults(items);
+  const selectableItems = groupedItems.flatMap((group) => [group.document, ...group.headings]);
 
   useEffect(() => {
     if (!open) return;
@@ -64,10 +89,10 @@ export function PublicSearchPalette() {
   }
 
   function onInputKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (!items.length) return;
-    if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => (current + 1) % items.length); }
-    if (event.key === "ArrowUp") { event.preventDefault(); setSelectedIndex((current) => (current - 1 + items.length) % items.length); }
-    if (event.key === "Enter" && selectedIndex >= 0) { event.preventDefault(); router.push(items[selectedIndex].href); setOpen(false); }
+    if (!selectableItems.length) return;
+    if (event.key === "ArrowDown") { event.preventDefault(); setSelectedIndex((current) => (current + 1) % selectableItems.length); }
+    if (event.key === "ArrowUp") { event.preventDefault(); setSelectedIndex((current) => (current - 1 + selectableItems.length) % selectableItems.length); }
+    if (event.key === "Enter" && selectedIndex >= 0) { event.preventDefault(); router.push(selectableItems[selectedIndex].href); setOpen(false); }
   }
 
   return <Dialog.Root open={open} onOpenChange={handleOpenChange}>
@@ -81,11 +106,15 @@ export function PublicSearchPalette() {
           : status === "error" ? <p className="px-3 py-4 text-sm text-destructive" role="alert">ไม่สามารถค้นหาคู่มือได้ ลองพิมพ์อีกครั้ง</p>
             : items.length === 0 ? <p className="px-3 py-4 text-sm text-muted-foreground" role="status">{query ? "ไม่พบเอกสารหรือหัวข้อที่ตรงกับคำค้น" : "ยังไม่มีเอกสารที่เผยแพร่"}</p>
               : <ul className="mt-2 max-h-80 overflow-y-auto" aria-label="ผลการค้นหา" role="listbox">
-                {items.map((item, index) => <li key={`${item.kind}-${item.id}-${item.href}`} aria-selected={index === selectedIndex} role="option">
-                  <a href={item.href} className={`block min-h-11 rounded-md px-3 py-2 ${index === selectedIndex ? "bg-muted" : "hover:bg-muted"}`}>
-                    <span className="block font-medium">{item.title}</span>
-                    {item.kind === "heading" && <span className="text-sm text-muted-foreground">หัวข้อ: {item.heading}</span>}
+                {groupedItems.map((group) => <li key={group.document.href}>
+                  <a data-testid="document-result" href={group.document.href} aria-selected={selectableItems[selectedIndex]?.href === group.document.href} role="option" className={`flex min-h-11 items-center gap-2 rounded-md px-3 py-2 font-medium ${selectableItems[selectedIndex]?.href === group.document.href ? "bg-muted" : "hover:bg-muted"}`}>
+                    <FileText data-testid="document-icon" size={16} aria-hidden="true" />
+                    <span>{group.document.title}</span>
                   </a>
+                  {group.headings.map((heading) => <a key={`${heading.id}-${heading.href}`} data-testid="heading-result" href={heading.href} aria-selected={selectableItems[selectedIndex]?.href === heading.href} role="option" className={`flex min-h-11 items-start gap-2 rounded-md py-2 pl-8 pr-3 text-sm ${selectableItems[selectedIndex]?.href === heading.href ? "bg-muted" : "hover:bg-muted"}`}>
+                    <List data-testid="heading-icon" size={16} aria-hidden="true" className="mt-0.5 shrink-0" />
+                    <span>{heading.heading}</span>
+                  </a>)}
                 </li>)}
               </ul>}
       </Dialog.Popup>

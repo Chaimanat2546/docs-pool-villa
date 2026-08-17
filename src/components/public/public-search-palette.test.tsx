@@ -49,8 +49,42 @@ describe("PublicSearchPalette", () => {
     await waitFor(() => expect(trigger).toBe(document.activeElement));
   });
 
-  it("selects a result with Arrow Down and opens it with Enter", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ id: "doc", href: "/guides/account#ตั้งค่า", title: "บัญชี", sectionTitle: "คู่มือ", parentTitle: null, kind: "heading", heading: "ตั้งค่า" }] }) }));
+  it("groups matching headings under their document rows with icons", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [
+      { id: "account", href: "/guides/account#ตั้งค่า", title: "บัญชี", sectionTitle: "คู่มือ", parentTitle: null, kind: "heading", heading: "ตั้งค่า" },
+      { id: "account", href: "/guides/account#ความปลอดภัย", title: "บัญชี", sectionTitle: "คู่มือ", parentTitle: null, kind: "heading", heading: "ความปลอดภัย" },
+      { id: "booking", href: "/guides/booking#การยืนยัน", title: "การจอง", sectionTitle: "คู่มือ", parentTitle: null, kind: "heading", heading: "การยืนยัน" },
+    ] }) }));
+    render(<PublicSearchPalette />);
+    fireEvent.click(screen.getByRole("button", { name: "ค้นหาคู่มือ" }));
+    await screen.findAllByText("บัญชี");
+
+    expect(screen.getAllByTestId("document-result")).toHaveLength(2);
+    expect(screen.getAllByTestId("document-icon")).toHaveLength(2);
+    expect(screen.getAllByTestId("heading-result")).toHaveLength(3);
+    expect(screen.getAllByTestId("heading-icon")).toHaveLength(3);
+    expect(screen.getAllByTestId("document-result")[0].textContent).toContain("บัญชี");
+  });
+
+  it("selects a grouped heading row with Arrow Down and Enter", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [
+      { id: "account", href: "/guides/account#ตั้งค่า", title: "บัญชี", sectionTitle: "คู่มือ", parentTitle: null, kind: "heading", heading: "ตั้งค่า" },
+    ] }) }));
+    render(<PublicSearchPalette />);
+    fireEvent.click(screen.getByRole("button", { name: "ค้นหาคู่มือ" }));
+    const input = await screen.findByRole("searchbox", { name: "ค้นหาคู่มือ" });
+    await screen.findByTestId("heading-result");
+
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    await waitFor(() => expect(screen.getByTestId("heading-result").getAttribute("aria-selected")).toBe("true"));
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(push).toHaveBeenCalledWith("/guides/account#ตั้งค่า");
+  });
+
+  it("selects a document result with Arrow Down and opens it with Enter", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ id: "doc", href: "/guides/account", title: "บัญชี", sectionTitle: "คู่มือ", parentTitle: null, kind: "document" }] }) }));
     render(<PublicSearchPalette />);
     fireEvent.click(screen.getByRole("button", { name: "ค้นหาคู่มือ" }));
     await screen.findByText("บัญชี");
@@ -58,7 +92,7 @@ describe("PublicSearchPalette", () => {
     fireEvent.keyDown(screen.getByRole("searchbox", { name: "ค้นหาคู่มือ" }), { key: "ArrowDown" });
     fireEvent.keyDown(screen.getByRole("searchbox", { name: "ค้นหาคู่มือ" }), { key: "Enter" });
 
-    expect(push).toHaveBeenCalledWith("/guides/account#ตั้งค่า");
+    expect(push).toHaveBeenLastCalledWith("/guides/account");
   });
 
   it("shows a recoverable error when live search fails", async () => {

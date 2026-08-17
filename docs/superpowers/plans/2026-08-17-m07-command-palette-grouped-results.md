@@ -4,7 +4,7 @@
 
 **Goal:** Group matching heading results under one document row in the public command palette, with document and heading icons.
 
-**Architecture:** Keep `/api/search` and `PublicSearchItem` unchanged. `PublicSearchPalette` will derive a flat keyboard-navigation collection and a grouped visual collection from the same 10 returned items, so grouping cannot change search scope or ordering. Document and heading rows retain their existing direct document/anchor hrefs.
+**Architecture:** Keep `/api/search` and `PublicSearchItem` unchanged. `PublicSearchPalette` will derive grouped document rows and then flatten those visual rows for keyboard navigation. A heading-only API response creates a synthetic document row from its document metadata, so every displayed row is selectable; API scope and its 10-item cap remain unchanged.
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript, Base UI Dialog, lucide-react, Vitest, Testing Library, Tailwind CSS.
 
@@ -28,7 +28,7 @@
 **Interfaces:**
 - Consumes: existing `SearchItem = { id; href; title; sectionTitle; parentTitle; kind; heading? }` from the route response.
 - Produces: `getGroupedSearchResults(items: SearchItem[]): GroupedSearchResult[]`, where `GroupedSearchResult = { document: SearchItem; headings: SearchItem[] }`.
-- Consumes: flattened ordered `SearchItem[]` for `selectedIndex`, Arrow navigation, and Enter navigation.
+- Produces: `getSelectableSearchItems(groups: GroupedSearchResult[]): SearchItem[]`, ordered as each document followed by its headings, for `selectedIndex`, Arrow navigation, and Enter navigation.
 
 - [ ] **Step 1: Write failing component tests for grouped rendering and navigation**
 
@@ -42,7 +42,7 @@ expect(screen.getAllByTestId("heading-icon")).toHaveLength(3);
 expect(screen.getByTestId("document-result").textContent).toContain("บัญชี");
 ```
 
-Add an Arrow Down + Enter test that moves through the flattened visual order and calls `push` with the selected heading anchor href. Keep existing tests for a single result, Escape/focus, Ctrl/Cmd+K, IME, status states, and empty query.
+Add an Arrow Down + Enter test that moves through the flattened visual order and calls `push` with the synthetic document href first, then the selected heading anchor href. Keep existing tests for a single result, Escape/focus, Ctrl/Cmd+K, IME, status states, and empty query.
 
 - [ ] **Step 2: Run the palette test to verify it fails**
 
@@ -78,9 +78,9 @@ function getGroupedSearchResults(items: SearchItem[]): GroupedSearchResult[] {
 }
 ```
 
-Render each `group.document` once as a link row with `<FileText data-testid="document-icon" aria-hidden />`; render each `group.headings` below it as an indented link row with `<List data-testid="heading-icon" aria-hidden />`. Give interactive rows `data-testid="document-result"` or `data-testid="heading-result"`, retain `role="option"`, and compute each row's selected state by matching its href against `items[selectedIndex]?.href`.
+Add a helper that flattens each group as `[group.document, ...group.headings]`, and use that array for `selectedIndex`, Arrow navigation, and Enter navigation. Render each `group.document` once as a link row with `<FileText data-testid="document-icon" aria-hidden />`; render each `group.headings` below it as an indented link row with `<List data-testid="heading-icon" aria-hidden />`. Give interactive rows `data-testid="document-result"` or `data-testid="heading-result"`, retain `role="option"`, and compute each row's selected state by matching its href against `selectableItems[selectedIndex]?.href`.
 
-Do not change `onInputKeyDown`: it continues to navigate raw `items`, which preserves API result order and uses each existing href for Enter.
+Update `onInputKeyDown` to navigate `selectableItems`, which mirrors the visual group order and uses existing document or anchor hrefs for Enter.
 
 - [ ] **Step 4: Run palette tests to verify the implementation passes**
 
