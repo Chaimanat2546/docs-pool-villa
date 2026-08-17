@@ -10,6 +10,8 @@
 
 **Post-closeout note (14 August 2026):** Paragraph Tab indentation renders as first-line indentation in the editor, Preview, and reader; persisted `indentLevel` and its keyboard behavior remain unchanged. Enter creates an independently indentable ordinary paragraph which renders with no paragraph-to-paragraph gap; headings, lists, callouts, quotes, code blocks, images, and embeds retain their own keyboard behavior. Tab after a legacy hard break first splits it into independently indentable paragraphs.
 
+**Post-closeout note (17 August 2026):** Editor typography, block spacing, and usable text width now share the same CSS rules as Preview/Public for text, headings, lists, links, and inline code; editor-only frame, toolbar, and minimum height remain unchanged.
+
 ## Scope
 
 - [x] Tiptap schema, Toolbar และ Slash Command
