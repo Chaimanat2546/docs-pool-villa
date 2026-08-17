@@ -60,12 +60,12 @@ it("renders the admin navigation with the current page", () => {
   expect(screen.getByRole("link", { name: "กลับหน้าคู่มือ" }).getAttribute("href")).toBe("/");
 });
 
-it("renders the documentation management identity with a house icon in the desktop sidebar", () => {
-  const { container } = render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
+it("renders the documentation management identity and content navigation in the desktop sidebar", () => {
+  render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
 
   expect(screen.getByText("ระบบจัดการคู่มือ")).not.toBeNull();
   expect(screen.getByText("Baan Pool Villa")).not.toBeNull();
-  expect(container.querySelector("aside svg.lucide-house")).not.toBeNull();
+  expect(screen.getByRole("link", { name: "จัดการเนื้อหา" })).not.toBeNull();
   expect(screen.queryByText("ผู้ดูแลคู่มือ")).toBeNull();
 });
 
