@@ -1,5 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 
+import { getDocumentHeadings, type DocumentHeading } from "@/lib/docs/headings";
+
 import { YouTubePlayer } from "./youtube-player";
 
 type ContentMark = { type?: string; attrs?: { href?: unknown } };
@@ -11,37 +13,8 @@ type ContentNode = {
   content?: ContentNode[];
 };
 
-export type TocItem = { id: string; level: 2 | 3; text: string };
-
-function textFromNode(node: ContentNode): string {
-  return node.text ?? node.content?.map(textFromNode).join("") ?? "";
-}
-
-function slugify(value: string) {
-  const normalized = value.toLowerCase().trim().normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
-  return normalized.replace(/[^\p{L}\p{M}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "section";
-}
-
-export function getTableOfContents(content: unknown): TocItem[] {
-  const root = content as ContentNode;
-  const usedIds = new Map<string, number>();
-  const headings: TocItem[] = [];
-  const visit = (node: ContentNode) => {
-    if (node.type === "table") return;
-    if (node.type === "heading" && (node.attrs?.level === 2 || node.attrs?.level === 3)) {
-      const text = textFromNode(node).trim();
-      if (text) {
-        const base = slugify(text);
-        const count = usedIds.get(base) ?? 0;
-        usedIds.set(base, count + 1);
-        headings.push({ id: count ? `${base}-${count + 1}` : base, level: node.attrs.level, text });
-      }
-    }
-    node.content?.forEach(visit);
-  };
-  visit(root);
-  return headings;
-}
+export type TocItem = DocumentHeading;
+export const getTableOfContents = getDocumentHeadings;
 
 function isSafeHref(value: unknown): value is string {
   if (typeof value !== "string") return false;
