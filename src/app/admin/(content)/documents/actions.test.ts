@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireAdmin, runDocumentSave } = vi.hoisted(() => ({
+const { createClient, revalidatePath, revalidatePublicDocs, requireAdmin, rpc, runDocumentSave } = vi.hoisted(() => ({
+  createClient: vi.fn(),
+  revalidatePath: vi.fn(),
+  revalidatePublicDocs: vi.fn(),
   requireAdmin: vi.fn(),
+  rpc: vi.fn(),
   runDocumentSave: vi.fn(),
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath }));
 vi.mock("@/lib/auth/require-admin", () => ({ requireAdmin }));
 vi.mock("@/lib/docs/content", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/docs/content")>(),
   validateDocumentContent: vi.fn((content) => ({ ok: true, content })),
 }));
-vi.mock("@/lib/docs/public-cache", () => ({ revalidatePublicDocs: vi.fn() }));
+vi.mock("@/lib/docs/public-cache", () => ({ revalidatePublicDocs }));
 vi.mock("@/lib/media/lifecycle", () => ({
   prepareAndDeleteDocument: vi.fn(),
   retryMediaCleanup: vi.fn(),
@@ -19,12 +23,14 @@ vi.mock("@/lib/media/lifecycle", () => ({
   runDocumentSave,
   resumeMediaOperation: vi.fn(),
 }));
+vi.mock("@/lib/server", () => ({ createClient }));
 
-import { createDocumentDraft, saveDocument } from "./actions";
+import { createDocumentDraft, reorderDocuments, saveDocument } from "./actions";
 
 const documentId = "11111111-1111-4111-8111-111111111111";
 const sectionId = "22222222-2222-4222-8222-222222222222";
 const mediaId = "33333333-3333-4333-8333-333333333333";
+const secondDocumentId = "44444444-4444-4444-8444-444444444444";
 
 describe("saveDocument", () => {
   beforeEach(() => {
@@ -162,5 +168,51 @@ describe("createDocumentDraft", () => {
       slug: "new-doc",
     })).resolves.toEqual({ error: "ข้อมูลเอกสารไม่ถูกต้อง" });
     expect(runDocumentSave).not.toHaveBeenCalled();
+  });
+});
+
+describe("reorderDocuments", () => {
+  beforeEach(() => {
+    requireAdmin.mockReset();
+    requireAdmin.mockResolvedValue(undefined);
+    createClient.mockReset();
+    createClient.mockResolvedValue({ rpc });
+    rpc.mockReset();
+    rpc.mockResolvedValue({ error: null });
+    revalidatePath.mockReset();
+    revalidatePublicDocs.mockReset();
+  });
+
+  it("reorders a complete document list and invalidates affected views", async () => {
+    await expect(reorderDocuments({ sectionId, documentIds: [documentId, secondDocumentId] })).resolves.toEqual({ success: true });
+
+    expect(rpc).toHaveBeenCalledWith("doc_reorder_documents", {
+      p_section_id: sectionId,
+      p_document_ids: [documentId, secondDocumentId],
+    });
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/structure");
+    expect(revalidatePath).toHaveBeenCalledWith("/");
+    expect(revalidatePublicDocs).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [{ sectionId: "invalid", documentIds: [documentId, secondDocumentId] }],
+    [{ sectionId, documentIds: [] }],
+    [{ sectionId, documentIds: ["invalid", secondDocumentId] }],
+    [{ sectionId, documentIds: [documentId, documentId] }],
+  ])("rejects malformed reorder input without calling the RPC", async (input) => {
+    await expect(reorderDocuments(input)).resolves.toEqual({ error: "ข้อมูลลำดับเอกสารไม่ถูกต้อง" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("returns a safe error without invalidation when the RPC fails", async () => {
+    rpc.mockResolvedValue({ error: { message: "database failure" } });
+
+    await expect(reorderDocuments({ sectionId, documentIds: [documentId, secondDocumentId] })).resolves.toEqual({
+      error: "บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง",
+    });
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidatePublicDocs).not.toHaveBeenCalled();
   });
 });

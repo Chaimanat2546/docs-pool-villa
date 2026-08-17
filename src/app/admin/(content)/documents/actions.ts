@@ -7,6 +7,7 @@ import { normalizeYouTubeContent, validateDocumentContent } from "@/lib/docs/con
 import { revalidatePublicDocs } from "@/lib/docs/public-cache";
 import { prepareAndDeleteDocument, retryMediaCleanup as runCleanupRetry, rollbackUploadedMedia as runRollback, runDocumentSave, resumeMediaOperation } from "@/lib/media/lifecycle";
 import type { LifecycleResult, UploadedMediaCommand } from "@/lib/media/lifecycle-types";
+import { createClient } from "@/lib/server";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -46,8 +47,20 @@ export type DocumentActionResult =
   | { success: true; id: string; version: number; path: string }
   | Extract<LifecycleResult, { pending: true }>;
 
+type ReorderDocumentsInput = { sectionId: string; documentIds: string[] };
+export type ReorderDocumentsResult = { success: true } | { error: string };
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function parseReorderDocumentsInput(value: unknown): ReorderDocumentsInput | null {
+  if (!isRecord(value) || typeof value.sectionId !== "string" || !uuidPattern.test(value.sectionId)) return null;
+  if (!Array.isArray(value.documentIds) || value.documentIds.length === 0) return null;
+  if (value.documentIds.some((id) => typeof id !== "string" || !uuidPattern.test(id))) return null;
+  return new Set(value.documentIds).size === value.documentIds.length
+    ? { sectionId: value.sectionId, documentIds: value.documentIds }
+    : null;
 }
 
 function parseMedia(value: unknown): DocumentMediaInput[] | null {
@@ -135,6 +148,24 @@ export async function createDocumentDraft(value: unknown): Promise<DocumentActio
     expectedVersion: null,
     media: [],
   });
+}
+
+export async function reorderDocuments(value: unknown): Promise<ReorderDocumentsResult> {
+  await requireAdmin();
+  const input = parseReorderDocumentsInput(value);
+  if (!input) return { error: "ข้อมูลลำดับเอกสารไม่ถูกต้อง" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("doc_reorder_documents", {
+    p_section_id: input.sectionId,
+    p_document_ids: input.documentIds,
+  });
+  if (error) return { error: "บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง" };
+
+  revalidatePath("/admin/structure");
+  revalidatePath("/");
+  revalidatePublicDocs();
+  return { success: true };
 }
 
 export async function deleteDocument(documentId: unknown, expectedVersion: unknown): Promise<DocumentActionResult> {
