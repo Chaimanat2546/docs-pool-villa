@@ -3,7 +3,9 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const { push } = vi.hoisted(() => ({ push: vi.fn() }));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 import { PublicSearchPalette } from "./public-search-palette";
 
@@ -24,5 +26,17 @@ describe("PublicSearchPalette", () => {
     render(<PublicSearchPalette />);
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(await screen.findByRole("dialog", { name: "ค้นหาคู่มือ" })).toBeTruthy();
+  });
+
+  it("selects a result with Arrow Down and opens it with Enter", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ id: "doc", href: "/guides/account#ตั้งค่า", title: "บัญชี", sectionTitle: "คู่มือ", parentTitle: null, kind: "heading", heading: "ตั้งค่า" }] }) }));
+    render(<PublicSearchPalette />);
+    fireEvent.click(screen.getByRole("button", { name: "ค้นหาคู่มือ" }));
+    await screen.findByText("บัญชี");
+
+    fireEvent.keyDown(screen.getByRole("searchbox", { name: "ค้นหาคู่มือ" }), { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByRole("searchbox", { name: "ค้นหาคู่มือ" }), { key: "Enter" });
+
+    expect(push).toHaveBeenCalledWith("/guides/account#ตั้งค่า");
   });
 });
