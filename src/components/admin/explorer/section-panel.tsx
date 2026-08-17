@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { FileWarning } from "lucide-react";
+import { FileWarning, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { forwardRef, useRef, useState, useTransition } from "react";
@@ -289,8 +289,9 @@ export function SectionPanel({
               type="button"
               disabled={isPending || mutationsBlocked}
               onClick={requestDelete}
-              className=" border border-destructive/10 cursor-pointer min-h-11 rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              className=" border border-destructive/10 cursor-pointer min-h-11 rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 flex items-center gap-1"
             >
+              <Trash2 className=" size-4"/>
               ลบหมวด
             </button>
           )}
@@ -350,7 +351,7 @@ export function SectionPanel({
                   ยืนยันการลบหมวด
                 </Dialog.Title>
                 <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-                  การลบเป็นแบบถาวร เอกสารและหมวดย่อยที่ไม่มีรูปจะถูกลบด้วย
+                  การลบเป็นแบบถาวร เอกสารและหมวดย่อยจะถูกลบด้วย
                 </Dialog.Description>
               </div>
             </div>
@@ -367,11 +368,6 @@ export function SectionPanel({
                       <li key={`${title}-${index}`}>{title}</li>
                     ))}
                   </ul>
-                )}
-                {deletePreview.mediaCount > 0 && (
-                  <p className="mt-2 text-destructive">
-                    ระบบจะไม่ลบข้อมูลจนกว่าจะลบรูปจาก R2 สำเร็จ
-                  </p>
                 )}
               </div>
             )}

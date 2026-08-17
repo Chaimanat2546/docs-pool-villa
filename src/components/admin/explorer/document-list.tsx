@@ -127,7 +127,7 @@ export function DocumentList({ documents, sections, selectedSectionId }: Documen
                     </p>
                   )}
                   <p className="mt-1 text-xs text-muted-foreground">
-                    อัปเดตล่าสุด {dateFormatter.format(new Date(document.updatedAt))} · <span className="break-all font-mono">{document.slug}</span>
+                    อัปเดตล่าสุด {dateFormatter.format(new Date(document.updatedAt))}
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
