@@ -1,13 +1,13 @@
 # M07 — pg_trgm Search, Performance & Security Hardening
 
-**Status:** Not started
+**Status:** In progress — title-only public search Local implementation complete; browser smoke and remaining hardening pending
 
 ## Scope
 
-- [ ] เปิด `pg_trgm` ใน Environment Docs
-- [ ] สร้าง `search_text` จาก Title/Excerpt/Tiptap plain text
-- [ ] GIN trigram index เฉพาะ Docs
-- [ ] Thai partial/typo search และ Published-only result
+- [x] เปิด `pg_trgm` และสร้าง GIN trigram index เฉพาะ `doc_documents.title` Published rows (Local)
+- [x] Public Search แบบ Title-only, Thai partial match, Published-only result, pagination 10 รายการ และไม่มี autocomplete (Local)
+- [x] Keyboard shortcut `Ctrl+K`/`⌘K` สำหรับ Search (Local)
+- [ ] ไม่สร้าง `search_text`; Excerpt/Content, typo/fuzzy search อยู่นอกขอบเขตรอบแรก
 - [ ] Performance tests ตาม p75/p95 และ Capacity baseline
 - [ ] Accessibility และ Browser matrix
 - [ ] RLS/Security regression tests
@@ -24,4 +24,3 @@
 ## Stop
 
 สรุปผล MVP ทั้งหมดและรอภูสั่งขั้นตอน Deployment แยก
-
