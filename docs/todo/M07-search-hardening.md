@@ -11,6 +11,7 @@
 - [x] แสดงสถานะกำลังค้นหา, ไม่พบผลลัพธ์ และข้อผิดพลาดที่ผู้ใช้แก้ไขได้ใน command palette (Local)
 - [x] จัดกลุ่มหัวข้อที่ค้นพบใต้เอกสารเดียวกันใน command palette พร้อมไอคอนเอกสาร/หัวข้อ และเลือกได้ด้วย Arrow/Enter ตามลำดับที่แสดง (Local)
 - [x] แสดงคำเกริ่นของเอกสารใน command palette เพียง 1 บรรทัดพร้อม ellipsis; แถวหัวข้อไม่แสดงคำเกริ่น (Local)
+- [x] ลบหน้าและลิงก์ `/search` แบบเดิม; การเข้าถึง `/search` ตอบ 404 และ command palette/API search ยังคงใช้งาน (Local)
 - [x] Apply/verify title-search migration บน Staging โดยไม่มี seed/role change
 - [x] ไม่สร้าง `search_text`; ใช้ runtime H2/H3 extraction เท่านั้น และยังไม่ค้น Excerpt/paragraph/content, typo/fuzzy search
 - [ ] Performance tests ตาม p75/p95 และ Capacity baseline
