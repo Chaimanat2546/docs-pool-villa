@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { createDocumentDraft } from "@/app/admin/(content)/documents/actions";
+import { DocumentProgressStepper } from "@/components/admin/document-progress-stepper";
 import {
   getAdminSectionPath,
   type AdminExplorerSection,
@@ -87,20 +88,7 @@ export function DocumentSetupForm({
         </p>
       </header>
 
-      <ol
-        aria-label="ขั้นตอนจัดทำเอกสาร"
-        className="mb-6 grid gap-2 text-sm sm:grid-cols-3"
-      >
-        <li aria-current="step" className="rounded-lg border px-3 py-2">
-          <span className="font-medium">1. ข้อมูลเอกสาร</span>
-        </li>
-        <li className="rounded-lg border px-3 py-2">
-          <span className="font-medium">2. เขียนเนื้อหา</span>
-        </li>
-        <li className="rounded-lg border px-3 py-2">
-          <span className="font-medium">3. ตรวจและเผยแพร่</span>
-        </li>
-      </ol>
+      <DocumentProgressStepper currentStep="setup" />
 
       <section aria-labelledby="document-setup-heading">
         {message && (
@@ -199,7 +187,6 @@ export function DocumentSetupForm({
 function Field({
   label,
   htmlFor,
-  hint,
   children,
 }: {
   label: string;

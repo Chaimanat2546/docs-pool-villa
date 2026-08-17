@@ -108,7 +108,6 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
   const reconciledFocusedKey = focusedNodeIsVisible ? focusedKey : selectedNodeIsVisible ? selectedKey : null;
   const shouldRestoreTreeFocus = !focusedNodeIsVisible && treeHasFocus;
   const creationBlockMessage = "กำลังจัดการรูปภาพที่ค้างอยู่";
-  const totalDocumentCount = sections.reduce((total, section) => total + section.directDocumentCount, 0);
 
   useLayoutEffect(() => {
     if (shouldRestoreTreeFocus && reconciledFocusedKey) itemRefs.current.get(reconciledFocusedKey)?.focus();

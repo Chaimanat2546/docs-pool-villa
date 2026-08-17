@@ -4,8 +4,6 @@ import { Dialog } from "@base-ui/react/dialog";
 import {
   Eye,
   FolderTree,
-  Home,
-  House,
   LogOut,
   Menu,
   PanelLeftClose,

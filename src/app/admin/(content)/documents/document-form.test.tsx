@@ -191,6 +191,25 @@ it("shows Thai status labels in the review selector", () => {
   expect(within(status).getByRole("option", { name: "เก็บถาวร" })).not.toBeNull();
 });
 
+it("shows completed, current, and upcoming document steps", () => {
+  const { container } = renderForm({ stage: "content" });
+  const stepper = screen.getByRole("list", { name: "ขั้นตอนจัดทำเอกสาร" });
+
+  expect(within(stepper).getByText("ข้อมูลเอกสาร").closest("li")?.dataset.state).toBe("completed");
+  expect(within(stepper).getByText("เขียนเนื้อหา").closest("li")?.getAttribute("aria-current")).toBe("step");
+  expect(within(stepper).getByText("สถานะเอกสาร").closest("li")?.dataset.state).toBe("upcoming");
+  expect(container.querySelectorAll("[data-step-connector]")).toHaveLength(2);
+});
+
+it("marks the first two steps complete when reviewing", () => {
+  renderForm({ stage: "review" });
+  const stepper = screen.getByRole("list", { name: "ขั้นตอนจัดทำเอกสาร" });
+
+  expect(within(stepper).getByText("ข้อมูลเอกสาร").closest("li")?.dataset.state).toBe("completed");
+  expect(within(stepper).getByText("เขียนเนื้อหา").closest("li")?.dataset.state).toBe("completed");
+  expect(within(stepper).getByText("สถานะเอกสาร").closest("li")?.getAttribute("aria-current")).toBe("step");
+});
+
 it("opens Preview from review before final save", async () => {
   const user = userEvent.setup();
   renderForm({ stage: "review" });

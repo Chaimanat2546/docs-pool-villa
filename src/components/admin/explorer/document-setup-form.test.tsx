@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -57,15 +57,15 @@ afterEach(() => {
 });
 
 describe("DocumentSetupForm", () => {
-  it("shows the three-step document workflow with setup as the current step", () => {
+  it("shows the connected workflow with setup current and later steps upcoming", () => {
     render(<DocumentSetupForm sections={sections} selectedSectionId={sectionId} />);
 
     const workflow = screen.getByRole("list", { name: "ขั้นตอนจัดทำเอกสาร" });
     const page = screen.getByRole("main");
-    expect(workflow.textContent).toContain("1. ข้อมูลเอกสาร");
-    expect(workflow.textContent).toContain("2. เขียนเนื้อหา");
-    expect(workflow.textContent).toContain("3. ตรวจและเผยแพร่");
-    expect(screen.getByText("1. ข้อมูลเอกสาร").closest("li")?.getAttribute("aria-current")).toBe("step");
+    expect(within(workflow).getByText("ข้อมูลเอกสาร").closest("li")?.getAttribute("aria-current")).toBe("step");
+    expect(within(workflow).getByText("เขียนเนื้อหา").closest("li")?.dataset.state).toBe("upcoming");
+    expect(within(workflow).getByText("สถานะเอกสาร").closest("li")?.dataset.state).toBe("upcoming");
+    expect(workflow.querySelectorAll("[data-step-connector]")).toHaveLength(2);
     expect(page.className).toContain("max-w-6xl");
     expect(page.className).toContain("py-8");
   });

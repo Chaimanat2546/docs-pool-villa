@@ -20,6 +20,7 @@ import type {
 } from "@/components/editor/pending-images";
 import { uploadPendingImage } from "@/components/editor/pending-images";
 import { HardDeleteDialog } from "@/components/admin/hard-delete-dialog";
+import { DocumentProgressStepper } from "@/components/admin/document-progress-stepper";
 import { MediaOperationBanner } from "@/components/admin/media-operation-banner";
 import { MediaProgressList } from "@/components/admin/media-progress-list";
 import { useUnsavedNavigation } from "@/components/admin/unsaved-navigation";
@@ -360,30 +361,7 @@ export function DocumentForm({
         </p>
       </header>
 
-      <ol
-        aria-label="ขั้นตอนจัดทำเอกสาร"
-        className="mb-6 grid gap-2 text-sm sm:grid-cols-3"
-      >
-        <li className="rounded-lg border px-3 py-2">
-          <span className="font-medium">1. ข้อมูลเอกสาร</span>
-          <span className="ml-2 text-muted-foreground">เสร็จแล้ว</span>
-        </li>
-        <li
-          aria-current={stage === "content" ? "step" : undefined}
-          className="rounded-lg border px-3 py-2"
-        >
-          <span className="font-medium">2. เขียนเนื้อหา</span>
-          {stage === "review" && (
-            <span className="ml-2 text-muted-foreground">เสร็จแล้ว</span>
-          )}
-        </li>
-        <li
-          aria-current={stage === "review" ? "step" : undefined}
-          className="rounded-lg border px-3 py-2"
-        >
-          <span className="font-medium">3. ตรวจและเผยแพร่</span>
-        </li>
-      </ol>
+      <DocumentProgressStepper currentStep={stage} />
 
       {message && (
         <p

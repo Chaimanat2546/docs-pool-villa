@@ -85,11 +85,6 @@ export function SectionPanel({
   const availableEditParents = selectedHasChildren
     ? []
     : rootSections.filter((section) => section.id !== selectedSection?.id);
-  const directDocuments = selectedSection
-    ? explorer.documents.filter(
-        (document) => document.sectionId === selectedSection.id
-      )
-    : explorer.documents;
   const mutationsBlocked = operations.length > 0;
   const mayCreateChild = selectedSection?.parentId === null;
   const rootNextSortOrder = nextSectionSortOrder(explorer.sections, null);
