@@ -93,3 +93,32 @@ Build ใน worktree โหลดค่า Local development ที่มีอ
 - `npm run build` ยังแสดง warning baseline ของ Next.js ว่า convention `middleware` deprecated; ไม่ใช่ผลเปลี่ยน pass/fail จาก follow-up นี้
 - ไม่เกิดการเปลี่ยน Schema, Migration, RLS, Worker, Remote หรือ Deployment
 - Manual accessibility check แบบ authenticated Admin บน Local ยังทำไม่ได้: เปิด `http://localhost:3000/admin` แล้ว redirect ไป `/auth/login` และไม่มี Admin session ที่ใช้ได้ จึงไม่สร้างหรือแก้ไข remote fixture; Desktop/390px action visibility, form focus, child restriction, overflow และ console ของ authenticated Explorer ยังต้องตรวจเมื่อมี local Admin session
+
+## Follow-up: document drag reorder — 17 สิงหาคม 2026
+
+อ้างอิง [Implementation plan](../superpowers/plans/2026-08-17-document-drag-reorder.md) และ [Approved design](../superpowers/specs/2026-08-17-document-reorder-design.md)
+
+- Reorder ทำได้เฉพาะเอกสาร direct documents ภายในหมวดจริงหนึ่งหมวดเท่านั้น; virtual root, search และ status filter ไม่สามารถเริ่ม reorder ได้
+- Normal mode ยังคงแบ่งหน้า 4 รายการต่อหน้า; reorder mode รับเอกสารครบทั้งหมวดที่เลือกโดยไม่แบ่งหน้า
+- การบันทึกส่งรายการ ID ที่เรียงแล้วครบชุดผ่าน `doc_reorder_documents` RPC เดิม ซึ่งตรวจสิทธิ์ Admin และทำงานแบบ atomic; Cancel หรือบันทึกล้มเหลวไม่เปลี่ยนลำดับที่เก็บไว้
+- ขอบเขตที่ตั้งใจไม่รวม keyboard reordering: รองรับ pointer/touch drag-and-drop เท่านั้น แต่ปุ่มและ drag handle ยังคงมี visible focus และ accessible name
+
+### Local verification
+
+รันเมื่อ 17 สิงหาคม 2026 และ Exit code 0 ทุกคำสั่งที่ผ่าน Gate:
+
+| คำสั่ง | ผลจริง |
+|---|---|
+| `npx vitest --config vitest.config.mts run "src/app/admin/(content)/documents/actions.test.ts" src/components/admin/explorer/document-reorder-list.test.tsx src/components/admin/explorer/document-list.test.tsx` | 3 files, 34/34 tests |
+| `npx tsc --noEmit` | ผ่าน |
+| `npm run lint` | ผ่าน |
+| `npm run build` | ผ่าน; warning `middleware` deprecation เป็น baseline เดิม |
+| `git diff --check` | ผ่าน |
+
+Vitest และ build รอบแรกภายใน Windows sandbox หยุดก่อนจบด้วย `spawn EPERM`; rerun คำสั่งเดิมนอก sandbox แล้วผ่านตามผลในตาราง โดยไม่มี remote action หรือ deploy
+
+### Local browser smoke
+
+- ไม่พบ Local Admin session ที่ปลอดภัย: เปิด `http://localhost:3000/admin` แบบ read-only แล้ว redirect ไป `http://localhost:3000/auth/login`
+- จึงไม่ได้ทดสอบ Desktop/390px, drag item จากหน้าถัดไป, Save/refresh persistence, Cancel หรือ forced action failure ผ่าน Browser
+- ไม่สร้างหรือแก้ Local, Staging หรือ Production fixture เพื่อให้ได้ session; ไม่มี Staging, Production, Supabase, Cloudflare หรือ deployment action ใน follow-up นี้
