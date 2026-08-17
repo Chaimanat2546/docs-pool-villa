@@ -44,7 +44,7 @@ it("renders a static all-documents heading outside the tree", () => {
   const navigate = vi.fn();
   render(<FolderTree sections={sections} selectedSectionId="child" onNavigate={navigate} />);
 
-  expect(screen.getByText("คู่มือทั้งหมด · 3 เอกสาร")).not.toBeNull();
+  expect(screen.getByText("คู่มือทั้งหมด")).not.toBeNull();
   expect(screen.queryByRole("treeitem", { name: /คู่มือทั้งหมด/ })).toBeNull();
   expect(screen.queryByRole("button", { name: /คู่มือทั้งหมด/ })).toBeNull();
   expect(screen.getByRole("treeitem", { name: /การจอง.*2/ }).getAttribute("aria-selected")).toBe("true");
@@ -189,7 +189,7 @@ it("keeps the all-documents heading non-interactive", () => {
   const navigate = vi.fn();
   render(<FolderTree sections={sections} selectedSectionId="root" onNavigate={navigate} />);
 
-  expect(screen.getByText("คู่มือทั้งหมด · 3 เอกสาร")).not.toBeNull();
+  expect(screen.getByText("คู่มือทั้งหมด")).not.toBeNull();
   expect(navigate).not.toHaveBeenCalled();
 });
 

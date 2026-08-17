@@ -146,7 +146,7 @@ describe("DocumentList", () => {
 
     const list = screen.getByRole("list", { name: "รายการเอกสาร" });
     expect(within(list).getByText("ฉบับร่าง")).not.toBeNull();
-    expect(within(list).getByText("เผยแพร่")).not.toBeNull();
+    expect(within(list).getByText("เผยแพร่แล้ว")).not.toBeNull();
     expect(within(list).getByText("เก็บถาวร")).not.toBeNull();
 
     await user.selectOptions(screen.getByRole("combobox", { name: "กรองตามสถานะ" }), "published");
@@ -181,20 +181,19 @@ describe("DocumentList", () => {
     expect(screen.queryByText("เอกสารการจอง 6")).toBeNull();
   });
 
-  it("offers contextual create, edit, and preview actions with 44px targets", () => {
+  it("offers contextual create, edit, and status actions with 44px targets", () => {
     renderList("child", [documents[1]]);
 
     expect(screen.getByRole("link", { name: "สร้างเอกสารในหมวดนี้" }).getAttribute("href"))
       .toBe("/admin/documents/new?section=child");
 
     const edit = screen.getByRole("link", { name: "แก้ไข" });
-    const preview = screen.getByRole("link", { name: "ดูตัวอย่าง" });
+    const status = screen.getByRole("link", { name: "แก้ไขสถานะ" });
     expect(screen.queryByRole("link", { name: /สร้างการจอง/ })).toBeNull();
     expect(edit.getAttribute("href")).toBe("/admin/documents/create-booking?section=child");
-    expect(preview.getAttribute("href")).toBe("/admin/documents/create-booking?section=child&stage=review");
-    expect(preview.getAttribute("target")).toBeNull();
+    expect(status.getAttribute("href")).toBe("/admin/documents/create-booking?section=child&stage=review");
     expect(edit.className).toContain("min-h-11");
-    expect(preview.className).toContain("min-h-11");
+    expect(status.className).toContain("min-h-11");
   });
 
   it("requires a real section before showing the create action", () => {
@@ -204,22 +203,20 @@ describe("DocumentList", () => {
     expect(screen.getByText("เลือกหมวดจากรายการด้านซ้ายก่อนสร้างเอกสาร")).not.toBeNull();
   });
 
-  it("contains long titles, section paths, and slugs inside the responsive pane", () => {
+  it("contains long titles and section paths inside the responsive pane", () => {
     const longTitle = "วิธีจัดการการจองพูลวิลล่าสำหรับคำขอพิเศษที่มีรายละเอียดภาษาไทยยาวมาก";
-    const longSlug = "create-a-booking-with-a-very-long-descriptive-slug-that-must-not-overflow-the-page";
     const longSectionTitle = "การจัดการคำขอพิเศษและการชำระเงินที่มีชื่อหมวดยาวมาก";
     renderList(null, [{
       ...documents[0],
       sectionId: "child",
       title: longTitle,
-      slug: longSlug,
+      slug: "create-a-booking-with-a-very-long-descriptive-slug-that-must-not-overflow-the-page",
     }]);
 
     const list = screen.getByRole("list", { name: "รายการเอกสาร" });
     const title = within(list).getByRole("heading", { name: longTitle });
     expect(title.className).toContain("truncate");
     expect(title.closest("div.min-w-0")).not.toBeNull();
-    expect(within(list).getByText(longSlug).className).toContain("break-all");
 
     const view = render(
       <UnsavedNavigationProvider>

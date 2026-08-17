@@ -13,5 +13,5 @@ it("indents only the first line of persisted paragraphs", () => {
 });
 
 it("renders consecutive ordinary paragraphs as simple line breaks", () => {
-  expect(stylesheet).toContain(".docs-editor-content p + p,\n.ProseMirror p + p,\n.docs-content p + p { margin-top: 0; }");
+  expect(stylesheet.replace(/\r\n/g, "\n")).toContain(".docs-editor-content p + p,\n.ProseMirror p + p,\n.docs-content p + p { margin-top: 0; }");
 });
