@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronRight, Folder, Library } from "lucide-react";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChevronRight, Folder } from "lucide-react";
+import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
@@ -22,8 +22,6 @@ type VisibleTreeNode = {
   childKeys: string[];
 };
 
-const VIRTUAL_ROOT_KEY = "virtual-root";
-
 function sectionKey(sectionId: string): string {
   return `section:${sectionId}`;
 }
@@ -33,7 +31,7 @@ function sectionHref(sectionId: string | null): string {
 }
 
 function initialExpandedKeys(sections: AdminExplorerSection[], selectedSectionId: string | null): Set<string> {
-  const expanded = new Set([VIRTUAL_ROOT_KEY]);
+  const expanded = new Set<string>();
   const selected = sections.find((section) => section.id === selectedSectionId);
   if (selected?.parentId) expanded.add(sectionKey(selected.parentId));
   return expanded;
@@ -41,7 +39,9 @@ function initialExpandedKeys(sections: AdminExplorerSection[], selectedSectionId
 
 export function FolderTree({ sections, selectedSectionId, onNavigate, creationBlocked = false }: FolderTreeProps) {
   const [expandedKeys, setExpandedKeys] = useState(() => initialExpandedKeys(sections, selectedSectionId));
-  const [focusedKey, setFocusedKey] = useState(() => selectedSectionId ? sectionKey(selectedSectionId) : VIRTUAL_ROOT_KEY);
+  const [focusedKey, setFocusedKey] = useState<string | null>(() => selectedSectionId
+    ? sectionKey(selectedSectionId)
+    : sections.find((section) => section.parentId === null)?.id ? sectionKey(sections.find((section) => section.parentId === null)!.id) : null);
   const [previousSelectedSectionId, setPreviousSelectedSectionId] = useState(selectedSectionId);
   const [treeHasFocus, setTreeHasFocus] = useState(false);
   const itemRefs = useRef(new Map<string, HTMLDivElement>());
@@ -67,17 +67,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
 
   const visibleNodes = useMemo(() => {
     const rootSections = childSectionsByParent.get(null) ?? [];
-    const nodes: VisibleTreeNode[] = [{
-      key: VIRTUAL_ROOT_KEY,
-      sectionId: null,
-      title: "คู่มือทั้งหมด",
-      count: sections.reduce((total, section) => total + section.directDocumentCount, 0),
-      level: 1,
-      parentKey: null,
-      childKeys: rootSections.map((section) => sectionKey(section.id)),
-    }];
-
-    if (!expandedKeys.has(VIRTUAL_ROOT_KEY)) return nodes;
+    const nodes: VisibleTreeNode[] = [];
 
     for (const rootSection of rootSections) {
       const rootKey = sectionKey(rootSection.id);
@@ -87,8 +77,8 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
         sectionId: rootSection.id,
         title: rootSection.title,
         count: rootSection.directDocumentCount,
-        level: 2,
-        parentKey: VIRTUAL_ROOT_KEY,
+        level: 1,
+        parentKey: null,
         childKeys: childSections.map((section) => sectionKey(section.id)),
       });
 
@@ -99,7 +89,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
           sectionId: childSection.id,
           title: childSection.title,
           count: childSection.directDocumentCount,
-          level: 3,
+          level: 2,
           parentKey: rootKey,
           childKeys: [],
         });
@@ -107,20 +97,21 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
     }
 
     return nodes;
-  }, [childSectionsByParent, expandedKeys, sections]);
+  }, [childSectionsByParent, expandedKeys]);
 
   const focusedNodeIsVisible = visibleNodes.some((node) => node.key === focusedKey);
-  const selectedKey = selectedSectionId ? sectionKey(selectedSectionId) : VIRTUAL_ROOT_KEY;
+  const requestedSelectedKey = selectedSectionId ? sectionKey(selectedSectionId) : null;
+  const selectedKey = visibleNodes.some((node) => node.key === requestedSelectedKey)
+    ? requestedSelectedKey
+    : visibleNodes[0]?.key ?? null;
   const selectedNodeIsVisible = visibleNodes.some((node) => node.key === selectedKey);
-  const reconciledFocusedKey = focusedNodeIsVisible ? focusedKey : selectedNodeIsVisible ? selectedKey : VIRTUAL_ROOT_KEY;
+  const reconciledFocusedKey = focusedNodeIsVisible ? focusedKey : selectedNodeIsVisible ? selectedKey : null;
   const shouldRestoreTreeFocus = !focusedNodeIsVisible && treeHasFocus;
-  const expandedRootSections = visibleNodes.filter((node) =>
-    node.parentKey === VIRTUAL_ROOT_KEY && expandedKeys.has(node.key),
-  );
   const creationBlockMessage = "กำลังจัดการรูปภาพที่ค้างอยู่";
+  const totalDocumentCount = sections.reduce((total, section) => total + section.directDocumentCount, 0);
 
   useLayoutEffect(() => {
-    if (shouldRestoreTreeFocus) itemRefs.current.get(reconciledFocusedKey)?.focus();
+    if (shouldRestoreTreeFocus && reconciledFocusedKey) itemRefs.current.get(reconciledFocusedKey)?.focus();
   }, [reconciledFocusedKey, shouldRestoreTreeFocus]);
 
   function focusNode(key: string) {
@@ -138,19 +129,20 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLDivElement>, node: VisibleTreeNode, index: number) {
+    const canExpand = node.parentKey === null || node.childKeys.length > 0;
     switch (event.key) {
       case "Enter":
         event.preventDefault();
         onNavigate(sectionHref(node.sectionId));
         return;
       case "ArrowRight":
-        if (node.childKeys.length === 0) return;
+        if (!canExpand) return;
         event.preventDefault();
         if (!expandedKeys.has(node.key)) setExpanded(node.key, true);
-        else focusNode(node.childKeys[0]);
+        else if (node.childKeys.length > 0) focusNode(node.childKeys[0]);
         return;
       case "ArrowLeft":
-        if (node.childKeys.length > 0 && expandedKeys.has(node.key)) {
+        if (canExpand && expandedKeys.has(node.key)) {
           event.preventDefault();
           setExpanded(node.key, false);
         } else if (node.parentKey) {
@@ -178,6 +170,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
 
   return (
     <div className="space-y-1">
+      <p className="px-3 py-2 text-sm font-medium text-muted-foreground">คู่มือทั้งหมด · {totalDocumentCount} เอกสาร</p>
       <div
         role="tree"
         aria-label="หมวดคู่มือ"
@@ -187,13 +180,20 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
       >
       {visibleNodes.map((node, index) => {
         const hasChildren = node.childKeys.length > 0;
-        const isExpanded = hasChildren && expandedKeys.has(node.key);
+        const canExpand = node.parentKey === null || hasChildren;
+        const isExpanded = canExpand && expandedKeys.has(node.key);
         const isSelected = node.sectionId === selectedSectionId;
-        const Icon = node.sectionId === null ? Library : Folder;
+        const Icon = Folder;
+        const nextNode = visibleNodes[index + 1];
+        const creationRoot = node.parentKey === null && isExpanded && !hasChildren
+          ? node
+          : node.level === 2 && nextNode?.parentKey !== node.parentKey
+            ? visibleNodes.find((candidate) => candidate.key === node.parentKey)
+            : null;
 
         return (
+          <Fragment key={node.key}>
             <div
-              key={node.key}
               ref={(element) => {
                 if (element) itemRefs.current.set(node.key, element);
                 else itemRefs.current.delete(node.key);
@@ -201,16 +201,16 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
               role="treeitem"
               aria-level={node.level}
               aria-selected={isSelected}
-              aria-expanded={hasChildren ? isExpanded : undefined}
+              aria-expanded={canExpand ? isExpanded : undefined}
               aria-label={`${node.title} ${node.count} เอกสาร`}
               tabIndex={reconciledFocusedKey === node.key ? 0 : -1}
               onFocus={() => setFocusedKey(node.key)}
               onClick={() => onNavigate(sectionHref(node.sectionId))}
               onKeyDown={(event) => handleKeyDown(event, node, index)}
-              className="flex min-h-11 w-full cursor-pointer items-center gap-1 rounded-md pr-3 text-left text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring aria-selected:bg-muted aria-selected:font-medium"
+              className={`flex min-h-11 w-full cursor-pointer select-none items-center gap-1 rounded-md pr-3 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring aria-selected:bg-muted aria-selected:font-medium aria-selected:shadow-[inset_3px_0_0_hsl(var(--primary))] ${node.level === 1 ? "font-medium text-foreground" : "text-muted-foreground"}`}
               style={{ paddingInlineStart: `${12 + (node.level - 1) * 16}px` }}
             >
-              {hasChildren ? (
+              {canExpand ? (
                 <span
                   data-tree-disclosure
                   aria-hidden="true"
@@ -231,36 +231,40 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
               )}
               <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <span className="min-w-0 flex-1 truncate">{node.title}</span>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground" aria-hidden="true">{node.count}</span>
+              {node.count > 0 && (
+                <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground" aria-hidden="true">
+                  {node.count}
+                </span>
+              )}
             </div>
+            {creationRoot?.sectionId && (
+              <button
+                type="button"
+                aria-label={`สร้างหมวดย่อยใน ${creationRoot.title}`}
+                disabled={creationBlocked}
+                title={creationBlocked ? creationBlockMessage : undefined}
+                onClick={() => onNavigate(`/admin/structure?section=${encodeURIComponent(creationRoot.sectionId!)}&mode=create-child`)}
+                className="flex min-h-11 w-full items-center border-l border-border px-3 text-left text-sm text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                style={{ paddingInlineStart: "60px" }}
+              >
+                ＋ เพิ่มหมวดย่อย
+              </button>
+            )}
+          </Fragment>
         );
       })}
       </div>
-      <div aria-label="การสร้างหมวด" className="space-y-1">
-        {expandedRootSections.map((root) => (
-          <button
-            key={`create-child:${root.key}`}
-            type="button"
-            aria-label={`สร้าง Sub-topic ใน ${root.title}`}
-            disabled={creationBlocked}
-            title={creationBlocked ? creationBlockMessage : undefined}
-            onClick={() => onNavigate(`/admin/structure?section=${encodeURIComponent(root.sectionId!)}&mode=create-child`)}
-            className="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-            style={{ paddingInlineStart: "60px" }}
-          >
-            สร้าง Sub-topic ใน {root.title}
-          </button>
-        ))}
+      <div aria-label="การสร้างหมวด" className="sticky bottom-0 z-10 space-y-1 border-t bg-card pt-2">
         <button
           type="button"
-          aria-label="สร้าง Topic"
+          aria-label="สร้างหมวดหลัก"
           disabled={creationBlocked}
           title={creationBlocked ? creationBlockMessage : undefined}
           onClick={() => onNavigate("/admin/structure?mode=create-root")}
           className="flex min-h-11 w-full items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
           style={{ paddingInlineStart: "28px" }}
         >
-          สร้าง Topic
+          ＋ สร้างหมวดหลัก
         </button>
         {creationBlocked && <p className="sr-only">{creationBlockMessage}; การสร้างหมวดถูกปิดชั่วคราว</p>}
       </div>

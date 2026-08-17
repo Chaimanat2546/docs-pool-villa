@@ -30,6 +30,52 @@ function setupEditorGeometry() {
 }
 
 describe("DocumentEditor paragraph indent", () => {
+  it("keeps the line created by Enter independently indentable", async () => {
+    const user = userEvent.setup();
+    const editorMount = document.createElement("div");
+    document.body.append(editorMount);
+    const editor = new Editor({
+      element: editorMount,
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "beforeafter" }] }] },
+    });
+    setupEditorGeometry();
+    editor.commands.setTextSelection(7);
+    editor.view.dom.focus();
+
+    await user.keyboard("{Enter}{Tab}");
+
+    expect(editor.getJSON().content).toEqual([
+      expect.objectContaining({ attrs: { indentLevel: 0 }, content: [{ type: "text", text: "before" }] }),
+      expect.objectContaining({ attrs: { indentLevel: 1 }, content: [{ type: "text", text: "after" }] }),
+    ]);
+    editor.destroy();
+    editorMount.remove();
+  });
+
+  it("splits a legacy line break before indenting its following line", async () => {
+    const user = userEvent.setup();
+    const editorMount = document.createElement("div");
+    document.body.append(editorMount);
+    const editor = new Editor({
+      element: editorMount,
+      extensions: docsExtensions,
+      content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "before" }, { type: "hardBreak" }, { type: "text", text: "after" }] }] },
+    });
+    setupEditorGeometry();
+    editor.commands.setTextSelection(8);
+    editor.view.dom.focus();
+
+    await user.keyboard("{Tab}");
+
+    expect(editor.getJSON().content).toEqual([
+      expect.objectContaining({ attrs: { indentLevel: 0 }, content: [{ type: "text", text: "before" }] }),
+      expect.objectContaining({ attrs: { indentLevel: 1 }, content: [{ type: "text", text: "after" }] }),
+    ]);
+    editor.destroy();
+    editorMount.remove();
+  });
+
   it("increases a paragraph indent with Tab and limits it to level 3", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
