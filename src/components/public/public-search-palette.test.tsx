@@ -48,6 +48,20 @@ describe("PublicSearchPalette", () => {
     ).toBeTruthy();
   });
 
+  it("opens the same dialog from its hero trigger", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [] }) })
+    );
+    render(<PublicSearchPalette variant="hero" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "ค้นหาคู่มือ" }));
+
+    expect(
+      await screen.findByRole("dialog", { name: "ค้นหาคู่มือ" })
+    ).toBeTruthy();
+  });
+
   it("does not open while an IME composition is active", () => {
     vi.stubGlobal("fetch", vi.fn());
     render(<PublicSearchPalette />);

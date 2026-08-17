@@ -43,7 +43,7 @@ function getGroupedSearchResults(items: SearchItem[]): GroupedSearchResult[] {
   return [...groups.values()];
 }
 
-export function PublicSearchPalette() {
+export function PublicSearchPalette({ variant = "header" }: { variant?: "header" | "hero" }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<SearchItem[]>([]);
@@ -136,11 +136,13 @@ export function PublicSearchPalette() {
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Trigger
         aria-label="ค้นหาคู่มือ"
-        className="ml-auto flex h-11 w-full max-w-sm items-center rounded-md border bg-card px-3 text-left text-sm text-muted-foreground sm:h-9"
+        className={variant === "hero"
+          ? "flex min-h-13 w-full items-center rounded-full border bg-background p-1 text-left shadow-sm"
+          : "ml-auto flex h-11 w-full max-w-sm items-center rounded-md border bg-card px-3 text-left text-sm text-muted-foreground sm:h-9"}
       >
-        <Search size={16} aria-hidden="true" />
-        <span className="ml-2 flex-1">ค้นหาคู่มือ</span>
-        <kbd className="rounded border px-1.5 py-0.5 text-xs">Ctrl K</kbd>
+        <Search size={variant === "hero" ? 18 : 16} aria-hidden="true" className={variant === "hero" ? "ml-3 text-muted-foreground" : undefined} />
+        <span className={variant === "hero" ? "flex-1 px-3 text-muted-foreground" : "ml-2 flex-1"}>ค้นหาคู่มือ</span>
+        {variant === "hero" ? <span className="min-h-11 rounded-full bg-primary px-5 content-center text-sm font-medium text-primary-foreground">ค้นหา</span> : <kbd className="rounded border px-1.5 py-0.5 text-xs">Ctrl K</kbd>}
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className="fixed inset-0 z-40 bg-background/60 backdrop-blur-sm" />
