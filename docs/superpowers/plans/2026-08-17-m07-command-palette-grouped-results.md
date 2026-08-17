@@ -21,11 +21,13 @@
 ### Task 1: Derive and render grouped palette results
 
 **Files:**
+
 - Modify: `src/components/public/public-search-palette.tsx`
 - Test: `src/components/public/public-search-palette.test.tsx`
 - Modify: `docs/todo/M07-search-hardening.md`
 
 **Interfaces:**
+
 - Consumes: existing `SearchItem = { id; href; title; sectionTitle; parentTitle; kind; heading? }` from the route response.
 - Produces: `getGroupedSearchResults(items: SearchItem[]): GroupedSearchResult[]`, where `GroupedSearchResult = { document: SearchItem; headings: SearchItem[] }`.
 - Produces: `getSelectableSearchItems(groups: GroupedSearchResult[]): SearchItem[]`, ordered as each document followed by its headings, for `selectedIndex`, Arrow navigation, and Enter navigation.
@@ -64,21 +66,25 @@ type GroupedSearchResult = { document: SearchItem; headings: SearchItem[] };
 function getGroupedSearchResults(items: SearchItem[]): GroupedSearchResult[] {
   const groups = new Map<string, GroupedSearchResult>();
   for (const item of items) {
-    const key = item.kind === "document" ? item.href : item.href.split("#", 1)[0];
+    const key =
+      item.kind === "document" ? item.href : item.href.split("#", 1)[0];
     const existing = groups.get(key);
     if (item.kind === "document") {
       groups.set(key, { document: item, headings: existing?.headings ?? [] });
     } else if (existing) {
       existing.headings.push(item);
     } else {
-      groups.set(key, { document: { ...item, href: key, kind: "document" }, headings: [item] });
+      groups.set(key, {
+        document: { ...item, href: key, kind: "document" },
+        headings: [item],
+      });
     }
   }
   return [...groups.values()];
 }
 ```
 
-Add a helper that flattens each group as `[group.document, ...group.headings]`, and use that array for `selectedIndex`, Arrow navigation, and Enter navigation. Render each `group.document` once as a link row with `<FileText data-testid="document-icon" aria-hidden />`; render each `group.headings` below it as an indented link row with `<List data-testid="heading-icon" aria-hidden />`. Give interactive rows `data-testid="document-result"` or `data-testid="heading-result"`, retain `role="option"`, and compute each row's selected state by matching its href against `selectableItems[selectedIndex]?.href`.
+Add a helper that flattens each group as `[group.document, ...group.headings]`, and use that array for `selectedIndex`, Arrow navigation, and Enter navigation. Render each `group.document` once as a link row with `<FileText data-testid="document-icon" aria-hidden />`; render each `group.headings` below it as an indented link row with `<Hash data-testid="heading-icon" aria-hidden />`. Give interactive rows `data-testid="document-result"` or `data-testid="heading-result"`, retain `role="option"`, and compute each row's selected state by matching its href against `selectableItems[selectedIndex]?.href`.
 
 Update `onInputKeyDown` to navigate `selectableItems`, which mirrors the visual group order and uses existing document or anchor hrefs for Enter.
 

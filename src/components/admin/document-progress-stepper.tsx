@@ -19,7 +19,7 @@ export function DocumentProgressStepper({ currentStep }: { currentStep: Document
         const state = completed ? "completed" : current ? "current" : "upcoming";
         const MarkerIcon = completed ? Check : Icon;
         const markerClass = completed
-          ? "bg-emerald-100 text-emerald-800"
+          ? "bg-black text-primary-foreground"
           : current
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground";
@@ -44,7 +44,7 @@ export function DocumentProgressStepper({ currentStep }: { currentStep: Document
                 data-step-connector
                 aria-hidden="true"
                 className={`mt-5 h-1 min-w-2 flex-1 rounded-full lg:mt-6 ${
-                  completed ? "bg-emerald-500" : "bg-border"
+                  completed ? "bg-black" : "bg-border"
                 }`}
               />
             )}
