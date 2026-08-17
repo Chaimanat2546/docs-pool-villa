@@ -6,7 +6,7 @@
 
 - Requirement baseline: [Poolvilla Docs Requirements TH v1.2](docs/Poolvilla-Docs-Requirements-TH-v1.2.md)
 - Requirement review: เสร็จแล้ว
-- Current work: M01–M06 ปิดงานแล้ว; [Admin File Explorer](docs/todo/admin-file-explorer.md) เป็น approved cross-module UX follow-up ที่ผ่าน Local gate และ Staging App/Admin smoke แล้ว. M07 ยังไม่เริ่มและต้องรอภูยืนยัน
+- Current work: M01–M06 ปิดงานแล้ว; [Admin File Explorer](docs/todo/admin-file-explorer.md) เป็น approved cross-module UX follow-up ที่ผ่าน Local gate และ Staging App/Admin smoke แล้ว. M07 อยู่ระหว่างดำเนินการ: public title/H2/H3 search และ command palette ผ่าน focused Local tests แล้ว; browser/performance hardening ยังเหลือ
 - Deployment: Staging Docs App version `a222ad20-d7f7-41e6-b158-ff3945fd9092` มี Admin File Explorer แล้ว; deploy เฉพาะ App ด้วย `--keep-vars`. Migration `20260814085611_remove_doc_section_description.sql` ถูก apply/verify บน Staging แล้ว; ไม่มี Docs Media Worker หรือ Production action. Guest/Admin/non-admin browser smoke ก่อน migration ผ่านแล้ว
 - Domain Production `docs.poolvilla.co.th`: ยืนยันชื่อแล้ว แต่ยังไม่ตั้งค่าหรือใช้งานจริง
 
