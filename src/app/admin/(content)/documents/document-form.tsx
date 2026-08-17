@@ -578,17 +578,33 @@ export function DocumentForm({
           aria-labelledby="review-stage-heading"
           className="rounded-xl border bg-card p-4 sm:p-6"
         >
-          <p className="min-w-0 break-words text-sm text-muted-foreground">
-            {sectionPath(sections, savedSectionId)}
-          </p>
-          <h2 id="review-stage-heading" className="mt-2 text-xl font-semibold">
-            ตรวจและเผยแพร่
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            ตรวจตัวอย่างและเลือกสถานะก่อนบันทึกขั้นสุดท้าย
-          </p>
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="min-w-0 break-words text-sm text-muted-foreground">
+                {sectionPath(sections, savedSectionId)}
+              </p>
+              <h2
+                id="review-stage-heading"
+                className="mt-2 text-xl font-semibold"
+              >
+                ตรวจและเผยแพร่
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                ตรวจตัวอย่างและเลือกสถานะก่อนบันทึกขั้นสุดท้าย
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium cursor-pointer"
+            >
+              <Eye size={16} aria-hidden="true" />
+              ดูตัวอย่าง
+            </button>
+          </div>
+
           <label className="mt-6 block text-sm font-medium">
-            สถานะ {" "}
+            สถานะ{" "}
             <select
               value={form.status}
               onChange={(event) =>
@@ -599,26 +615,18 @@ export function DocumentForm({
               }
               className="mt-1 h-11 w-full rounded-md border bg-background px-3 sm:max-w-sm"
             >
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
-              <option value="archived">Archived</option>
+              <option value="draft">ฉบับร่าง</option>
+              <option value="published">เผยแพร่</option>
+              <option value="archived">เก็บถาวร</option>
             </select>
           </label>
           <div className="mt-6 flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setPreviewOpen(true)}
-              className="inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-sm font-medium cursor-pointer"
-            >
-              <Eye size={16} aria-hidden="true" />
-              ดูตัวอย่าง
-            </button>
-            <button
-              type="button"
               onClick={returnToContent}
               className="min-h-11 rounded-full border px-4 text-sm font-medium"
             >
-              กลับไปแก้เนื้อหา
+              แก้ไขเนื้อหา
             </button>
             <button
               type="button"

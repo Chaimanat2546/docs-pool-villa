@@ -182,6 +182,15 @@ it("chooses status in review and final save returns to the selected folder", asy
   expect(actions.saveDocument).toHaveBeenCalledWith(expect.objectContaining({ status: "published" }));
 });
 
+it("shows Thai status labels in the review selector", () => {
+  renderForm({ stage: "review" });
+
+  const status = screen.getByRole("combobox", { name: "สถานะ" });
+  expect(within(status).getByRole("option", { name: "ฉบับร่าง" })).not.toBeNull();
+  expect(within(status).getByRole("option", { name: "เผยแพร่" })).not.toBeNull();
+  expect(within(status).getByRole("option", { name: "เก็บถาวร" })).not.toBeNull();
+});
+
 it("opens Preview from review before final save", async () => {
   const user = userEvent.setup();
   renderForm({ stage: "review" });
@@ -209,7 +218,7 @@ it("keeps long Thai section paths inside the responsive review pane with 44px ac
   const main = view.container.querySelector("main");
   expect(main?.className).toContain("w-full");
   expect(screen.getByText(`เริ่มต้น › ${longSectionTitle}`).className).toContain("break-words");
-  for (const name of ["ดูตัวอย่าง", "กลับไปแก้เนื้อหา", "ยกเลิก", "บันทึกและกลับรายการ"]) {
+  for (const name of ["ดูตัวอย่าง", "แก้ไขเนื้อหา", "ยกเลิก", "บันทึกและกลับรายการ"]) {
     expect(screen.getByRole("button", { name }).className).toContain("min-h-11");
   }
 });
@@ -291,7 +300,7 @@ it("returns to content without losing a review status choice", async () => {
   renderForm({ stage: "review" });
 
   await user.selectOptions(screen.getByRole("combobox", { name: "สถานะ" }), "archived");
-  await user.click(screen.getByRole("button", { name: "กลับไปแก้เนื้อหา" }));
+  await user.click(screen.getByRole("button", { name: "แก้ไขเนื้อหา" }));
 
   expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
   expect(navigation.replace).toHaveBeenCalledWith(`/admin/documents/${document.id}?section=${rootSectionId}&stage=content`);

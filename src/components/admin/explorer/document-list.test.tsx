@@ -146,7 +146,7 @@ describe("DocumentList", () => {
 
     const list = screen.getByRole("list", { name: "รายการเอกสาร" });
     expect(within(list).getByText("ฉบับร่าง")).not.toBeNull();
-    expect(within(list).getByText("เผยแพร่แล้ว")).not.toBeNull();
+    expect(within(list).getByText("เผยแพร่")).not.toBeNull();
     expect(within(list).getByText("เก็บถาวร")).not.toBeNull();
 
     await user.selectOptions(screen.getByRole("combobox", { name: "กรองตามสถานะ" }), "published");

@@ -742,7 +742,7 @@ Use local `query` and `status` state; use `filterAdminDocuments()` for the resul
 </GuardedAdminLink>
 ```
 
-Use Thai labels Draft = **ฉบับร่าง**, Published = **เผยแพร่แล้ว**, Archived = **เก็บถาวร**. Keep text labels in addition to color.
+Use Thai labels Draft = **ฉบับร่าง**, Published = **เผยแพร่**, Archived = **เก็บถาวร**. Keep text labels in addition to color.
 
 - [ ] **Step 4: Make Structure the canonical contents page**
 
@@ -996,7 +996,7 @@ Do not duplicate upload code or move R2 cleanup into the client. Preserve the cu
 - [ ] **Step 4: Render the two remaining stages**
 
 - Content stage: title, slug, section, excerpt, order, Editor, media progress, **บันทึกและตรวจต่อ**, Preview, cancel.
-- Review stage: breadcrumb/section path, Preview, status, explicit **บันทึกและกลับรายการ**, **กลับไปแก้เนื้อหา**, cancel.
+- Review stage: breadcrumb/section path, Preview, status, explicit **บันทึกและกลับรายการ**, **แก้ไขเนื้อหา**, cancel.
 - Keep hard delete as a distinct destructive action; successful delete returns through `requestNavigation(returnHref)`.
 - A successful section move updates the stage URL and final return URL to `form.sectionId`; a failed move leaves the stored document and original selected context unchanged.
 

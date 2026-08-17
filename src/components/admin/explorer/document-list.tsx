@@ -20,7 +20,7 @@ type DocumentListProps = {
 
 const statusLabels: Record<AdminDocumentStatus, string> = {
   draft: "ฉบับร่าง",
-  published: "เผยแพร่แล้ว",
+  published: "เผยแพร่",
   archived: "เก็บถาวร",
 };
 
@@ -122,7 +122,7 @@ export function DocumentList({
           >
             <option value="all">ทุกสถานะ</option>
             <option value="draft">ฉบับร่าง</option>
-            <option value="published">เผยแพร่แล้ว</option>
+            <option value="published">เผยแพร่</option>
             <option value="archived">เก็บถาวร</option>
           </select>
         </label>

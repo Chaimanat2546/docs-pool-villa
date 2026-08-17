@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
+import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export function HardDeleteDialog({
@@ -27,8 +28,9 @@ export function HardDeleteDialog({
     >
       <Dialog.Trigger
         disabled={disabled}
-        className=" cursor-pointer inline-flex min-h-10 items-center rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+        className="gap-2 cursor-pointer inline-flex min-h-10 items-center rounded-full px-4 text-sm font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50 border border-destructive/10"
       >
+        <Trash2 className=" size-4"/>
         {title}
       </Dialog.Trigger>
       <Dialog.Portal>
