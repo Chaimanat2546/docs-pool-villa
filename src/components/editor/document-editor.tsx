@@ -22,6 +22,10 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { docsExtensions } from "./extensions";
 import { preparePendingImage, type PendingImage } from "./pending-images";
+import {
+  useImagePreparationQueue,
+  type ImagePreparationQueueItem,
+} from "./use-image-preparation-queue";
 import { toYouTubeNoCookieUrl } from "@/lib/docs/content";
 
 export type DocumentEditorProps = {
@@ -29,6 +33,7 @@ export type DocumentEditorProps = {
   /** Changes only after the parent has committed persisted content successfully. */
   contentRevision?: number;
   onChange: (content: JSONContent, pendingImages: PendingImage[]) => void;
+  onPreparationChange?: (isPreparing: boolean) => void;
 };
 
 type EditorDialog = "image" | "youtube" | null;
@@ -37,6 +42,7 @@ export function DocumentEditor({
   content,
   contentRevision,
   onChange,
+  onPreparationChange,
 }: DocumentEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<PendingImage[]>([]);
@@ -45,11 +51,23 @@ export function DocumentEditor({
   const imageDialogHandle = useMemo(() => Dialog.createHandle(), []);
   const appliedContentRevisionRef = useRef(contentRevision);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
-  const [message, setMessage] = useState<string | null>(null);
   const [dialog, setDialog] = useState<EditorDialog>(null);
   const [dialogValue, setDialogValue] = useState("");
   const [dialogError, setDialogError] = useState<string | null>(null);
-  const [imageDraft, setImageDraft] = useState<PendingImage | null>(null);
+  const {
+    items: preparationItems,
+    isPreparing,
+    enqueue,
+    retry,
+    remove,
+    takeReady,
+  } = useImagePreparationQueue({ prepare: preparePendingImage });
+  const readyItem = preparationItems.find(
+    (item) => item.status === "ready" && item.prepared,
+  );
+  const imageDraft = readyItem?.prepared
+    ? { queueId: readyItem.id, image: readyItem.prepared }
+    : null;
   const descriptionId = useId();
   const editor = useEditor({
     extensions: docsExtensions,
@@ -61,11 +79,11 @@ export function DocumentEditor({
         "aria-describedby": descriptionId,
       },
       handlePaste: (_view, event) => {
-        const image = Array.from(event.clipboardData?.files ?? []).find(
-          (file) => file.type.startsWith("image/")
+        const images = Array.from(event.clipboardData?.files ?? []).filter(
+          isImageFile,
         );
-        if (!image) return false;
-        void addImage(image);
+        if (images.length === 0) return false;
+        enqueue(images);
         return true;
       },
     },
@@ -103,6 +121,13 @@ export function DocumentEditor({
   useEffect(() => {
     pendingImagesRef.current = pendingImages;
   }, [pendingImages]);
+  useEffect(() => {
+    onPreparationChange?.(isPreparing);
+  }, [isPreparing, onPreparationChange]);
+  useEffect(() => {
+    if (!readyItem?.prepared || dialog === "image") return;
+    imageDialogHandle.open("editor-image-dialog-trigger");
+  }, [dialog, imageDialogHandle, readyItem]);
   useEffect(
     () => () =>
       pendingImagesRef.current.forEach((image) =>
@@ -132,18 +157,6 @@ export function DocumentEditor({
     setPendingImages([]);
   }, [content, contentRevision, editor]);
 
-  async function addImage(file: File) {
-    if (!editor) return;
-    setMessage(null);
-    try {
-      const pending = await preparePendingImage(file);
-      setImageDraft(pending);
-      imageDialogHandle.open("editor-image-dialog-trigger");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "เตรียมรูปไม่สำเร็จ");
-    }
-  }
-
   function reconcilePendingImages(nextContent: JSONContent) {
     const pendingIds = new Set<string>();
     collectPendingImageIds(nextContent, pendingIds);
@@ -171,9 +184,7 @@ export function DocumentEditor({
   }
 
   function closeDialog() {
-    if (dialog === "image" && imageDraft)
-      URL.revokeObjectURL(imageDraft.previewUrl);
-    setImageDraft(null);
+    if (dialog === "image" && imageDraft) remove(imageDraft.queueId);
     setDialog(null);
     setDialogError(null);
   }
@@ -250,7 +261,8 @@ export function DocumentEditor({
         closeDialog();
         return;
       }
-      const nextImages = [...pendingImagesRef.current, imageDraft];
+      const pending = imageDraft.image;
+      const nextImages = [...pendingImagesRef.current, pending];
       pendingImagesRef.current = nextImages;
       setPendingImages(nextImages);
       editor
@@ -259,13 +271,13 @@ export function DocumentEditor({
         .insertContent({
           type: "image",
           attrs: {
-            src: imageDraft.previewUrl,
+            src: pending.previewUrl,
             alt: value,
-            pendingId: imageDraft.id,
+            pendingId: pending.id,
           },
         })
         .run();
-      setImageDraft(null);
+      takeReady();
       setDialog(null);
       return;
     }
@@ -409,21 +421,20 @@ export function DocumentEditor({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
+        multiple
         className="sr-only"
         onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) void addImage(file);
+          enqueue(event.target.files ?? []);
           event.currentTarget.value = "";
         }}
       />
-      {message && (
-        <p
-          role="alert"
-          className="m-3 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
-        >
-          {message}
-        </p>
+      {preparationItems.length > 0 && (
+        <ImagePreparationQueue
+          items={preparationItems}
+          onRetry={retry}
+          onRemove={remove}
+        />
       )}
       <EditorContent editor={editor} />
       {pendingImages.length > 0 && (
@@ -432,6 +443,79 @@ export function DocumentEditor({
           และจะยังไม่อัปโหลดจนกดบันทึก
         </p>
       )}
+    </section>
+  );
+}
+
+function ImagePreparationQueue({
+  items,
+  onRetry,
+  onRemove,
+}: {
+  items: ImagePreparationQueueItem[];
+  onRetry: (id: string) => void;
+  onRemove: (id: string) => void;
+}) {
+  const current =
+    items.find((item) => item.status === "converting") ??
+    items.find((item) => item.status === "ready") ??
+    items.find((item) => item.status === "pending");
+
+  return (
+    <section
+      aria-label="คิวเตรียมรูป"
+      className="m-3 rounded-lg border bg-muted/30 p-3"
+    >
+      {current && (
+        <p role="status" className="text-sm font-medium">
+          {current.status === "ready" ? "รอคำอธิบายรูป" : "กำลังเตรียมรูป"}{" "}
+          {current.ordinal} จาก {current.total}
+        </p>
+      )}
+      <ul className="mt-2 space-y-2">
+        {items.map((item) => (
+          <li
+            key={item.id}
+            className="flex min-h-11 items-center justify-between gap-3 rounded-md border bg-background px-3 py-2 text-sm"
+          >
+            <div className="min-w-0">
+              <p className="truncate font-medium">{item.file.name}</p>
+              {item.status === "pending" && (
+                <p className="text-muted-foreground">รอเตรียมรูป</p>
+              )}
+              {item.status === "converting" && (
+                <p className="text-muted-foreground">กำลังแปลงเป็น WebP</p>
+              )}
+              {item.status === "ready" && (
+                <p className="text-muted-foreground">รอ Alt text</p>
+              )}
+              {item.status === "failed" && (
+                <p className="text-destructive">{item.error}</p>
+              )}
+            </div>
+            {item.status === "failed" && (
+              <div className="flex shrink-0 gap-2">
+                <button
+                  type="button"
+                  aria-label={`ลองใหม่ ${item.file.name}`}
+                  onClick={() => onRetry(item.id)}
+                  className="min-h-11 rounded-md border px-3 py-2"
+                >
+                  ลองใหม่
+                </button>
+                <button
+                  type="button"
+                  aria-label={`นำ ${item.file.name} ออก`}
+                  onClick={() => onRemove(item.id)}
+                  className="min-h-11 rounded-md border px-3 py-2 text-destructive"
+                >
+                  นำออก
+                </button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -464,4 +548,11 @@ function collectPendingImageIds(content: JSONContent, ids: Set<string>) {
   if (content.type === "image" && typeof content.attrs?.pendingId === "string")
     ids.add(content.attrs.pendingId);
   for (const child of content.content ?? []) collectPendingImageIds(child, ids);
+}
+
+function isImageFile(file: File) {
+  return (
+    file.type.startsWith("image/") ||
+    /\.(?:jpe?g|png|webp|heic|heif)$/i.test(file.name)
+  );
 }
