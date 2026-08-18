@@ -22,6 +22,7 @@ import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 import type { MediaOperationView } from "@/lib/media/lifecycle-types";
 
 import { SectionInlineForm } from "./section-inline-form";
+import { SectionReorderList } from "./section-reorder-list";
 import { useCreationNavigation } from "./admin-explorer-shell";
 import type { SectionMode } from "./section-mode";
 
@@ -78,6 +79,9 @@ export function SectionPanel({
   const rootSections = explorer.sections.filter(
     (section) => section.parentId === null
   );
+  const childSections = selectedSection
+    ? explorer.sections.filter((section) => section.parentId === selectedSection.id)
+    : [];
   const selectedHasChildren = selectedSection
     ? explorer.sections.some(
         (section) => section.parentId === selectedSection.id
@@ -231,6 +235,11 @@ export function SectionPanel({
         }
       />
     ) : null;
+  const reorder = !mutationsBlocked && mode === "reorder-root" && !selectedSection && rootSections.length > 1 ? (
+    <SectionReorderList parentId={null} sections={rootSections} onCancel={() => router.replace("/admin/structure")} onSaved={() => { router.replace("/admin/structure"); router.refresh(); }} />
+  ) : !mutationsBlocked && mode === "reorder-child" && selectedSection?.parentId === null && childSections.length > 1 ? (
+    <SectionReorderList parentId={selectedSection.id} sections={childSections} onCancel={() => router.replace(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`)} onSaved={() => { router.replace(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`); router.refresh(); }} />
+  ) : null;
 
   return (
     <div className="mx-auto min-w-0 w-full max-w-6xl px-4 py-6 sm:px-6">
@@ -261,6 +270,9 @@ export function SectionPanel({
           >
             เพิ่มหมวดหลัก
           </ActionLink>
+          {!selectedSection && rootSections.length > 1 && (
+            <ActionLink href="/admin/structure?mode=reorder-root" disabled={mutationsBlocked}>จัดลำดับหมวดหลัก</ActionLink>
+          )}
           {selectedSection &&
             (mayCreateChild ? (
               <ActionLink
@@ -292,6 +304,9 @@ export function SectionPanel({
             >
               เปลี่ยนชื่อและตั้งค่า
             </ActionLink>
+          )}
+          {selectedSection?.parentId === null && childSections.length > 1 && (
+            <ActionLink href={`/admin/structure?section=${encodeURIComponent(selectedSection.id)}&mode=reorder-child`} disabled={mutationsBlocked}>จัดลำดับหมวดย่อย</ActionLink>
           )}
           {selectedSection && (
             <button
@@ -327,9 +342,9 @@ export function SectionPanel({
         </section>
       )}
 
-      {(form || !selectedSection) && (
+      {(form || reorder || !selectedSection) && (
         <div className="mt-6">
-          {form ?? null}
+          {form ?? reorder ?? null}
         </div>
       )}
 

@@ -103,6 +103,25 @@ describe("SectionPanel", () => {
     expect(screen.getByText(/หมวดแม่:/).textContent).toContain("เริ่มต้น");
   });
 
+  it("offers reorder modes only for complete root or child sibling groups", () => {
+    const groupedExplorer: AdminExplorerData = {
+      ...explorer,
+      sections: [
+        ...explorer.sections,
+        { id: "55555555-5555-4555-8555-555555555555", parentId: null, title: "หมวดหลัก B", slug: "root-b", isPublished: true, sortOrder: 1, directDocumentCount: 0 },
+        { id: "66666666-6666-4666-8666-666666666666", parentId: rootId, title: "หมวดย่อย B", slug: "child-b", isPublished: true, sortOrder: 1, directDocumentCount: 0 },
+      ],
+    };
+    const { rerender } = render(<SectionPanel selectedSectionId={null} mode="view" explorer={groupedExplorer} />);
+    expect(screen.getByRole("link", { name: "จัดลำดับหมวดหลัก" }).getAttribute("href")).toBe("/admin/structure?mode=reorder-root");
+
+    rerender(<SectionPanel selectedSectionId={rootId} mode="view" explorer={groupedExplorer} />);
+    expect(screen.getByRole("link", { name: "จัดลำดับหมวดย่อย" }).getAttribute("href")).toBe(`/admin/structure?section=${rootId}&mode=reorder-child`);
+
+    rerender(<SectionPanel selectedSectionId={childId} mode="view" explorer={groupedExplorer} />);
+    expect(screen.queryByRole("link", { name: "จัดลำดับหมวดย่อย" })).toBeNull();
+  });
+
   it("prefills new root and child sections after their own highest sibling order", async () => {
     const user = userEvent.setup();
     const explorerWithSiblings: AdminExplorerData = {

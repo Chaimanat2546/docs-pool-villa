@@ -1,5 +1,5 @@
 begin;
-select plan(19);
+select plan(25);
 
 insert into public.roles (id, name) values
   (1, '{"th":"Administrator"}'::json),
@@ -21,6 +21,9 @@ insert into public.doc_sections (id, title, slug, sort_order) values
 update public.doc_sections
 set parent_id = '91000000-0000-0000-0000-000000000001'
 where id = '91000000-0000-0000-0000-000000000003';
+
+insert into public.doc_sections (id, parent_id, title, slug, sort_order) values
+  ('91000000-0000-0000-0000-000000000007', '91000000-0000-0000-0000-000000000001', 'หมวดย่อย B', 'child-b', 1);
 
 insert into public.doc_documents (id, section_id, title, slug, sort_order) values
   ('92000000-0000-0000-0000-000000000001', '91000000-0000-0000-0000-000000000004', 'ลบได้', 'deletable-doc', 4),
@@ -95,6 +98,31 @@ select throws_ok(
 
 set local role authenticated;
 set local request.jwt.claim.sub = '90000000-0000-0000-0000-000000000001';
+
+select lives_ok(
+  $$select public.doc_reorder_sections(null, array[
+    '91000000-0000-0000-0000-000000000002'::uuid,
+    '91000000-0000-0000-0000-000000000001'::uuid,
+    '91000000-0000-0000-0000-000000000004'::uuid,
+    '91000000-0000-0000-0000-000000000005'::uuid
+  ])$$,
+  'Admin can reorder every root section atomically'
+);
+select is((select sort_order from public.doc_sections where id = '91000000-0000-0000-0000-000000000002'), 0, 'First reordered root receives sort order zero');
+select lives_ok(
+  $$select public.doc_reorder_sections('91000000-0000-0000-0000-000000000001', array[
+    '91000000-0000-0000-0000-000000000007'::uuid,
+    '91000000-0000-0000-0000-000000000003'::uuid
+  ])$$,
+  'Admin can reorder every child section under one root atomically'
+);
+select is((select sort_order from public.doc_sections where id = '91000000-0000-0000-0000-000000000007'), 0, 'First reordered child receives sort order zero');
+select throws_ok(
+  $$select public.doc_reorder_sections('91000000-0000-0000-0000-000000000001', array['91000000-0000-0000-0000-000000000007'::uuid, '91000000-0000-0000-0000-000000000007'::uuid])$$,
+  '23514', 'The section order is invalid.',
+  'Duplicate section ids are rejected'
+);
+select is((select sort_order from public.doc_sections where id = '91000000-0000-0000-0000-000000000007'), 0, 'Rejected reorder keeps persisted child order');
 
 select is(
   (select child_section_count from public.doc_section_delete_preview('91000000-0000-0000-0000-000000000004')),
