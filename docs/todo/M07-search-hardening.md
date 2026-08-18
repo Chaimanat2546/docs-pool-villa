@@ -20,6 +20,8 @@
 - [x] ปรับ action bar บน mobile ให้ชิดขอบล่าง viewport (`bottom-0`) และคงระยะห่างบนจอใหญ่ (Local)
 - [x] Apply/verify title-search migration บน Staging โดยไม่มี seed/role change
 - [x] ไม่สร้าง `search_text`; ใช้ runtime H2/H3 extraction เท่านั้น และยังไม่ค้น Excerpt/paragraph/content, typo/fuzzy search
+- [x] Admin-only toast local regression (18 สิงหาคม 2026): `npm run test:admin-shell` 22/22, `npm run test:media` 52/52, `npm run lint`, `npm run build` และ `git diff --check` exit 0; build ยังแสดง Next `middleware` convention deprecation เดิมเท่านั้น
+- [ ] Admin Toast browser validation: Local `/admin` redirect ไป `/auth/login` จึงไม่สามารถ trigger Success/Info/Warning/Error/Loading, ตรวจ focus ปุ่มปิด หรือยืนยัน loading update in place ได้โดยไม่ใช้ Admin session; ที่ 390px และ 1280px หน้า Login ไม่มี horizontal overflow (scrollWidth เท่ากับ clientWidth)
 - [ ] Performance tests ตาม p75/p95 และ Capacity baseline
 - [ ] Accessibility และ Browser matrix
 - [ ] RLS/Security regression tests
