@@ -46,6 +46,7 @@ The homepage uses a category-first layout inspired by the clarity of Next.js doc
 - JPEG, PNG, and WebP use a Safari-compatible `<img>` decoding path; `createImageBitmap()` is an optional successful-path optimization, never the sole dependency.
 - HEIC and HEIF lazily load a browser-only decoder only when such a file is selected. The decoder output joins the same normalization path as native formats.
 - The normalization step applies EXIF orientation, maintains aspect ratio, limits the longest side to 1920 px, and encodes the final Blob as WebP.
+- Native `canvas.toBlob(..., "image/webp")` output is accepted only when its MIME type is exactly `image/webp`. A browser-only WebAssembly WebP encoder is lazy-loaded when native encoding is unavailable or returns another MIME type; HEIC/HEIF output uses that same guaranteed-WebP path.
 - The existing browser preview, 10 MB source validation, HMAC ticket, and Worker-side WebP/container/dimension validation remain authoritative after preparation.
 - If the browser cannot decode a source or cannot encode WebP, it reports a clear per-file error and performs no upload.
 
@@ -69,7 +70,7 @@ The existing `AdminToastProvider` becomes the single transient-feedback surface 
 
 ## Validation
 
-- Unit tests cover native image decoder selection/fallback, HEIC/HEIF lazy decoding, EXIF orientation, resize, WebP conversion errors, FIFO queue sequencing, item cancellation, retry, and object-URL cleanup.
+- Unit tests cover native image decoder selection/fallback, HEIC/HEIF lazy decoding, EXIF orientation, resize, rejected non-WebP canvas output, WebAssembly WebP encoder fallback/errors, FIFO queue sequencing, item cancellation, retry, and object-URL cleanup.
 - Component tests cover multiple-file selection, paste into the same queue, progress/error/retry rendering, and Save being blocked only while conversion is active.
 - Browser validation includes real iPhone Safari for JPEG, PNG, HEIC, multiple-file queue handling, orientation, failed conversion, and Save/upload handoff.
 - Toast tests cover each kind’s semantics and timing, loading-to-result updates, manual dismissal, roles, and mobile layout. Regression tests cover migrated Admin action feedback.
