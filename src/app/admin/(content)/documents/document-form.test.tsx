@@ -19,6 +19,13 @@ const unsavedNavigation = vi.hoisted(() => ({
   registerDirty: vi.fn(),
   requestNavigation: vi.fn(),
 }));
+const toast = vi.hoisted(() => ({
+  dismiss: vi.fn(),
+  showError: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  showSuccess: vi.fn(),
+  update: vi.fn(),
+}));
 const bannerBehavior = vi.hoisted(() => ({ triggerRetryBeforeEffect: true }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
@@ -28,7 +35,7 @@ vi.mock("@/components/admin/unsaved-navigation", () => ({
   useUnsavedNavigation: () => ({ dirty: false, ...unsavedNavigation }),
 }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+  useAdminToast: () => toast,
 }));
 vi.mock("@/components/editor/document-editor", () => ({
   DocumentEditor: ({ content, onChange }: { content: unknown; onChange: (content: unknown, pendingImages: unknown[]) => void }) => (
@@ -121,6 +128,17 @@ it("saves content before advancing to review", async () => {
   expect(navigation.replace).toHaveBeenCalledWith(`/admin/documents/${document.id}?section=${rootSectionId}&stage=review`);
 });
 
+it("updates one loading toast to success when saving content succeeds", async () => {
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledWith("กำลังบันทึกเอกสาร");
+  await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "success", "บันทึกเอกสารสำเร็จ"));
+});
+
 it("keeps content stage and values when save fails", async () => {
   actions.saveDocument.mockResolvedValue({ error: "Version conflict กรุณา Reload" });
   const user = userEvent.setup();
@@ -135,6 +153,17 @@ it("keeps content stage and values when save fails", async () => {
   expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
   expect((title as HTMLInputElement).value).toBe("ชื่อที่ยังไม่บันทึก");
   expect(navigation.replace).not.toHaveBeenCalled();
+});
+
+it("updates the same loading toast to error when saving content fails", async () => {
+  actions.saveDocument.mockResolvedValue({ error: "Version conflict กรุณา Reload" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledWith("กำลังบันทึกเอกสาร");
+  await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "error", "Version conflict กรุณา Reload"));
 });
 
 it("shows inline field errors and focuses the first invalid field before saving", async () => {

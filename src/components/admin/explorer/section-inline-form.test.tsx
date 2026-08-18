@@ -8,16 +8,18 @@ import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
 import { SectionInlineForm } from "./section-inline-form";
 
-const { refresh, replace, saveSection } = vi.hoisted(() => ({
+const { refresh, replace, saveSection, showLoading, update } = vi.hoisted(() => ({
   refresh: vi.fn(),
   replace: vi.fn(),
   saveSection: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  update: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, replace }) }));
 vi.mock("@/app/admin/(content)/structure/actions", () => ({ saveSection }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn(), showLoading, update, dismiss: vi.fn() }),
 }));
 
 const root: AdminExplorerSection = {
@@ -89,6 +91,19 @@ describe("SectionInlineForm", () => {
       parentId: root.id,
       sortOrder: 7,
     }));
+  });
+
+  it("updates one loading toast to the save result", async () => {
+    const user = userEvent.setup();
+    saveSection.mockResolvedValue({ error: "Slug หรือ Route นี้ถูกใช้งานแล้ว" });
+    render(<SectionInlineForm mode="create-child" section={null} parent={root} rootSections={[root]} initialSortOrder={0} onCancel={vi.fn()} />);
+
+    await user.type(screen.getByRole("textbox", { name: "ชื่อหมวด" }), child.title);
+    await user.type(screen.getByRole("textbox", { name: "Slug" }), child.slug);
+    await user.click(screen.getByRole("button", { name: "บันทึกหมวด" }));
+
+    expect(showLoading).toHaveBeenCalledWith("กำลังบันทึกหมวด");
+    await waitFor(() => expect(update).toHaveBeenCalledWith("toast-1", "error", "Slug หรือ Route นี้ถูกใช้งานแล้ว"));
   });
 
   it("prefills every active field for rename and editing without a description field", () => {

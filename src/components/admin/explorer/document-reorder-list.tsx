@@ -47,7 +47,7 @@ export function DocumentReorderList({
   onSaved,
 }: DocumentReorderListProps) {
   const [orderedDocuments, setOrderedDocuments] = useState(() => [...documents]);
-  const { showError, showSuccess } = useAdminToast();
+  const { showLoading, update } = useAdminToast();
   const [isPending, startTransition] = useTransition();
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -67,19 +67,20 @@ export function DocumentReorderList({
 
   function saveOrder() {
     startTransition(async () => {
+      const toastId = showLoading("กำลังบันทึกลำดับเอกสาร");
       try {
         const result = await reorderDocuments({
           sectionId,
           documentIds: orderedDocuments.map(({ id }) => id),
         });
         if ("error" in result) {
-          showError(result.error);
+          update(toastId, "error", result.error);
           return;
         }
-        showSuccess("บันทึกลำดับเอกสารสำเร็จ");
+        update(toastId, "success", "บันทึกลำดับเอกสารสำเร็จ");
         onSaved();
       } catch {
-        showError("บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง");
+        update(toastId, "error", "บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง");
       }
     });
   }

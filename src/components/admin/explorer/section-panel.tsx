@@ -47,7 +47,7 @@ export function SectionPanel({
   explorer,
 }: SectionPanelProps) {
   const router = useRouter();
-  const { showError, showSuccess } = useAdminToast();
+  const { dismiss, showError, showLoading, update } = useAdminToast();
   const [operations, setOperations] = useState(
     explorer.pendingSectionOperations
   );
@@ -124,28 +124,38 @@ export function SectionPanel({
   function confirmDelete() {
     if (!deleteTarget || confirmedName !== deleteTarget.title) return;
     startTransition(async () => {
-      const result = await deleteSection(deleteTarget.id, confirmedName);
-      if ("error" in result) {
-        showError(result.error);
-        return;
-      }
-      if ("pending" in result) {
-        setCreationBlocked(true);
-        setOperations((current) => [
-          ...current.filter(
-            (operation) =>
-              operation.operationId !== result.operation.operationId
-          ),
-          result.operation,
-        ]);
-        closeDeleteDialog();
-        return;
-      }
+      const toastId = showLoading("กำลังลบหมวด");
+      try {
+        const result = await deleteSection(deleteTarget.id, confirmedName);
+        if ("error" in result) {
+          update(toastId, "error", result.error);
+          return;
+        }
+        if ("pending" in result) {
+          dismiss(toastId);
+          setCreationBlocked(true);
+          setOperations((current) => [
+            ...current.filter(
+              (operation) =>
+                operation.operationId !== result.operation.operationId
+            ),
+            result.operation,
+          ]);
+          closeDeleteDialog();
+          return;
+        }
 
-      closeDeleteDialog();
-      showSuccess("ลบหมวดสำเร็จ");
-      router.replace("/admin/structure");
-      router.refresh();
+        closeDeleteDialog();
+        update(toastId, "success", "ลบหมวดสำเร็จ");
+        router.replace("/admin/structure");
+        router.refresh();
+      } catch (error) {
+        update(
+          toastId,
+          "error",
+          error instanceof Error ? error.message : "ลบหมวดไม่สำเร็จ กรุณาลองอีกครั้ง"
+        );
+      }
     });
   }
 

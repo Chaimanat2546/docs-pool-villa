@@ -8,13 +8,15 @@ import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 
 import { SectionPanel } from "./section-panel";
 
-const { deleteSection, getDeletePreview, refresh, replace, retrySectionMediaOperation, saveSection } = vi.hoisted(() => ({
+const { deleteSection, getDeletePreview, refresh, replace, retrySectionMediaOperation, saveSection, showLoading, update } = vi.hoisted(() => ({
   deleteSection: vi.fn(),
   getDeletePreview: vi.fn(),
   refresh: vi.fn(),
   replace: vi.fn(),
   retrySectionMediaOperation: vi.fn(),
   saveSection: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  update: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, replace }) }));
@@ -25,7 +27,7 @@ vi.mock("@/app/admin/(content)/structure/actions", () => ({
   saveSection,
 }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn(), showLoading, update, dismiss: vi.fn() }),
 }));
 
 const rootId = "11111111-1111-4111-8111-111111111111";
@@ -264,6 +266,8 @@ describe("SectionPanel", () => {
     await user.type(within(dialog).getByRole("textbox", { name: /พิมพ์.*การจอง.*เพื่อยืนยัน/ }), "การจอง");
     await user.click(within(dialog).getByRole("button", { name: "ลบถาวร" }));
 
+    expect(showLoading).toHaveBeenCalledWith("กำลังลบหมวด");
+    await waitFor(() => expect(update).toHaveBeenCalledWith("toast-1", "error", "ลบหมวดไม่สำเร็จ กรุณาลองอีกครั้ง"));
     expect(within(dialog).queryByRole("alert")).toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "ยกเลิก" }));
     expect(screen.getByRole("heading", { name: "การจอง" })).not.toBeNull();

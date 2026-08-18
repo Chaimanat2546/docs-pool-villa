@@ -100,7 +100,7 @@ export function DocumentForm({
   hardDeleteFiles?: string[];
 }) {
   const router = useRouter();
-  const { showError, showSuccess } = useAdminToast();
+  const { dismiss, showError, showLoading, update } = useAdminToast();
   const { registerDirty, requestNavigation } = useUnsavedNavigation();
   const idRef = useRef(document.id);
   const [stage, setStage] = useState<DocumentStage>(initialStage);
@@ -214,6 +214,7 @@ export function DocumentForm({
   async function persist(): Promise<boolean> {
     if (saving || operation || !validateFields()) return false;
     setSaving(true);
+    const toastId = showLoading("กำลังบันทึกเอกสาร");
     const uploaded = new Map<string, UploadedPendingImage>();
     let saveSubmitted = false;
     try {
@@ -261,10 +262,11 @@ export function DocumentForm({
         media: [...uploaded.values()],
       });
       if ("error" in result) {
-        showError(result.error);
+        update(toastId, "error", result.error);
         return false;
       }
       if ("pending" in result) {
+        dismiss(toastId);
         setOperation(result.operation);
         return false;
       }
@@ -275,7 +277,7 @@ export function DocumentForm({
       setSavedSnapshot(snapshot(form, persistedContent));
       setSavedSectionId(form.sectionId);
       registerDirty(false);
-      showSuccess("บันทึกเอกสารสำเร็จ");
+      update(toastId, "success", "บันทึกเอกสารสำเร็จ");
       return true;
     } catch (error) {
       if (!saveSubmitted && uploaded.size > 0)
@@ -286,7 +288,9 @@ export function DocumentForm({
             displayLabel: `${item.mediaId}.webp`,
           }))
         );
-      showError(
+      update(
+        toastId,
+        "error",
         error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ"
       );
       return false;
@@ -325,20 +329,32 @@ export function DocumentForm({
   async function remove() {
     if (saving || operation) return;
     setSaving(true);
-    const result = await deleteDocument(document.id, version);
-    setSaving(false);
-    if ("error" in result) {
-      showError(result.error);
-      return;
+    const toastId = showLoading("กำลังลบเอกสาร");
+    try {
+      const result = await deleteDocument(document.id, version);
+      if ("error" in result) {
+        update(toastId, "error", result.error);
+        return;
+      }
+      if ("pending" in result) {
+        dismiss(toastId);
+        setOperation(result.operation);
+        return;
+      }
+      registerDirty(false);
+      update(toastId, "success", "ลบเอกสารสำเร็จ");
+      requestNavigation(
+        `/admin/structure?section=${encodeURIComponent(savedSectionId)}`
+      );
+    } catch (error) {
+      update(
+        toastId,
+        "error",
+        error instanceof Error ? error.message : "ลบเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง"
+      );
+    } finally {
+      setSaving(false);
     }
-    if ("pending" in result) {
-      setOperation(result.operation);
-      return;
-    }
-    registerDirty(false);
-    requestNavigation(
-      `/admin/structure?section=${encodeURIComponent(savedSectionId)}`
-    );
   }
 
   const savedReturnHref =

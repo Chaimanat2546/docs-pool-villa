@@ -56,7 +56,7 @@ function modeLabel(mode: EditableSectionMode): string {
 
 export function SectionInlineForm({ mode, section, parent, rootSections, initialSortOrder, onCancel }: SectionInlineFormProps) {
   const router = useRouter();
-  const { showError, showSuccess } = useAdminToast();
+  const { showLoading, update } = useAdminToast();
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState(() => initialFormState(mode, section, parent, initialSortOrder));
   const [isPending, startTransition] = useTransition();
@@ -68,23 +68,32 @@ export function SectionInlineForm({ mode, section, parent, rootSections, initial
   function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     startTransition(async () => {
-      const result = await saveSection({
-        id: mode === "edit" ? section?.id : undefined,
-        title: form.title,
-        slug: form.slug,
-        parentId: mode === "create-root" ? null : form.parentId || null,
-        sortOrder: Number(form.sortOrder),
-        isPublished: form.isPublished,
-      });
+      const toastId = showLoading("กำลังบันทึกหมวด");
+      try {
+        const result = await saveSection({
+          id: mode === "edit" ? section?.id : undefined,
+          title: form.title,
+          slug: form.slug,
+          parentId: mode === "create-root" ? null : form.parentId || null,
+          sortOrder: Number(form.sortOrder),
+          isPublished: form.isPublished,
+        });
 
-      if ("error" in result) {
-        showError(result.error);
-        return;
+        if ("error" in result) {
+          update(toastId, "error", result.error);
+          return;
+        }
+
+        update(toastId, "success", "บันทึกหมวดสำเร็จ");
+        router.replace(`/admin/structure?section=${encodeURIComponent(result.id)}`);
+        router.refresh();
+      } catch (error) {
+        update(
+          toastId,
+          "error",
+          error instanceof Error ? error.message : "บันทึกหมวดไม่สำเร็จ กรุณาลองอีกครั้ง"
+        );
       }
-
-      showSuccess("บันทึกหมวดสำเร็จ");
-      router.replace(`/admin/structure?section=${encodeURIComponent(result.id)}`);
-      router.refresh();
     });
   }
 

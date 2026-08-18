@@ -8,11 +8,21 @@ import type { AdminExplorerDocument } from "@/lib/docs/admin-explorer";
 
 import { DocumentReorderList } from "./document-reorder-list";
 
-const { reorderDocuments } = vi.hoisted(() => ({ reorderDocuments: vi.fn() }));
+const { reorderDocuments, showLoading, update } = vi.hoisted(() => ({
+  reorderDocuments: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  update: vi.fn(),
+}));
 
 vi.mock("@/app/admin/(content)/documents/actions", () => ({ reorderDocuments }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+  useAdminToast: () => ({
+    showError: vi.fn(),
+    showSuccess: vi.fn(),
+    showLoading,
+    update,
+    dismiss: vi.fn(),
+  }),
 }));
 
 vi.mock("@dnd-kit/core", () => ({
@@ -181,6 +191,17 @@ describe("DocumentReorderList", () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledOnce());
   });
 
+  it("updates one loading toast to success after saving the new order", async () => {
+    const user = userEvent.setup();
+    reorderDocuments.mockResolvedValue({ success: true });
+    renderList();
+
+    await user.click(screen.getByRole("button", { name: "บันทึกลำดับ" }));
+
+    expect(showLoading).toHaveBeenCalledWith("กำลังบันทึกลำดับเอกสาร");
+    await waitFor(() => expect(update).toHaveBeenCalledWith("toast-1", "success", "บันทึกลำดับเอกสารสำเร็จ"));
+  });
+
   it("keeps the dragged order and reports an unsuccessful save", async () => {
     const user = userEvent.setup();
     reorderDocuments.mockResolvedValue({ error: "บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง" });
@@ -191,6 +212,21 @@ describe("DocumentReorderList", () => {
 
     expect(screen.queryByRole("alert")).toBeNull();
     expect(listTitles()).toEqual(["เอกสาร B", "เอกสาร C", "เอกสาร A"]);
+  });
+
+  it("updates the same loading toast to error when saving fails", async () => {
+    const user = userEvent.setup();
+    reorderDocuments.mockResolvedValue({ error: "บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง" });
+    renderList();
+
+    await user.click(screen.getByRole("button", { name: "บันทึกลำดับ" }));
+
+    expect(showLoading).toHaveBeenCalledWith("กำลังบันทึกลำดับเอกสาร");
+    await waitFor(() => expect(update).toHaveBeenCalledWith(
+      "toast-1",
+      "error",
+      "บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง",
+    ));
   });
 
   it("cancels without invoking the save action", async () => {

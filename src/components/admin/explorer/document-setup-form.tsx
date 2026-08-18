@@ -22,7 +22,7 @@ export function DocumentSetupForm({
   selectedSectionId,
 }: DocumentSetupFormProps) {
   const router = useRouter();
-  const { showError } = useAdminToast();
+  const { showLoading, update } = useAdminToast();
   const documentIdRef = useRef(crypto.randomUUID());
   const titleInputRef = useRef<HTMLInputElement>(null);
   const submittingRef = useRef(false);
@@ -42,6 +42,7 @@ export function DocumentSetupForm({
 
     submittingRef.current = true;
     setIsPending(true);
+    const toastId = showLoading("กำลังสร้างฉบับร่าง");
     try {
       const result = await createDocumentDraft({
         id: documentIdRef.current,
@@ -51,13 +52,15 @@ export function DocumentSetupForm({
       });
 
       if ("error" in result) {
-        showError(result.error);
+        update(toastId, "error", result.error);
         return;
       }
       if ("pending" in result) {
-        showError(result.operation.message);
+        update(toastId, "error", result.operation.message);
         return;
       }
+
+      update(toastId, "success", "สร้างฉบับร่างสำเร็จ");
 
       router.replace(
         `/admin/documents/${result.id}?section=${encodeURIComponent(
@@ -65,7 +68,9 @@ export function DocumentSetupForm({
         )}&stage=content`
       );
     } catch (error) {
-      showError(
+      update(
+        toastId,
+        "error",
         error instanceof Error ? error.message : "ไม่สามารถสร้างฉบับร่างได้"
       );
     } finally {
