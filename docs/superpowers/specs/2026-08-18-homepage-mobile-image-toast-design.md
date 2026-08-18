@@ -37,6 +37,7 @@ The homepage uses a category-first layout inspired by the clarity of Next.js doc
 - The editor accepts multiple selected files and repeated image pastes through one FIFO preparation queue.
 - Each source file has the existing 10 MB maximum. This is a per-file limit, not a total selection limit.
 - The queue processes exactly one image at a time. It exposes per-file states: pending, converting, ready, and failed, together with a summary such as “กำลังเตรียมรูป 2 จาก 5”.
+- Each ready item opens the existing Alt-text dialog before it is inserted into the editor. The dialogs are shown one at a time in FIFO order, preserving the current accessibility flow rather than introducing an alternate metadata UI.
 - Cancelling/removing an item or leaving the editor cancels work where possible and revokes preview object URLs. Once conversion succeeds, the source file/decoder output is released; only the resized WebP preview/blob is retained for the existing Save flow.
 - A failed file does not halt following queued files. Its name and an actionable reason stay visible beside that file, with retry and remove controls.
 - Save remains unavailable while at least one queued image is converting. Ready files keep the existing media lifecycle; failed files are never uploaded.
