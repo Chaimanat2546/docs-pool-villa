@@ -33,6 +33,29 @@ afterEach(() => {
 });
 
 describe("useImagePreparationQueue", () => {
+  it("continues preparing files after the StrictMode setup-cleanup-setup cycle", async () => {
+    const file = new File(["strict"], "strict.jpg", { type: "image/jpeg" });
+    const resultImage = deferred<PendingImage>();
+    const prepare = vi
+      .fn<(file: File, signal?: AbortSignal) => Promise<PendingImage>>()
+      .mockImplementation(() => resultImage.promise);
+    const { result } = renderHook(
+      () => useImagePreparationQueue({ prepare }),
+      { reactStrictMode: true },
+    );
+
+    act(() => result.current.enqueue([file]));
+    await waitFor(() => expect(prepare).toHaveBeenCalledOnce());
+    await act(async () => resultImage.resolve(prepared(file, "strict-ready")));
+
+    await waitFor(() =>
+      expect(result.current.items[0]).toMatchObject({
+        status: "ready",
+        prepared: expect.objectContaining({ id: "strict-ready" }),
+      }),
+    );
+  });
+
   it("starts one file at a time and waits for the ready item to be taken", async () => {
     const firstFile = new File(["first"], "first.jpg", { type: "image/jpeg" });
     const secondFile = new File(["second"], "second.png", { type: "image/png" });

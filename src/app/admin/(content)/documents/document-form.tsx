@@ -12,7 +12,10 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { DocumentEditor } from "@/components/editor/document-editor";
+import {
+  DocumentEditor,
+  type ImagePreparationBatchEvent,
+} from "@/components/editor/document-editor";
 import { EditorPreview } from "@/components/editor/editor-preview";
 import type {
   PendingImage,
@@ -103,6 +106,7 @@ export function DocumentForm({
   const { dismiss, showError, showLoading, update } = useAdminToast();
   const { registerDirty, requestNavigation } = useUnsavedNavigation();
   const idRef = useRef(document.id);
+  const preparationToastIdRef = useRef<string | null>(null);
   const [stage, setStage] = useState<DocumentStage>(initialStage);
   const [form, setForm] = useState<FormState>({
     sectionId: document.sectionId,
@@ -155,6 +159,49 @@ export function DocumentForm({
     registerDirty(dirty);
     return () => registerDirty(false);
   }, [dirty, registerDirty]);
+
+  useEffect(
+    () => () => {
+      if (preparationToastIdRef.current)
+        dismiss(preparationToastIdRef.current);
+      preparationToastIdRef.current = null;
+    },
+    [dismiss],
+  );
+
+  const handlePreparationBatchChange = useCallback(
+    (event: ImagePreparationBatchEvent) => {
+      if (event.status === "started") {
+        const message = `กำลังเตรียมรูป ${event.total} รูป`;
+        if (preparationToastIdRef.current) {
+          update(preparationToastIdRef.current, "loading", message);
+        } else {
+          preparationToastIdRef.current = showLoading(message);
+        }
+        return;
+      }
+
+      const toastId = preparationToastIdRef.current;
+      if (!toastId) return;
+      preparationToastIdRef.current = null;
+      if (event.failed === 0) {
+        update(toastId, "success", `เตรียมรูปสำเร็จ ${event.succeeded} รูป`);
+      } else if (event.succeeded > 0) {
+        update(
+          toastId,
+          "warning",
+          `เตรียมรูปสำเร็จ ${event.succeeded} จาก ${event.total} รูป กรุณาตรวจรายการที่ไม่สำเร็จ`,
+        );
+      } else {
+        update(
+          toastId,
+          "error",
+          "ไม่สามารถเตรียมรูปได้ กรุณาตรวจรายการและลองใหม่",
+        );
+      }
+    },
+    [showLoading, update],
+  );
 
   const retryOperation = useCallback(
     (currentOperation: MediaOperationView) => {
@@ -560,6 +607,7 @@ export function DocumentForm({
                 setPendingImages(nextPending);
               }}
               onPreparationChange={setIsPreparingImages}
+              onPreparationBatchChange={handlePreparationBatchChange}
             />
             {isPreparingImages && (
               <p role="alert" className="mt-3 text-sm text-amber-700">

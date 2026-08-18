@@ -17,20 +17,81 @@ export type ImagePreparationQueueItem = {
 
 type ImagePreparationQueueOptions = {
   prepare: (file: File, signal?: AbortSignal) => Promise<PendingImage>;
+  onBatchChange?: (event: ImagePreparationBatchEvent) => void;
 };
+
+export type ImagePreparationBatchEvent =
+  | { status: "started"; total: number }
+  | {
+      status: "completed";
+      total: number;
+      succeeded: number;
+      failed: number;
+    };
 
 type ActivePreparation = {
   id: string;
   controller: AbortController;
 };
 
+type ImagePreparationBatch = {
+  itemIds: Set<string>;
+  succeeded: Set<string>;
+  failed: Set<string>;
+};
+
 export function useImagePreparationQueue({
   prepare,
+  onBatchChange,
 }: ImagePreparationQueueOptions) {
   const [items, setItems] = useState<ImagePreparationQueueItem[]>([]);
   const itemsRef = useRef(items);
   const activeRef = useRef<ActivePreparation | null>(null);
   const mountedRef = useRef(true);
+  const batchRef = useRef<ImagePreparationBatch | null>(null);
+  const onBatchChangeRef = useRef(onBatchChange);
+
+  useEffect(() => {
+    onBatchChangeRef.current = onBatchChange;
+  }, [onBatchChange]);
+
+  const beginBatch = useCallback((itemIds: string[]) => {
+    let batch = batchRef.current;
+    if (!batch) {
+      batch = {
+        itemIds: new Set(),
+        succeeded: new Set(),
+        failed: new Set(),
+      };
+      batchRef.current = batch;
+    }
+    for (const id of itemIds) batch.itemIds.add(id);
+    onBatchChangeRef.current?.({
+      status: "started",
+      total: batch.itemIds.size,
+    });
+  }, []);
+
+  const settleBatchItem = useCallback(
+    (id: string, outcome: "succeeded" | "failed") => {
+      const batch = batchRef.current;
+      if (!batch?.itemIds.has(id)) return;
+      batch.succeeded.delete(id);
+      batch.failed.delete(id);
+      batch[outcome].add(id);
+      if (batch.succeeded.size + batch.failed.size !== batch.itemIds.size)
+        return;
+
+      onBatchChangeRef.current?.({
+        status: "completed",
+        total: batch.itemIds.size,
+        succeeded: batch.succeeded.size,
+        failed: batch.failed.size,
+      });
+      batchRef.current = null;
+    },
+    [],
+  );
 
   const updateItems = useCallback(
     (
@@ -51,27 +112,43 @@ export function useImagePreparationQueue({
     (files: Iterable<File>) => {
       const incoming = Array.from(files);
       if (incoming.length === 0) return;
+      const added = incoming.map((file) => ({
+        id: crypto.randomUUID(),
+        file,
+      }));
+      beginBatch(added.map((item) => item.id));
 
       updateItems((current) => {
         const previousTotal = current.length === 0 ? 0 : current[0]!.total;
         const total = previousTotal + incoming.length;
         const existing = current.map((item) => ({ ...item, total }));
-        const added = incoming.map((file, index) => ({
-          id: crypto.randomUUID(),
+        const queued = added.map(({ id, file }, index) => ({
+          id,
           file,
           fileName: file.name,
           status: "pending" as const,
           ordinal: previousTotal + index + 1,
           total,
         }));
-        return [...existing, ...added];
+        return [...existing, ...queued];
       });
     },
-    [updateItems],
+    [beginBatch, updateItems],
   );
 
   const retry = useCallback(
     (id: string) => {
+      const failed = itemsRef.current.find(
+        (item) => item.id === id && item.status === "failed",
+      );
+      if (!failed) return;
+      const activeBatch = batchRef.current;
+      if (activeBatch?.itemIds.has(id)) {
+        activeBatch.failed.delete(id);
+        activeBatch.succeeded.delete(id);
+      } else {
+        beginBatch([id]);
+      }
       updateItems((current) =>
         current.map((item) =>
           item.id === id && item.status === "failed"
@@ -80,7 +157,7 @@ export function useImagePreparationQueue({
         ),
       );
     },
-    [updateItems],
+    [beginBatch, updateItems],
   );
 
   const remove = useCallback(
@@ -89,6 +166,7 @@ export function useImagePreparationQueue({
       if (active?.id === id) {
         activeRef.current = null;
         active.controller.abort();
+        settleBatchItem(id, "failed");
       }
 
       updateItems((current) => {
@@ -97,7 +175,7 @@ export function useImagePreparationQueue({
         return current.filter((item) => item.id !== id);
       });
     },
-    [updateItems],
+    [settleBatchItem, updateItems],
   );
 
   const takeReady = useCallback(() => {
@@ -132,6 +210,7 @@ export function useImagePreparationQueue({
         }
 
         activeRef.current = null;
+        settleBatchItem(next.id, "succeeded");
         updateItems((current) => {
           if (!current.some((item) => item.id === next.id)) {
             URL.revokeObjectURL(prepared.previewUrl);
@@ -165,6 +244,7 @@ export function useImagePreparationQueue({
         if (activeRef.current?.id !== next.id) return;
         activeRef.current = null;
         if (!mountedRef.current || controller.signal.aborted) return;
+        settleBatchItem(next.id, "failed");
         updateItems((current) =>
           current.map((item) =>
             item.id === next.id
@@ -181,19 +261,19 @@ export function useImagePreparationQueue({
         );
       },
     );
-  }, [items, prepare, updateItems]);
+  }, [items, prepare, settleBatchItem, updateItems]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
       mountedRef.current = false;
       activeRef.current?.controller.abort();
       activeRef.current = null;
       for (const item of itemsRef.current) {
         if (item.prepared) URL.revokeObjectURL(item.prepared.previewUrl);
       }
-    },
-    [],
-  );
+    };
+  }, []);
 
   const isPreparing = items.some(
     (item) => item.status === "pending" || item.status === "converting",

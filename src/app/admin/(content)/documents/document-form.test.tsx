@@ -40,16 +40,24 @@ vi.mock("@/components/admin/admin-toast", () => ({
 }));
 vi.mock("@/components/editor/pending-images", () => pendingImages);
 vi.mock("@/components/editor/document-editor", () => ({
-  DocumentEditor: ({ content, onChange, onPreparationChange }: {
+  DocumentEditor: ({ content, onChange, onPreparationChange, onPreparationBatchChange }: {
     content: unknown;
     onChange: (content: unknown, pendingImages: unknown[]) => void;
     onPreparationChange?: (isPreparing: boolean) => void;
+    onPreparationBatchChange?: (event:
+      | { status: "started"; total: number }
+      | { status: "completed"; total: number; succeeded: number; failed: number }
+    ) => void;
   }) => (
     <>
       <output data-testid="editor-content">{JSON.stringify(content)}</output>
       <button type="button" onClick={() => onChange({ type: "doc", content: [{ type: "paragraph" }] }, [])}>แก้ไขเนื้อหา</button>
       <button type="button" onClick={() => onPreparationChange?.(true)}>เริ่มเตรียมรูปจำลอง</button>
       <button type="button" onClick={() => onPreparationChange?.(false)}>เตรียมรูปจำลองเสร็จ</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "started", total: 2 })}>เริ่มชุดเตรียมรูป</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "completed", total: 2, succeeded: 2, failed: 0 })}>เตรียมรูปสำเร็จทั้งชุด</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "completed", total: 2, succeeded: 1, failed: 1 })}>เตรียมรูปสำเร็จบางส่วน</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "completed", total: 2, succeeded: 0, failed: 2 })}>เตรียมรูปไม่สำเร็จทั้งชุด</button>
       <button
         type="button"
         onClick={() => onChange(
@@ -202,6 +210,40 @@ it("blocks saving while the editor is preparing images", async () => {
   await waitFor(() =>
     expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(true),
   );
+});
+
+it.each([
+  {
+    completion: "เตรียมรูปสำเร็จทั้งชุด",
+    kind: "success",
+    message: "เตรียมรูปสำเร็จ 2 รูป",
+  },
+  {
+    completion: "เตรียมรูปสำเร็จบางส่วน",
+    kind: "warning",
+    message: "เตรียมรูปสำเร็จ 1 จาก 2 รูป กรุณาตรวจรายการที่ไม่สำเร็จ",
+  },
+  {
+    completion: "เตรียมรูปไม่สำเร็จทั้งชุด",
+    kind: "error",
+    message: "ไม่สามารถเตรียมรูปได้ กรุณาตรวจรายการและลองใหม่",
+  },
+])("uses one preparation-batch toast for the $kind outcome", async ({
+  completion,
+  kind,
+  message,
+}) => {
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เริ่มชุดเตรียมรูป" }));
+  expect(toast.showLoading).toHaveBeenCalledOnce();
+  expect(toast.showLoading).toHaveBeenCalledWith("กำลังเตรียมรูป 2 รูป");
+
+  await user.click(screen.getByRole("button", { name: completion }));
+  expect(toast.update).toHaveBeenCalledWith("toast-1", kind, message);
+  expect(toast.showLoading).toHaveBeenCalledOnce();
+  expect(actions.saveDocument).not.toHaveBeenCalled();
 });
 
 it("updates one image-batch toast to warning when only some uploads succeed", async () => {

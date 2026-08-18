@@ -24,9 +24,12 @@ import { docsExtensions } from "./extensions";
 import { preparePendingImage, type PendingImage } from "./pending-images";
 import {
   useImagePreparationQueue,
+  type ImagePreparationBatchEvent,
   type ImagePreparationQueueItem,
 } from "./use-image-preparation-queue";
 import { toYouTubeNoCookieUrl } from "@/lib/docs/content";
+
+export type { ImagePreparationBatchEvent } from "./use-image-preparation-queue";
 
 export type DocumentEditorProps = {
   content: JSONContent;
@@ -34,6 +37,7 @@ export type DocumentEditorProps = {
   contentRevision?: number;
   onChange: (content: JSONContent, pendingImages: PendingImage[]) => void;
   onPreparationChange?: (isPreparing: boolean) => void;
+  onPreparationBatchChange?: (event: ImagePreparationBatchEvent) => void;
 };
 
 type EditorDialog = "image" | "youtube" | null;
@@ -43,6 +47,7 @@ export function DocumentEditor({
   contentRevision,
   onChange,
   onPreparationChange,
+  onPreparationBatchChange,
 }: DocumentEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pendingImagesRef = useRef<PendingImage[]>([]);
@@ -61,7 +66,10 @@ export function DocumentEditor({
     retry,
     remove,
     takeReady,
-  } = useImagePreparationQueue({ prepare: preparePendingImage });
+  } = useImagePreparationQueue({
+    prepare: preparePendingImage,
+    onBatchChange: onPreparationBatchChange,
+  });
   const readyItem = preparationItems.find(
     (item) => item.status === "ready" && item.prepared,
   );

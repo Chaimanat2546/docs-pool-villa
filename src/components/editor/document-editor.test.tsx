@@ -544,6 +544,46 @@ describe("DocumentEditor accessibility", () => {
 });
 
 describe("DocumentEditor image preparation queue", () => {
+  it("reports one preparation batch from selection through conversion success", async () => {
+    const user = userEvent.setup();
+    const firstFile = new File(["first"], "first.jpg", { type: "image/jpeg" });
+    const secondFile = new File(["second"], "second.png", { type: "image/png" });
+    const second = deferred<ReturnType<typeof preparedImage>>();
+    const onPreparationBatchChange = vi.fn();
+    preparePendingImage
+      .mockResolvedValueOnce(preparedImage(firstFile, "batch-first"))
+      .mockImplementationOnce(() => second.promise);
+    const view = render(
+      <DocumentEditor
+        content={{ type: "doc", content: [] }}
+        onChange={() => {}}
+        onPreparationBatchChange={onPreparationBatchChange}
+      />,
+    );
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
+
+    await user.upload(input!, [firstFile, secondFile]);
+    expect(onPreparationBatchChange).toHaveBeenCalledWith({
+      status: "started",
+      total: 2,
+    });
+
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+    await user.type(screen.getByRole("textbox", { name: "Alt text" }), "รูปแรก");
+    await user.click(screen.getByRole("button", { name: "ยืนยัน" }));
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(2));
+    second.resolve(preparedImage(secondFile, "batch-second"));
+
+    await waitFor(() =>
+      expect(onPreparationBatchChange).toHaveBeenCalledWith({
+        status: "completed",
+        total: 2,
+        succeeded: 2,
+        failed: 0,
+      }),
+    );
+  });
+
   it("cancels and revokes the current ready image before preparing the next one", async () => {
     const user = userEvent.setup();
     const revokeObjectURL = vi
