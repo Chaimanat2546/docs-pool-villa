@@ -2,7 +2,8 @@ import { expect, it } from "vitest";
 
 import { sectionMode } from "./section-mode";
 
-it("recognizes explicit root and child reorder URL modes", () => {
-  expect(sectionMode("reorder-root")).toBe("reorder-root");
-  expect(sectionMode("reorder-child")).toBe("reorder-child");
+it("recognizes the single reorder URL mode", () => {
+  expect(sectionMode("reorder")).toBe("reorder");
+  expect(sectionMode("reorder-root")).toBe("view");
+  expect(sectionMode("reorder-child")).toBe("view");
 });

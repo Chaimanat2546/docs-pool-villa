@@ -20,5 +20,5 @@ export async function GET(request: Request): Promise<Response> {
     return loginResponse(request, "invalid_credentials");
   }
 
-  return NextResponse.redirect(new URL("/admin/structure", request.url));
+  return NextResponse.redirect(new URL("/admin/structure?mode=reorder", request.url));
 }

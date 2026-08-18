@@ -28,12 +28,12 @@ Moving a child section to a different root would change its documents' public pa
 
 The normal Folder Tree remains a stable, keyboard-navigable navigation control.  Reorder happens in an explicit main-panel mode so selection, disclosure, creation controls, and drag controls do not compete in one tree row.
 
-1. At the virtual root (`/admin/structure`), the panel offers **จัดลำดับหมวดหลัก** when there are at least two root sections.
-2. When a root section is selected, the panel offers **จัดลำดับหมวดย่อย** when it has at least two direct child sections.
-3. A selected child section does not expose the action, because its sibling group is owned by its root; the Admin returns to that root to arrange the group.
-4. Entering reorder mode renders every member of the exact sibling group in one list, independent of the normal tree disclosure state.  Each row identifies the section and has a 44px drag handle.
+1. The sidebar has one action, **จัดลำดับหมวดหมู่**, which opens `/admin/structure?mode=reorder`.
+2. The reorder hub lists every root and its direct children together, with indentation and nested lists that make the hierarchy explicit.
+3. **จัดลำดับหมวดหลัก** is enabled when there are at least two root sections.  **จัดลำดับหมวดย่อย** starts disabled and is enabled only after the Admin selects a root with at least two direct children.
+4. Choosing either action opens the existing reorder list for only that exact sibling group.  Each row identifies the section and has a 44px drag handle.
 5. Pointer, touch, and keyboard drag update local draft order only.  The list provides Thai screen-reader instructions and live announcements; the keyboard sensor follows the standard pick-up/move/drop interaction.
-6. **บันทึกลำดับ** submits the complete ordered ID list once.  **ยกเลิก** discards the draft and restores normal panel mode.
+6. **บันทึกลำดับ** submits the complete ordered ID list once.  **ยกเลิก** returns to the hub and discards the draft; **กลับ** returns to normal panel mode.
 7. During save, while any pending section-media operation exists, or while another action makes mutations unavailable, reorder controls are disabled.  The existing pending-media explanation remains the source of truth.
 
 No drag target is rendered outside the active sibling list, so cross-root and root/child drops cannot occur.
@@ -52,7 +52,7 @@ The new Server Action accepts only a UUID-or-null parent ID and a non-empty, dup
 
 ## Components and state
 
-`SectionPanel` decides which sibling group is eligible and owns transitions between normal and reorder mode.  A focused `SectionReorderList` component mirrors the existing `DocumentReorderList`:
+`SectionPanel` owns the explicit reorder mode. `SectionReorderHub` owns root selection and delegates a focused `SectionReorderList` component for the selected sibling group. The list mirrors the existing `DocumentReorderList`:
 
 - receives a parent ID and the complete ordered sibling data;
 - owns only local draft order and pending-save state;
@@ -60,7 +60,7 @@ The new Server Action accepts only a UUID-or-null parent ID and a non-empty, dup
 - calls the new action on explicit save and keeps the draft intact on an error;
 - calls the existing navigation/refresh path after success so the refreshed server tree becomes canonical.
 
-The Folder Tree receives no drag behavior.  Its current roving focus, expanded-state behavior, and creation actions therefore remain unchanged outside reorder mode.
+The Folder Tree receives no drag behavior and exposes only the single reorder entry action. Its current roving focus, expanded-state behavior, and creation actions therefore remain unchanged outside reorder mode.
 
 ## Error handling and concurrency
 
@@ -81,7 +81,7 @@ The Folder Tree receives no drag behavior.  Its current roving focus, expanded-s
 ### Server action and UI
 
 - Input parsing, Admin authorization, RPC arguments, error mapping, and success-only cache invalidation.
-- Root action appears only for a complete multi-root group; child action only for a selected root with multiple children; no action for a selected child or one-item group.
+- The sidebar has only the single reorder action. The hub lists the full hierarchy, starts the child action disabled, and enables it only after selecting an eligible root.
 - Drag and keyboard reorder change only local state; Save submits one complete ordered ID list; Cancel and failed save retain the expected persisted/draft state.
 - Cross-level/cross-parent placement is impossible by construction; pending media operations block entry and save.
 - Accessible names, visible focus, Thai live announcements, 44px controls, touch interaction, and 390px no-horizontal-overflow behavior.

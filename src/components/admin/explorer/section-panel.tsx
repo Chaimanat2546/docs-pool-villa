@@ -22,7 +22,7 @@ import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 import type { MediaOperationView } from "@/lib/media/lifecycle-types";
 
 import { SectionInlineForm } from "./section-inline-form";
-import { SectionReorderList } from "./section-reorder-list";
+import { SectionReorderHub } from "./section-reorder-hub";
 import { useCreationNavigation } from "./admin-explorer-shell";
 import type { SectionMode } from "./section-mode";
 
@@ -79,9 +79,6 @@ export function SectionPanel({
   const rootSections = explorer.sections.filter(
     (section) => section.parentId === null
   );
-  const childSections = selectedSection
-    ? explorer.sections.filter((section) => section.parentId === selectedSection.id)
-    : [];
   const selectedHasChildren = selectedSection
     ? explorer.sections.some(
         (section) => section.parentId === selectedSection.id
@@ -235,10 +232,8 @@ export function SectionPanel({
         }
       />
     ) : null;
-  const reorder = !mutationsBlocked && mode === "reorder-root" && !selectedSection && rootSections.length > 1 ? (
-    <SectionReorderList parentId={null} sections={rootSections} onCancel={() => router.replace("/admin/structure")} onSaved={() => { router.replace("/admin/structure"); router.refresh(); }} />
-  ) : !mutationsBlocked && mode === "reorder-child" && selectedSection?.parentId === null && childSections.length > 1 ? (
-    <SectionReorderList parentId={selectedSection.id} sections={childSections} onCancel={() => router.replace(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`)} onSaved={() => { router.replace(`/admin/structure?section=${encodeURIComponent(selectedSection.id)}`); router.refresh(); }} />
+  const reorder = !mutationsBlocked && mode === "reorder" ? (
+    <SectionReorderHub sections={explorer.sections} onClose={() => router.replace("/admin/structure")} onSaved={() => { router.replace("/admin/structure?mode=reorder"); router.refresh(); }} />
   ) : null;
 
   return (
@@ -270,9 +265,6 @@ export function SectionPanel({
           >
             เพิ่มหมวดหลัก
           </ActionLink>
-          {!selectedSection && rootSections.length > 1 && (
-            <ActionLink href="/admin/structure?mode=reorder-root" disabled={mutationsBlocked}>จัดลำดับหมวดหลัก</ActionLink>
-          )}
           {selectedSection &&
             (mayCreateChild ? (
               <ActionLink
@@ -304,9 +296,6 @@ export function SectionPanel({
             >
               เปลี่ยนชื่อและตั้งค่า
             </ActionLink>
-          )}
-          {selectedSection?.parentId === null && childSections.length > 1 && (
-            <ActionLink href={`/admin/structure?section=${encodeURIComponent(selectedSection.id)}&mode=reorder-child`} disabled={mutationsBlocked}>จัดลำดับหมวดย่อย</ActionLink>
           )}
           {selectedSection && (
             <button

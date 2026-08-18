@@ -9,10 +9,10 @@
 - [x] สร้าง worktree `codex/section-reorder` และกู้ design spec
 - [x] เพิ่ม Server Action `reorderSections` พร้อม UUID/duplicate validation และ success-only cache refresh
 - [x] เพิ่ม `SectionReorderList` ด้วย `@dnd-kit` รองรับ mouse, touch และ keyboard sensor
-- [x] เพิ่ม URL modes `reorder-root` และ `reorder-child` ใน `SectionPanel`
+- [x] เพิ่ม URL mode `reorder` และ `SectionReorderHub`: sidebar ปุ่มเดียว, แสดง hierarchy ทั้งหมด, เลือกหมวดหลักก่อนจัดลำดับหมวดย่อย
 - [x] เพิ่ม migration `doc_reorder_sections(parent_id, section_ids)` แบบ `SECURITY INVOKER`, Admin-only, complete sibling validation และ atomic `sort_order` update
 - [x] เพิ่ม focused Vitest และ pgTAP cases สำหรับ root/child ordering และ duplicate IDs
-- [ ] รัน Local Supabase migration + `npm run test:db` เมื่อ Docker พร้อม
+- [x] Apply/verify migration บน Staging หลังได้รับอนุมัติจากภู; Local `npm run test:db` ยังรอ Docker
 - [ ] ตรวจ UI authenticated Admin, 390px, pointer/touch/keyboard interaction
 - [ ] อัปเดต `docs/todo/admin-file-explorer.md`, `TODO.md` และ `context.md` หลัง Local verification ผ่าน
 

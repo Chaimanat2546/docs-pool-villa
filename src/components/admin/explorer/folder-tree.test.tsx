@@ -130,15 +130,11 @@ it("adds contextual reorder actions below the content sidebar tree", async () =>
   };
   const { rerender } = render(<FolderTree sections={[...sections, childSibling]} selectedSectionId={null} onNavigate={navigate} />);
 
-  await userEvent.setup().click(screen.getByRole("button", { name: "จัดลำดับหมวดหลัก" }));
-  expect(navigate).toHaveBeenCalledWith("/admin/structure?mode=reorder-root");
+  await userEvent.setup().click(screen.getByRole("button", { name: "จัดลำดับหมวดหมู่" }));
+  expect(navigate).toHaveBeenCalledWith("/admin/structure?mode=reorder");
 
   rerender(<FolderTree sections={[...sections, childSibling]} selectedSectionId="root" onNavigate={navigate} />);
-  await userEvent.setup().click(screen.getByRole("button", { name: "จัดลำดับหมวดย่อย" }));
-  expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root&mode=reorder-child");
-
-  rerender(<FolderTree sections={[...sections, childSibling]} selectedSectionId="child" onNavigate={navigate} />);
-  expect(screen.queryByRole("button", { name: /จัดลำดับหมวด/ })).toBeNull();
+  expect(screen.getByRole("button", { name: "จัดลำดับหมวดหมู่" })).not.toBeNull();
 });
 
 it("prevents pointer drags on a folder row from selecting its label", () => {
@@ -265,6 +261,8 @@ it("provides one Tab entry into the tree followed by root creation when no root 
   expect(document.activeElement).toBe(selected);
   expect(screen.getAllByRole("treeitem").filter((item) => item.tabIndex === 0)).toEqual([selected]);
 
+  await user.tab();
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "จัดลำดับหมวดหมู่" }));
   await user.tab();
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "สร้างหมวดหลัก" }));
   await user.tab();

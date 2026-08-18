@@ -24,7 +24,7 @@ import {
 const adminNavigation = [
   {
     title: "จัดการเนื้อหา",
-    href: "/admin/structure",
+    href: "/admin/structure?mode=reorder",
     matches: ["/admin/structure", "/admin/documents"],
     icon: FolderTree,
   },
