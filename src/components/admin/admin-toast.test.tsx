@@ -110,6 +110,24 @@ it("keeps an error alert until its close button is pressed", async () => {
   expect(screen.queryByRole("alert")).toBeNull();
 });
 
+it("dismisses a visible success toast when its focused close button receives Enter", async () => {
+  const user = userEvent.setup();
+  render(
+    <AdminToastProvider>
+      <ToastHarness />
+    </AdminToastProvider>
+  );
+
+  await user.click(screen.getByRole("button", { name: "success" }));
+  const closeButton = screen.getByRole("button", { name: "ปิดข้อความแจ้งเตือน" });
+  closeButton.focus();
+  expect(document.activeElement).toBe(closeButton);
+
+  await user.keyboard("{Enter}");
+
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
 it("keeps a loading status until it is updated or dismissed", async () => {
   vi.useFakeTimers();
   render(
