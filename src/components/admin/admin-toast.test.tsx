@@ -2,12 +2,14 @@
 
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useRef } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { AdminToastProvider, useAdminToast } from "./admin-toast";
 
 function ToastHarness() {
-  const { showError, showSuccess } = useAdminToast();
+  const { dismiss, show, showError, showLoading, showSuccess, update } = useAdminToast();
+  const loadingToastId = useRef("");
 
   return (
     <>
@@ -16,6 +18,29 @@ function ToastHarness() {
       </button>
       <button type="button" onClick={() => showError("บันทึกไม่สำเร็จ")}>
         error
+      </button>
+      <button type="button" onClick={() => show("info", "ข้อมูลเพิ่มเติม")}>
+        info
+      </button>
+      <button type="button" onClick={() => show("warning", "ตรวจสอบข้อมูล")}>
+        warning
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          loadingToastId.current = showLoading("กำลังบันทึก");
+        }}
+      >
+        loading
+      </button>
+      <button
+        type="button"
+        onClick={() => update(loadingToastId.current, "success", "บันทึกสำเร็จ")}
+      >
+        update loading
+      </button>
+      <button type="button" onClick={() => dismiss(loadingToastId.current)}>
+        dismiss loading
       </button>
     </>
   );
@@ -26,7 +51,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it("dismisses a success status after 3 seconds", async () => {
+it("dismisses success and info statuses after 3 seconds", async () => {
   vi.useFakeTimers();
   render(
     <AdminToastProvider>
@@ -40,6 +65,31 @@ it("dismisses a success status after 3 seconds", async () => {
   await act(() => vi.advanceTimersByTimeAsync(3_000));
 
   expect(screen.queryByRole("status")).toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: "info" }));
+  expect(screen.getByRole("status").textContent).toContain("ข้อมูลเพิ่มเติม");
+
+  await act(() => vi.advanceTimersByTimeAsync(3_000));
+
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("dismisses a warning alert after 5 seconds", async () => {
+  vi.useFakeTimers();
+  render(
+    <AdminToastProvider>
+      <ToastHarness />
+    </AdminToastProvider>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "warning" }));
+  expect(screen.getByRole("alert").textContent).toContain("ตรวจสอบข้อมูล");
+
+  await act(() => vi.advanceTimersByTimeAsync(4_999));
+  expect(screen.getByRole("alert")).not.toBeNull();
+
+  await act(() => vi.advanceTimersByTimeAsync(1));
+  expect(screen.queryByRole("alert")).toBeNull();
 });
 
 it("keeps an error alert until its close button is pressed", async () => {
@@ -58,4 +108,39 @@ it("keeps an error alert until its close button is pressed", async () => {
   );
 
   expect(screen.queryByRole("alert")).toBeNull();
+});
+
+it("keeps a loading status until it is updated or dismissed", async () => {
+  vi.useFakeTimers();
+  render(
+    <AdminToastProvider>
+      <ToastHarness />
+    </AdminToastProvider>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "loading" }));
+  expect(screen.getByRole("status").textContent).toContain("กำลังบันทึก");
+
+  await act(() => vi.advanceTimersByTimeAsync(10_000));
+  expect(screen.getByRole("status")).not.toBeNull();
+
+  fireEvent.click(screen.getByRole("button", { name: "update loading" }));
+  expect(screen.getAllByRole("status")).toHaveLength(1);
+  expect(screen.getByRole("status").textContent).toContain("บันทึกสำเร็จ");
+
+  await act(() => vi.advanceTimersByTimeAsync(3_000));
+  expect(screen.queryByRole("status")).toBeNull();
+});
+
+it("lets a loading status be dismissed explicitly", () => {
+  render(
+    <AdminToastProvider>
+      <ToastHarness />
+    </AdminToastProvider>
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "loading" }));
+  fireEvent.click(screen.getByRole("button", { name: "dismiss loading" }));
+
+  expect(screen.queryByRole("status")).toBeNull();
 });
