@@ -26,10 +26,10 @@ export default async function Home() {
         id="main-content"
         className="font-[family-name:var(--font-geist-sans),ui-sans-serif,system-ui,sans-serif]"
       >
-        <section className="relative overflow-hidden border-b bg-[#fbfcfe] px-4 py-14 sm:px-6 sm:py-16">
+        <section className="relative overflow-hidden border-b bg-[#fbfcfe] px-4 py-14 dark:bg-[#111827] sm:px-6 sm:py-16">
           <div
             aria-hidden="true"
-            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(147,197,253,0.3),transparent_55%),linear-gradient(rgba(15,23,42,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.035)_1px,transparent_1px)] bg-[size:auto,32px_32px,32px_32px]"
+            className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(147,197,253,0.3),transparent_55%),linear-gradient(rgba(15,23,42,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,0.035)_1px,transparent_1px)] bg-[size:auto,32px_32px,32px_32px] dark:bg-[radial-gradient(circle_at_50%_-20%,rgba(96,165,250,0.24),transparent_55%),linear-gradient(rgba(255,255,255,0.055)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.055)_1px,transparent_1px)]"
           />
           <div className="relative mx-auto max-w-3xl text-center">
             <p className="inline-flex items-center rounded-full border bg-background/80 px-3 py-1 text-xs font-medium tracking-wide text-muted-foreground shadow-sm">
