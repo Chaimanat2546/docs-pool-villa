@@ -21,7 +21,9 @@
 - [x] Apply/verify title-search migration บน Staging โดยไม่มี seed/role change
 - [x] ไม่สร้าง `search_text`; ใช้ runtime H2/H3 extraction เท่านั้น และยังไม่ค้น Excerpt/paragraph/content, typo/fuzzy search
 - [x] Admin-only toast local regression (18 สิงหาคม 2026): `npm run test:admin-shell` 22/22, `npm run test:media` 52/52, `npm run lint`, `npm run build` และ `git diff --check` exit 0; build ยังแสดง Next `middleware` convention deprecation เดิมเท่านั้น
-- [ ] Admin Toast browser validation: Local `/admin` redirect ไป `/auth/login` จึงไม่สามารถ trigger Success/Info/Warning/Error/Loading, ตรวจ focus ปุ่มปิด หรือยืนยัน loading update in place ได้โดยไม่ใช้ Admin session; ที่ 390px และ 1280px หน้า Login ไม่มี horizontal overflow (scrollWidth เท่ากับ clientWidth)
+- [x] Admin Toast authorized dev smoke (18 สิงหาคม 2026): Local app เชื่อม Remote Staging data และภูอนุมัติให้สร้าง/คง `Toast smoke test` (ไม่มีการลบ); Save แสดง Loading แล้วหลัง route navigation เป็น Success `role=status` ข้อความ `บันทึกหมวดสำเร็จ` พร้อม close button—พบและแก้ provider remount bug ใน `31745b1`; duplicate slug `toast-smoke-test` แสดง Error `role=alert` ข้อความ `Slug หรือ Route นี้ถูกใช้งานแล้ว` และคลิก close ได้
+- [x] Admin Toast responsive/keyboard evidence: viewport 390×844 มี document clientWidth/scrollWidth = 375 จึงไม่มี horizontal overflow และ close target 44×44; keyboard close ยืนยันด้วย focused component test ใน `0b588c3` (browser locator keypress ให้ผลไม่ชัดเจน)
+- [ ] Admin Toast Info/Warning ยังไม่มี caller ที่ตั้งใจให้ trigger ใน Admin; provider behavior ครอบคลุมด้วย component tests แต่ไม่ได้เพิ่ม live integration path
 - [ ] Performance tests ตาม p75/p95 และ Capacity baseline
 - [ ] Accessibility และ Browser matrix
 - [ ] RLS/Security regression tests

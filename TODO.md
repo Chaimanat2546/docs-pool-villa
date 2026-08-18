@@ -11,7 +11,8 @@
 - [x] Admin File Explorer cross-module follow-up: Local gate และ Staging App/Admin smoke เสร็จแล้ว ([รายละเอียด](docs/todo/admin-file-explorer.md))
 - [x] Admin File Explorer: non-admin browser smoke ผ่าน; ไม่มี Migration หรือ Media Worker deploy
 - [x] Admin document-management ใช้ Admin-only toast กลางบน รองรับ Success/Info/Warning/Error/Loading; local regression 18 ส.ค. ผ่าน (Admin Shell 22/22, Media 52/52, lint, build และ diff check)
-- [ ] Admin Toast browser check ที่ trigger ครบ 5 สถานะ, close-button focus และ loading-to-result ยังต้องใช้ Admin session ที่ Local; รอบ 18 ส.ค. ตรวจได้เพียง redirect ไป Login และไม่มี overflow ที่ 390px/desktop
+- [x] Admin Toast dev smoke (18 ส.ค.): Local app เชื่อมข้อมูล Staging และภูอนุมัติให้สร้าง/คง `Toast smoke test`; Save แสดง Loading แล้วหลัง navigate เป็น Success `role=status` พร้อมปุ่มปิด, duplicate slug แสดง Error `role=alert` และปิดได้; 390×844 ไม่มี overflow และ close target 44×44
+- [ ] Admin Toast Info/Warning ไม่มี caller ใน Admin ที่ตั้งใจให้ trigger ตอนนี้; provider behavior ครอบคลุมด้วย component tests โดยไม่เพิ่ม live integration path
 - [x] Approved cross-module follow-up: removed the unused section description field; Local tests and Staging migration-history/DB-lint verification complete, Production migration remains pending separate approval
 - [ ] M07 กำลังดำเนินการ: Search Title/H2/H3 และ command palette ผ่าน focused Local tests; browser/performance hardening ค้าง
 
