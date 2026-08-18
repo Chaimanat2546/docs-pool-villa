@@ -19,6 +19,7 @@ vi.mock("./pending-images", () => ({ preparePendingImage }));
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 function setupEditorGeometry() {
@@ -42,7 +43,7 @@ function deferred<T>() {
 function preparedImage(file: File, id: string) {
   return {
     id,
-    file,
+    fileName: file.name,
     blob: new Blob([id], { type: "image/webp" }),
     previewUrl: `blob:${id}`,
     width: 800,
@@ -543,6 +544,42 @@ describe("DocumentEditor accessibility", () => {
 });
 
 describe("DocumentEditor image preparation queue", () => {
+  it("cancels and revokes the current ready image before preparing the next one", async () => {
+    const user = userEvent.setup();
+    const revokeObjectURL = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+    const firstFile = new File(["first"], "cancel-first.jpg", {
+      type: "image/jpeg",
+    });
+    const secondFile = new File(["second"], "after-cancel.png", {
+      type: "image/png",
+    });
+    const second = deferred<ReturnType<typeof preparedImage>>();
+    preparePendingImage
+      .mockResolvedValueOnce(preparedImage(firstFile, "cancel-first"))
+      .mockImplementationOnce(() => second.promise);
+    const view = render(
+      <DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />,
+    );
+    const input = view.container.querySelector<HTMLInputElement>(
+      'input[type="file"]',
+    );
+
+    await user.upload(input!, [firstFile, secondFile]);
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+    expect(preparePendingImage).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:cancel-first");
+    expect(screen.queryByText("cancel-first.jpg")).toBeNull();
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(2));
+    expect(preparePendingImage.mock.calls[1]?.[0]).toBe(secondFile);
+    second.resolve(preparedImage(secondFile, "after-cancel"));
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+  });
+
   it("forwards every selected file and waits for Alt confirmation before preparing the next one", async () => {
     const user = userEvent.setup();
     const firstFile = new File(["first"], "first.jpg", { type: "image/jpeg" });

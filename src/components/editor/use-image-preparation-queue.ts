@@ -6,7 +6,8 @@ import type { PendingImage } from "./pending-images";
 
 export type ImagePreparationQueueItem = {
   id: string;
-  file: File;
+  file?: File;
+  fileName: string;
   status: "pending" | "converting" | "ready" | "failed";
   error?: string;
   ordinal: number;
@@ -58,6 +59,7 @@ export function useImagePreparationQueue({
         const added = incoming.map((file, index) => ({
           id: crypto.randomUUID(),
           file,
+          fileName: file.name,
           status: "pending" as const,
           ordinal: previousTotal + index + 1,
           total,
@@ -111,6 +113,8 @@ export function useImagePreparationQueue({
     if (items.some((item) => item.status === "ready")) return;
     const next = items.find((item) => item.status === "pending");
     if (!next) return;
+    const sourceFile = next.file;
+    if (!sourceFile) return;
 
     const controller = new AbortController();
     activeRef.current = { id: next.id, controller };
@@ -120,7 +124,7 @@ export function useImagePreparationQueue({
       ),
     );
 
-    void prepare(next.file, controller.signal).then(
+    void prepare(sourceFile, controller.signal).then(
       (prepared) => {
         if (!mountedRef.current || activeRef.current?.id !== next.id) {
           URL.revokeObjectURL(prepared.previewUrl);
@@ -133,11 +137,28 @@ export function useImagePreparationQueue({
             URL.revokeObjectURL(prepared.previewUrl);
             return current;
           }
-          return current.map((item) =>
-            item.id === next.id
-              ? { ...item, status: "ready", prepared, error: undefined }
-              : item,
-          );
+          const retained: PendingImage = {
+            id: prepared.id,
+            fileName: prepared.fileName,
+            blob: prepared.blob,
+            previewUrl: prepared.previewUrl,
+            width: prepared.width,
+            height: prepared.height,
+            status: prepared.status,
+            progress: prepared.progress,
+            error: prepared.error,
+          };
+          return current.map((item) => {
+            if (item.id !== next.id) return item;
+            const released = { ...item };
+            delete released.file;
+            return {
+              ...released,
+              status: "ready",
+              prepared: retained,
+              error: undefined,
+            };
+          });
         });
       },
       (error: unknown) => {

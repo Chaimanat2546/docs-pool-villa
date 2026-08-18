@@ -2,7 +2,7 @@
 
 export type PendingImage = {
   id: string;
-  file: File;
+  fileName: string;
   blob: Blob;
   previewUrl: string;
   width: number;
@@ -206,7 +206,7 @@ export async function preparePendingImage(file: File, signal?: AbortSignal): Pro
     throwIfAborted(signal);
     return {
       id: crypto.randomUUID(),
-      file,
+      fileName: file.name,
       blob,
       previewUrl: URL.createObjectURL(blob),
       width: targetWidth,

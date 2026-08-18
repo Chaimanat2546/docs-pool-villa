@@ -479,7 +479,7 @@ function ImagePreparationQueue({
             className="flex min-h-11 items-center justify-between gap-3 rounded-md border bg-background px-3 py-2 text-sm"
           >
             <div className="min-w-0">
-              <p className="truncate font-medium">{item.file.name}</p>
+              <p className="truncate font-medium">{item.fileName}</p>
               {item.status === "pending" && (
                 <p className="text-muted-foreground">รอเตรียมรูป</p>
               )}
@@ -497,7 +497,7 @@ function ImagePreparationQueue({
               <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
-                  aria-label={`ลองใหม่ ${item.file.name}`}
+                  aria-label={`ลองใหม่ ${item.fileName}`}
                   onClick={() => onRetry(item.id)}
                   className="min-h-11 rounded-md border px-3 py-2"
                 >
@@ -505,7 +505,7 @@ function ImagePreparationQueue({
                 </button>
                 <button
                   type="button"
-                  aria-label={`นำ ${item.file.name} ออก`}
+                  aria-label={`นำ ${item.fileName} ออก`}
                   onClick={() => onRemove(item.id)}
                   className="min-h-11 rounded-md border px-3 py-2 text-destructive"
                 >

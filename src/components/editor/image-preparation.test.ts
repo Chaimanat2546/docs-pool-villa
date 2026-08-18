@@ -112,11 +112,13 @@ describe("preparePendingImage", () => {
 
     expect(result).toMatchObject({
       id: "pending-image",
+      fileName: "villa.jpg",
       width: 1600,
       height: 900,
       previewUrl: "blob:first",
       status: "ready",
     });
+    expect(result).not.toHaveProperty("file");
     expect(result.blob.type).toBe("image/webp");
     expect(browser.bitmap.close).toHaveBeenCalledOnce();
     expect(codecs.heic2any).not.toHaveBeenCalled();
@@ -145,7 +147,7 @@ describe("preparePendingImage", () => {
 
     const result = await preparePendingImage(source);
 
-    expect(result).toMatchObject({ file: source, width: 800, height: 1200 });
+    expect(result).toMatchObject({ fileName: "portrait.HEIF", width: 800, height: 1200 });
     expect(codecs.heic2any).toHaveBeenCalledWith({
       blob: source,
       toType: "image/jpeg",

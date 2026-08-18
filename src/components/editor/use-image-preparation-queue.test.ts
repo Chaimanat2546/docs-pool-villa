@@ -19,7 +19,7 @@ function deferred<T>() {
 function prepared(file: File, id: string): PendingImage {
   return {
     id,
-    file,
+    fileName: file.name,
     blob: new Blob([id], { type: "image/webp" }),
     previewUrl: `blob:${id}`,
     width: 800,
@@ -56,12 +56,19 @@ describe("useImagePreparationQueue", () => {
     await act(async () => first.resolve(prepared(firstFile, "first-ready")));
     await waitFor(() => expect(result.current.items[0]?.status).toBe("ready"));
     expect(prepare).toHaveBeenCalledTimes(1);
+    expect(result.current.items[0]).toMatchObject({
+      fileName: "first.jpg",
+      status: "ready",
+    });
+    expect(result.current.items[0]).not.toHaveProperty("file");
+    expect(result.current.items[0]?.prepared).not.toHaveProperty("file");
 
     const transferred: { value: PendingImage | null } = { value: null };
     act(() => {
       transferred.value = result.current.takeReady();
     });
     expect(transferred.value?.id).toBe("first-ready");
+    expect(transferred.value).not.toHaveProperty("file");
     await waitFor(() => expect(prepare).toHaveBeenCalledTimes(2));
     expect(prepare.mock.calls[1]?.[0]).toBe(secondFile);
     expect(result.current.items[0]).toMatchObject({
