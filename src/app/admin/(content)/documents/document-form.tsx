@@ -280,14 +280,19 @@ export function DocumentForm({
       update(toastId, "success", "บันทึกเอกสารสำเร็จ");
       return true;
     } catch (error) {
-      if (!saveSubmitted && uploaded.size > 0)
-        await rollbackUploadedMedia(
-          idRef.current,
-          [...uploaded.values()].map((item) => ({
-            ...item,
-            displayLabel: `${item.mediaId}.webp`,
-          }))
-        );
+      if (!saveSubmitted && uploaded.size > 0) {
+        try {
+          await rollbackUploadedMedia(
+            idRef.current,
+            [...uploaded.values()].map((item) => ({
+              ...item,
+              displayLabel: `${item.mediaId}.webp`,
+            }))
+          );
+        } catch {
+          // The original upload failure remains the user-facing result.
+        }
+      }
       update(
         toastId,
         "error",

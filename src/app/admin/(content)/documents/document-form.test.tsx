@@ -27,6 +27,7 @@ const toast = vi.hoisted(() => ({
   update: vi.fn(),
 }));
 const bannerBehavior = vi.hoisted(() => ({ triggerRetryBeforeEffect: true }));
+const pendingImages = vi.hoisted(() => ({ uploadPendingImage: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 vi.mock("./actions", () => actions);
@@ -37,11 +38,24 @@ vi.mock("@/components/admin/unsaved-navigation", () => ({
 vi.mock("@/components/admin/admin-toast", () => ({
   useAdminToast: () => toast,
 }));
+vi.mock("@/components/editor/pending-images", () => pendingImages);
 vi.mock("@/components/editor/document-editor", () => ({
   DocumentEditor: ({ content, onChange }: { content: unknown; onChange: (content: unknown, pendingImages: unknown[]) => void }) => (
     <>
       <output data-testid="editor-content">{JSON.stringify(content)}</output>
       <button type="button" onClick={() => onChange({ type: "doc", content: [{ type: "paragraph" }] }, [])}>แก้ไขเนื้อหา</button>
+      <button
+        type="button"
+        onClick={() => onChange(
+          { type: "doc", content: [{ type: "paragraph" }] },
+          [
+            { id: "pending-1", file: new File(["one"], "one.webp", { type: "image/webp" }), blob: new Blob(["one"], { type: "image/webp" }), previewUrl: "blob:one", width: 1, height: 1, status: "ready" },
+            { id: "pending-2", file: new File(["two"], "two.webp", { type: "image/webp" }), blob: new Blob(["two"], { type: "image/webp" }), previewUrl: "blob:two", width: 1, height: 1, status: "ready" },
+          ],
+        )}
+      >
+        เพิ่มรูปจำลอง
+      </button>
     </>
   ),
 }));
@@ -164,6 +178,22 @@ it("updates the same loading toast to error when saving content fails", async ()
 
   expect(toast.showLoading).toHaveBeenCalledWith("กำลังบันทึกเอกสาร");
   await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "error", "Version conflict กรุณา Reload"));
+});
+
+it("updates the saving toast when uploaded-media rollback rejects", async () => {
+  pendingImages.uploadPendingImage
+    .mockResolvedValueOnce({ mediaId: "media-1", objectKey: "docs/media-1.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 })
+    .mockRejectedValueOnce(new Error("upload failed"));
+  actions.rollbackUploadedMedia.mockRejectedValue(new Error("rollback failed"));
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  await waitFor(() => expect(actions.rollbackUploadedMedia).toHaveBeenCalledOnce());
+  await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "error", "upload failed"));
+  expect(navigation.replace).not.toHaveBeenCalled();
 });
 
 it("shows inline field errors and focuses the first invalid field before saving", async () => {
