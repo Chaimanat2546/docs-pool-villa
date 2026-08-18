@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { ArrowRight, BookOpen } from "lucide-react";
 
 import { PublicHeader } from "@/components/public/public-header";
-import { PublicSearchPalette } from "@/components/public/public-search-palette";
 import { getPublicDocsIndex } from "@/lib/docs/public";
 import type { PublicNavigationItem, PublicNavigationSection } from "@/lib/docs/public-types";
 
@@ -23,13 +22,12 @@ export default async function Home() {
   return <>
     <PublicHeader />
     <main id="main-content">
-      <section className="border-b bg-[linear-gradient(180deg,#87a8c8_0%,#f5e9d8_100%)] px-4 py-20 sm:px-6 sm:py-28">
+      <section className="border-b bg-[linear-gradient(180deg,#87a8c8_0%,#f5e9d8_100%)] px-4 py-24 sm:px-6 sm:py-32">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="mb-4 text-sm font-medium">Baan Pool Villa</p>
+          <p className="mb-4 text-sm font-medium text-foreground/75">Baan Pool Villa</p>
           <h1 className="text-4xl font-semibold tracking-tight text-balance sm:text-6xl">คู่มือสำหรับเว็บ Baan Pool Villa</h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-foreground/80">ค้นหาวิธีใช้งานและคำแนะนำที่จำเป็นสำหรับการจัดการเว็บไซต์ของคุณ</p>
-          <div className="mx-auto mt-8 max-w-xl"><PublicSearchPalette variant="hero" /></div>
-          {startPath ? <Link href={startPath} className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"><BookOpen size={17} aria-hidden="true" />เริ่มต้นใช้งาน</Link> : <p className="mt-6 text-sm text-foreground/70">กำลังจัดเตรียมคู่มือสำหรับคุณ</p>}
+          {startPath ? <Link href={startPath} className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground"><BookOpen size={17} aria-hidden="true" />เริ่มต้นใช้งาน</Link> : <p className="mt-8 text-sm text-foreground/70">กำลังจัดเตรียมคู่มือสำหรับคุณ</p>}
         </div>
       </section>
       <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6"><h2 className="text-2xl font-semibold">เลือกหัวข้อที่ต้องการ</h2>
