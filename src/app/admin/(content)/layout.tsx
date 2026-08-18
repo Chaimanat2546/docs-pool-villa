@@ -13,22 +13,24 @@ import Loading from "./loading";
 
 export default function AdminContentLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AdminExplorerShell
-      mobileTree={(
-        <Suspense fallback={<TreeLoading />}>
-          <LoadedAdminExplorerTree closeDrawer />
+    <AdminToastProvider>
+      <AdminExplorerShell
+        mobileTree={(
+          <Suspense fallback={<TreeLoading />}>
+            <LoadedAdminExplorerTree closeDrawer />
+          </Suspense>
+        )}
+        desktopTree={(
+          <Suspense fallback={<TreeLoading />}>
+            <LoadedAdminExplorerTree />
+          </Suspense>
+        )}
+      >
+        <Suspense fallback={<Loading />}>
+          <AdminExplorerContent>{children}</AdminExplorerContent>
         </Suspense>
-      )}
-      desktopTree={(
-        <Suspense fallback={<TreeLoading />}>
-          <LoadedAdminExplorerTree />
-        </Suspense>
-      )}
-    >
-      <Suspense fallback={<Loading />}>
-        <AdminExplorerContent>{children}</AdminExplorerContent>
-      </Suspense>
-    </AdminExplorerShell>
+      </AdminExplorerShell>
+    </AdminToastProvider>
   );
 }
 
@@ -40,7 +42,7 @@ export async function AdminExplorerContent({ children }: { children: React.React
     return <ContentLoadError />;
   }
 
-  return <AdminToastProvider>{children}</AdminToastProvider>;
+  return children;
 }
 
 export async function LoadedAdminExplorerTree({ closeDrawer = false }: { closeDrawer?: boolean }) {

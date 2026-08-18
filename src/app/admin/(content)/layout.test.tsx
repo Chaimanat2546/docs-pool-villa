@@ -2,10 +2,11 @@
 
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { isValidElement, type ReactElement, type ReactNode } from "react";
+import { isValidElement, useState, type ReactElement, type ReactNode } from "react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { UnsavedNavigationProvider } from "@/components/admin/unsaved-navigation";
+import { AdminToastProvider, useAdminToast } from "@/components/admin/admin-toast";
 
 const route = vi.hoisted(() => ({
   loadAdminExplorerData: vi.fn(),
@@ -39,12 +40,15 @@ it("returns the shared shell immediately while the right-pane route loader remai
   expect(isValidElement(routeLayout)).toBe(true);
   if (!isValidElement(routeLayout)) return;
 
-  const shellProps = routeLayout.props as {
+  const providerProps = routeLayout.props as { children: ReactElement };
+  expect(routeLayout.type).toBe(AdminToastProvider);
+  expect(providerProps.children.type).toBe(AdminExplorerShell);
+
+  const shellProps = providerProps.children.props as {
     mobileTree: ReactElement<{ fallback: ReactNode }>;
     desktopTree: ReactElement<{ fallback: ReactNode }>;
     children: ReactElement<{ fallback: ReactNode }>;
   };
-  expect(routeLayout.type).toBe(AdminExplorerShell);
   expect(route.loadAdminExplorerData).not.toHaveBeenCalled();
 
   render(
@@ -60,6 +64,59 @@ it("returns the shared shell immediately while the right-pane route loader remai
   expect(screen.getByRole("region", { name: "พื้นที่จัดการเนื้อหา" })).not.toBeNull();
   expect(screen.getByLabelText("กำลังโหลดพื้นที่จัดการเนื้อหา").getAttribute("aria-busy")).toBe("true");
   expect(screen.queryByText("รายการเอกสาร")).toBeNull();
+});
+
+it("keeps the toast provider above the shell while loader content remains unwrapped", async () => {
+  route.loadAdminExplorerData.mockResolvedValue({});
+  const child = <p>รายการเอกสาร</p>;
+  const routeLayout = AdminContentLayout({ children: child });
+  const providerProps = routeLayout.props as { children: ReactElement };
+
+  expect(routeLayout.type).toBe(AdminToastProvider);
+  expect(providerProps.children.type).toBe(AdminExplorerShell);
+  await expect(AdminExplorerContent({ children: child })).resolves.toBe(child);
+});
+
+function SuccessfulNavigationHarness() {
+  const { showLoading, update } = useAdminToast();
+  const [navigated, setNavigated] = useState(false);
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          const toastId = showLoading("กำลังบันทึกหมวด");
+          update(toastId, "success", "บันทึกหมวดสำเร็จ");
+          setNavigated(true);
+        }}
+      >
+        บันทึกหมวด
+      </button>
+      {navigated ? <p>หมวดที่สร้างแล้ว</p> : <p>ฟอร์มสร้างหมวด</p>}
+    </>
+  );
+}
+
+it("preserves a success toast when route content is replaced after navigation", async () => {
+  const user = userEvent.setup();
+  render(
+    <UnsavedNavigationProvider>
+      <AdminToastProvider>
+        <AdminExplorerShell
+          mobileTree={<AdminExplorerTree sections={[]} closeDrawer />}
+          desktopTree={<AdminExplorerTree sections={[]} />}
+        >
+          <SuccessfulNavigationHarness />
+        </AdminExplorerShell>
+      </AdminToastProvider>
+    </UnsavedNavigationProvider>,
+  );
+
+  await user.click(screen.getByRole("button", { name: "บันทึกหมวด" }));
+
+  expect(screen.getByText("หมวดที่สร้างแล้ว")).not.toBeNull();
+  expect(screen.getByRole("status").textContent).toContain("บันทึกหมวดสำเร็จ");
 });
 
 it("keeps the shared shell mounted and refreshes from a loader failure at the route hierarchy", async () => {
