@@ -73,7 +73,9 @@ describe("Home", () => {
     expect(hero).not.toBeNull();
     expect(within(hero!).getByRole("link", { name: "เริ่มต้นใช้งาน" }).getAttribute("href")).toBe("/getting-started/getting-started");
     expect(screen.getByRole("heading", { name: "เริ่มต้น", level: 3 })).not.toBeNull();
-    expect(within(screen.getByRole("article")).getByRole("link", { name: "เริ่มต้นใช้งาน" }).getAttribute("href")).toBe("/getting-started/getting-started");
+    const categoryDocumentLink = within(screen.getByRole("article")).getByRole("link", { name: "เริ่มต้นใช้งาน" });
+    expect(categoryDocumentLink.getAttribute("href")).toBe("/getting-started/getting-started");
+    expect(categoryDocumentLink.className).toContain("min-h-11");
     expect(screen.getByRole("heading", { name: "อัปเดตล่าสุด", level: 2 })).not.toBeNull();
   });
 
