@@ -116,6 +116,7 @@ export function DocumentForm({
   const [contentRevision, setContentRevision] = useState(0);
   const [version, setVersion] = useState<number>(document.version);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [isPreparingImages, setIsPreparingImages] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
@@ -143,8 +144,11 @@ export function DocumentForm({
     )
   );
   const dirty = useMemo(
-    () => snapshot(form, content) !== savedSnapshot || pendingImages.length > 0,
-    [form, content, pendingImages.length, savedSnapshot]
+    () =>
+      snapshot(form, content) !== savedSnapshot ||
+      pendingImages.length > 0 ||
+      isPreparingImages,
+    [form, content, isPreparingImages, pendingImages.length, savedSnapshot]
   );
 
   useEffect(() => {
@@ -212,10 +216,17 @@ export function DocumentForm({
   }
 
   async function persist(): Promise<boolean> {
-    if (saving || operation || !validateFields()) return false;
+    if (saving || operation || isPreparingImages || !validateFields())
+      return false;
     setSaving(true);
-    const toastId = showLoading("กำลังบันทึกเอกสาร");
+    const batchSize = pendingImages.length;
+    const toastId = showLoading(
+      batchSize > 0
+        ? `กำลังอัปโหลดรูป ${batchSize} รูปและบันทึกเอกสาร`
+        : "กำลังบันทึกเอกสาร"
+    );
     const uploaded = new Map<string, UploadedPendingImage>();
+    const uploadFailures: string[] = [];
     let saveSubmitted = false;
     try {
       for (const image of pendingImages) {
@@ -226,20 +237,63 @@ export function DocumentForm({
               : candidate
           )
         );
-        const result = await uploadPendingImage(
-          idRef.current,
-          image,
-          (progress) =>
-            setPendingImages((current) =>
-              current.map((candidate) =>
-                candidate.id === image.id
-                  ? { ...candidate, status: "uploading", progress }
-                  : candidate
-              )
-            ),
-          createMediaUploadTicket
+        try {
+          const result = await uploadPendingImage(
+            idRef.current,
+            image,
+            (progress) =>
+              setPendingImages((current) =>
+                current.map((candidate) =>
+                  candidate.id === image.id
+                    ? { ...candidate, status: "uploading", progress }
+                    : candidate
+                )
+              ),
+            createMediaUploadTicket
+          );
+          uploaded.set(image.id, result);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ";
+          uploadFailures.push(message);
+          setPendingImages((current) =>
+            current.map((candidate) =>
+              candidate.id === image.id
+                ? { ...candidate, status: "error", error: message }
+                : candidate
+            )
+          );
+        }
+      }
+      if (uploadFailures.length > 0) {
+        if (uploaded.size > 0) {
+          try {
+            await rollbackUploadedMedia(
+              idRef.current,
+              [...uploaded.values()].map((item) => ({
+                ...item,
+                displayLabel: `${item.mediaId}.webp`,
+              }))
+            );
+          } catch {
+            // The per-file upload errors remain the user-facing recovery path.
+          }
+          setPendingImages((current) =>
+            current.map((candidate) =>
+              uploaded.has(candidate.id)
+                ? { ...candidate, status: "ready", progress: undefined }
+                : candidate
+            )
+          );
+        }
+        update(
+          toastId,
+          uploaded.size > 0 ? "warning" : "error",
+          uploaded.size > 0
+            ? `อัปโหลดรูปสำเร็จ ${uploaded.size} จาก ${batchSize} รูป กรุณาลองบันทึกอีกครั้ง`
+            : "ไม่สามารถอัปโหลดรูปได้ กรุณาลองบันทึกอีกครั้ง"
         );
-        uploaded.set(image.id, result);
+        return false;
       }
       const persistedContent = replacePendingImages(
         content,
@@ -505,7 +559,13 @@ export function DocumentForm({
                 setContent(nextContent);
                 setPendingImages(nextPending);
               }}
+              onPreparationChange={setIsPreparingImages}
             />
+            {isPreparingImages && (
+              <p role="alert" className="mt-3 text-sm text-amber-700">
+                กรุณารอให้เตรียมรูปเสร็จก่อนบันทึก
+              </p>
+            )}
             <MediaProgressList images={pendingImages} />
             <div className="sticky bottom-0 z-10 mt-6 flex flex-wrap justify-end gap-2 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur sm:bottom-4 sm:p-3">
               <button
@@ -517,7 +577,7 @@ export function DocumentForm({
               </button>
               <button
                 type="submit"
-                disabled={saving || Boolean(operation)}
+                disabled={saving || Boolean(operation) || isPreparingImages}
                 className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
                 <Save size={16} aria-hidden="true" />
@@ -590,7 +650,7 @@ export function DocumentForm({
             </button>
             <button
               type="button"
-              disabled={saving || Boolean(operation)}
+              disabled={saving || Boolean(operation) || isPreparingImages}
               onClick={finalSave}
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >

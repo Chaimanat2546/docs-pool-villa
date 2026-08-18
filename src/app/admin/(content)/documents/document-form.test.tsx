@@ -40,10 +40,16 @@ vi.mock("@/components/admin/admin-toast", () => ({
 }));
 vi.mock("@/components/editor/pending-images", () => pendingImages);
 vi.mock("@/components/editor/document-editor", () => ({
-  DocumentEditor: ({ content, onChange }: { content: unknown; onChange: (content: unknown, pendingImages: unknown[]) => void }) => (
+  DocumentEditor: ({ content, onChange, onPreparationChange }: {
+    content: unknown;
+    onChange: (content: unknown, pendingImages: unknown[]) => void;
+    onPreparationChange?: (isPreparing: boolean) => void;
+  }) => (
     <>
       <output data-testid="editor-content">{JSON.stringify(content)}</output>
       <button type="button" onClick={() => onChange({ type: "doc", content: [{ type: "paragraph" }] }, [])}>แก้ไขเนื้อหา</button>
+      <button type="button" onClick={() => onPreparationChange?.(true)}>เริ่มเตรียมรูปจำลอง</button>
+      <button type="button" onClick={() => onPreparationChange?.(false)}>เตรียมรูปจำลองเสร็จ</button>
       <button
         type="button"
         onClick={() => onChange(
@@ -127,6 +133,7 @@ function renderForm(options: {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  pendingImages.uploadPendingImage.mockReset();
   bannerBehavior.triggerRetryBeforeEffect = true;
 });
 
@@ -151,6 +158,92 @@ it("updates one loading toast to success when saving content succeeds", async ()
 
   expect(toast.showLoading).toHaveBeenCalledWith("กำลังบันทึกเอกสาร");
   await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "success", "บันทึกเอกสารสำเร็จ"));
+});
+
+it("updates one image-batch toast to success after every upload and save succeeds", async () => {
+  pendingImages.uploadPendingImage
+    .mockResolvedValueOnce({ mediaId: "media-1", objectKey: "docs/media-1.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 })
+    .mockResolvedValueOnce({ mediaId: "media-2", objectKey: "docs/media-2.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 });
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledTimes(1);
+  expect(toast.showLoading).toHaveBeenCalledWith(
+    "กำลังอัปโหลดรูป 2 รูปและบันทึกเอกสาร",
+  );
+  await waitFor(() =>
+    expect(toast.update).toHaveBeenCalledWith(
+      "toast-1",
+      "success",
+      "บันทึกเอกสารสำเร็จ",
+    ),
+  );
+});
+
+it("blocks saving while the editor is preparing images", async () => {
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เริ่มเตรียมรูปจำลอง" }));
+
+  expect(screen.getByRole("alert").textContent).toBe(
+    "กรุณารอให้เตรียมรูปเสร็จก่อนบันทึก",
+  );
+  expect(
+    (screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  expect(pendingImages.uploadPendingImage).not.toHaveBeenCalled();
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+  await waitFor(() =>
+    expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(true),
+  );
+});
+
+it("updates one image-batch toast to warning when only some uploads succeed", async () => {
+  pendingImages.uploadPendingImage
+    .mockResolvedValueOnce({ mediaId: "media-1", objectKey: "docs/media-1.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 })
+    .mockRejectedValueOnce(new Error("upload failed"));
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledTimes(1);
+  await waitFor(() =>
+    expect(toast.update).toHaveBeenCalledWith(
+      "toast-1",
+      "warning",
+      "อัปโหลดรูปสำเร็จ 1 จาก 2 รูป กรุณาลองบันทึกอีกครั้ง",
+    ),
+  );
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+});
+
+it("updates one image-batch toast to error when no upload becomes ready", async () => {
+  pendingImages.uploadPendingImage
+    .mockRejectedValueOnce(new Error("first upload failed"))
+    .mockRejectedValueOnce(new Error("second upload failed"));
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledTimes(1);
+  await waitFor(() =>
+    expect(toast.update).toHaveBeenCalledWith(
+      "toast-1",
+      "error",
+      "ไม่สามารถอัปโหลดรูปได้ กรุณาลองบันทึกอีกครั้ง",
+    ),
+  );
+  expect(actions.saveDocument).not.toHaveBeenCalled();
 });
 
 it("keeps content stage and values when save fails", async () => {
@@ -180,7 +273,7 @@ it("updates the same loading toast to error when saving content fails", async ()
   await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "error", "Version conflict กรุณา Reload"));
 });
 
-it("updates the saving toast when uploaded-media rollback rejects", async () => {
+it("keeps the aggregate warning when uploaded-media rollback rejects", async () => {
   pendingImages.uploadPendingImage
     .mockResolvedValueOnce({ mediaId: "media-1", objectKey: "docs/media-1.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 })
     .mockRejectedValueOnce(new Error("upload failed"));
@@ -192,7 +285,11 @@ it("updates the saving toast when uploaded-media rollback rejects", async () => 
   await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
 
   await waitFor(() => expect(actions.rollbackUploadedMedia).toHaveBeenCalledOnce());
-  await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "error", "upload failed"));
+  await waitFor(() => expect(toast.update).toHaveBeenCalledWith(
+    "toast-1",
+    "warning",
+    "อัปโหลดรูปสำเร็จ 1 จาก 2 รูป กรุณาลองบันทึกอีกครั้ง",
+  ));
   expect(navigation.replace).not.toHaveBeenCalled();
 });
 
