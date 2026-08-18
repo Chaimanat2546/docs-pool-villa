@@ -24,6 +24,7 @@
 - [x] Admin Toast authorized dev smoke (18 สิงหาคม 2026): Local app เชื่อม Remote Staging data และภูอนุมัติให้สร้าง/คง `Toast smoke test` (ไม่มีการลบ); Save แสดง Loading แล้วหลัง route navigation เป็น Success `role=status` ข้อความ `บันทึกหมวดสำเร็จ` พร้อม close button—พบและแก้ provider remount bug ใน `31745b1`; duplicate slug `toast-smoke-test` แสดง Error `role=alert` ข้อความ `Slug หรือ Route นี้ถูกใช้งานแล้ว` และคลิก close ได้
 - [x] Admin Toast responsive/keyboard evidence: viewport 390×844 มี document clientWidth/scrollWidth = 375 จึงไม่มี horizontal overflow และ close target 44×44; keyboard close ยืนยันด้วย focused component test ใน `0b588c3` (browser locator keypress ให้ผลไม่ชัดเจน)
 - [ ] Admin Toast Info/Warning ยังไม่มี caller ที่ตั้งใจให้ trigger ใน Admin; provider behavior ครอบคลุมด้วย component tests แต่ไม่ได้เพิ่ม live integration path
+- [x] Mobile image preparation validation (18 สิงหาคม 2026): Local `npm run test:content` 42/42, `npm run test:media` 56/56, `npm run lint`, `npm run build` และ `git diff --check` exit 0; Staging App version `51af8760-1b43-457c-bdd4-1b18441ea2b7` deploy แล้ว, `/` ตอบ 200 และ Guest `/admin` redirect ไป login; ภูยืนยันผลการใช้งานจริงบน iPhone Safari ว่า “ใช้ได้ปกติ” โดยไม่มีรายละเอียดรายรูปแบบไฟล์เพิ่มเติม
 - [ ] Performance tests ตาม p75/p95 และ Capacity baseline
 - [ ] Accessibility และ Browser matrix
 - [ ] RLS/Security regression tests
