@@ -123,6 +123,24 @@ it("shows a pointer cursor for section creation buttons", async () => {
   expect(screen.getByRole("button", { name: "สร้างหมวดย่อยใน เริ่มต้น" }).className).toContain("cursor-pointer");
 });
 
+it("adds contextual reorder actions below the content sidebar tree", async () => {
+  const navigate = vi.fn();
+  const childSibling: AdminExplorerSection = {
+    id: "second-child", parentId: "root", title: "การชำระเงิน", slug: "payment", isPublished: true, sortOrder: 1, directDocumentCount: 0,
+  };
+  const { rerender } = render(<FolderTree sections={[...sections, childSibling]} selectedSectionId={null} onNavigate={navigate} />);
+
+  await userEvent.setup().click(screen.getByRole("button", { name: "จัดลำดับหมวดหลัก" }));
+  expect(navigate).toHaveBeenCalledWith("/admin/structure?mode=reorder-root");
+
+  rerender(<FolderTree sections={[...sections, childSibling]} selectedSectionId="root" onNavigate={navigate} />);
+  await userEvent.setup().click(screen.getByRole("button", { name: "จัดลำดับหมวดย่อย" }));
+  expect(navigate).toHaveBeenCalledWith("/admin/structure?section=root&mode=reorder-child");
+
+  rerender(<FolderTree sections={[...sections, childSibling]} selectedSectionId="child" onNavigate={navigate} />);
+  expect(screen.queryByRole("button", { name: /จัดลำดับหมวด/ })).toBeNull();
+});
+
 it("prevents pointer drags on a folder row from selecting its label", () => {
   const navigate = vi.fn();
   render(<FolderTree sections={sections} selectedSectionId="root" onNavigate={navigate} />);

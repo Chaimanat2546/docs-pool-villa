@@ -55,6 +55,8 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
     }
     return result;
   }, [sections]);
+  const rootSections = childSectionsByParent.get(null) ?? [];
+  const selectedSection = sections.find((section) => section.id === selectedSectionId) ?? null;
 
   if (selectedSectionId !== previousSelectedSectionId) {
     setPreviousSelectedSectionId(selectedSectionId);
@@ -66,7 +68,6 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
   }
 
   const visibleNodes = useMemo(() => {
-    const rootSections = childSectionsByParent.get(null) ?? [];
     const nodes: VisibleTreeNode[] = [];
 
     for (const rootSection of rootSections) {
@@ -108,6 +109,13 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
   const reconciledFocusedKey = focusedNodeIsVisible ? focusedKey : selectedNodeIsVisible ? selectedKey : null;
   const shouldRestoreTreeFocus = !focusedNodeIsVisible && treeHasFocus;
   const creationBlockMessage = "กำลังจัดการรูปภาพที่ค้างอยู่";
+  const selectedChildSections = selectedSectionId
+    ? childSectionsByParent.get(selectedSectionId) ?? []
+    : [];
+  const canReorderRoots = selectedSectionId === null && rootSections.length > 1;
+  const canReorderChildren = selectedSectionId !== null
+    && selectedSection?.parentId === null
+    && selectedChildSections.length > 1;
 
   useLayoutEffect(() => {
     if (shouldRestoreTreeFocus && reconciledFocusedKey) itemRefs.current.get(reconciledFocusedKey)?.focus();
@@ -254,6 +262,32 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
       })}
       </div>
       <div aria-label="การสร้างหมวด" className="sticky bottom-0 z-10 space-y-1 border-t bg-card pt-2">
+        {canReorderRoots && (
+          <button
+            type="button"
+            aria-label="จัดลำดับหมวดหลัก"
+            disabled={creationBlocked}
+            title={creationBlocked ? creationBlockMessage : undefined}
+            onClick={() => onNavigate("/admin/structure?mode=reorder-root")}
+            className="flex min-h-11 w-full cursor-pointer items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ paddingInlineStart: "28px" }}
+          >
+            จัดลำดับหมวดหลัก
+          </button>
+        )}
+        {canReorderChildren && selectedSectionId && (
+          <button
+            type="button"
+            aria-label="จัดลำดับหมวดย่อย"
+            disabled={creationBlocked}
+            title={creationBlocked ? creationBlockMessage : undefined}
+            onClick={() => onNavigate(`/admin/structure?section=${encodeURIComponent(selectedSectionId)}&mode=reorder-child`)}
+            className="flex min-h-11 w-full cursor-pointer items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            style={{ paddingInlineStart: "28px" }}
+          >
+            จัดลำดับหมวดย่อย
+          </button>
+        )}
         <button
           type="button"
           aria-label="สร้างหมวดหลัก"
