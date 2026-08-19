@@ -57,7 +57,7 @@ describe("SectionInlineForm", () => {
     const title = screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement;
     expect(document.activeElement).toBe(title);
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("4");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
     await user.type(title, "การชำระเงิน");
     await user.type(screen.getByRole("textbox", { name: "Slug" }), "payment");
     await user.click(screen.getByRole("button", { name: "บันทึกหมวด" }));
@@ -106,13 +106,13 @@ describe("SectionInlineForm", () => {
     await waitFor(() => expect(update).toHaveBeenCalledWith("toast-1", "error", "Slug หรือ Route นี้ถูกใช้งานแล้ว"));
   });
 
-  it("prefills every active field for rename and editing without a description field", () => {
+  it("does not expose manual ordering while editing a section", () => {
     render(<SectionInlineForm mode="edit" section={child} parent={root} rootSections={[root]} initialSortOrder={99} onCancel={vi.fn()} />);
 
     expect((screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement).value).toBe(child.title);
     expect((screen.getByRole("textbox", { name: "Slug" }) as HTMLInputElement).value).toBe(child.slug);
     expect(screen.queryByRole("textbox", { name: "คำอธิบาย" })).toBeNull();
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe(String(child.sortOrder));
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
     expect((screen.getByRole("checkbox", { name: /แสดงหมวดนี้/ }) as HTMLInputElement).checked).toBe(false);
     expect((screen.getByRole("combobox", { name: "หมวดแม่" }) as HTMLSelectElement).value).toBe(root.id);
   });

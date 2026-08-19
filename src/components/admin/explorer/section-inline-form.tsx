@@ -113,17 +113,6 @@ export function SectionInlineForm({ mode, section, parent, rootSections, initial
           </select>
         </Field>
       )}
-      <Field label="ลำดับ" htmlFor="section-order" hint="ตัวเลขน้อยจะแสดงก่อน">
-        <input
-          id="section-order"
-          type="number"
-          min="0"
-          step="1"
-          value={form.sortOrder}
-          onChange={(event) => setForm((current) => ({ ...current, sortOrder: event.target.value }))}
-          className="h-11 w-full rounded-md border bg-background px-3"
-        />
-      </Field>
       <label className="flex min-h-11 items-center gap-3 rounded-md border p-3 text-sm">
         <input
           type="checkbox"

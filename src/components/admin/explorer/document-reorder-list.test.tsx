@@ -142,6 +142,15 @@ beforeEach(() => {
 });
 
 describe("DocumentReorderList", () => {
+  it("renders as embedded content without a second card wrapper", () => {
+    renderList();
+
+    const reorderPanel = screen.getByRole("region", { name: "จัดลำดับเอกสาร" });
+    expect(reorderPanel.className).not.toContain("rounded-xl");
+    expect(reorderPanel.className).not.toContain("bg-card");
+    expect(reorderPanel.className).not.toContain("shadow-sm");
+  });
+
   it("moves the dragged document locally before any save request", async () => {
     const user = userEvent.setup();
     renderList();

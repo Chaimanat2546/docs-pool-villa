@@ -86,7 +86,7 @@ export function DocumentReorderList({
   }
 
   return (
-    <section aria-labelledby="document-reorder-title" className="w-full rounded-xl border bg-card shadow-sm">
+    <section aria-labelledby="document-reorder-title" className="w-full">
       <div className="border-b p-5">
         <h2 id="document-reorder-title" className="text-lg font-semibold">จัดลำดับเอกสาร</h2>
         <p className="mt-1 text-sm text-muted-foreground">ลากเอกสารเพื่อเปลี่ยนลำดับภายในหมวดนี้</p>

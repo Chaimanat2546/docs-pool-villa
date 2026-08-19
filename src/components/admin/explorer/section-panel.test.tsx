@@ -118,7 +118,7 @@ describe("SectionPanel", () => {
     expect(refresh).toHaveBeenCalledOnce();
   });
 
-  it("prefills new root and child sections after their own highest sibling order", async () => {
+  it("keeps the automatic sibling order hidden while creating root and child sections", async () => {
     const user = userEvent.setup();
     const explorerWithSiblings: AdminExplorerData = {
       ...explorer,
@@ -147,19 +147,19 @@ describe("SectionPanel", () => {
     const { rerender } = render(<SectionPanel selectedSectionId={null} mode="create-root" explorer={explorerWithSiblings} />);
 
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("6");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
 
     rerender(<SectionPanel selectedSectionId={rootId} mode="create-child" explorer={explorerWithSiblings} />);
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("9");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
   });
 
-  it("prefills a new root section with zero when no root siblings exist", async () => {
+  it("keeps the automatic zero order hidden when no root siblings exist", async () => {
     const user = userEvent.setup();
     render(<SectionPanel selectedSectionId={null} mode="create-root" explorer={{ ...explorer, sections: [], documents: [] }} />);
 
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("0");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
   });
 
   it("disables third-level creation with a visible explanation", () => {

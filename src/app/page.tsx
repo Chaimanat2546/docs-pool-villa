@@ -1,11 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import {
-  ArrowRight,
-  BookOpen,
-  Box,
-  Code2,
-} from "lucide-react";
+import { ArrowRight, BookOpen, Box, Code2 } from "lucide-react";
 
 import { PublicHeader } from "@/components/public/public-header";
 import { getPublicDocsIndex } from "@/lib/docs/public";
@@ -34,7 +29,8 @@ function formatDate(value: string) {
 export default async function Home() {
   const index = await getPublicDocsIndex();
   const startPath = index.documents[0]?.path;
-  const gettingStartedDocuments = index.sections[0]?.documents.slice(0, 3) ?? [];
+  const gettingStartedDocuments =
+    index.sections[0]?.documents.slice(0, 3) ?? [];
   return (
     <>
       <PublicHeader />
@@ -81,13 +77,13 @@ export default async function Home() {
                 {[
                   "Introduction",
                   "Getting Started",
-                  "Installation",
-                  "Project Structure",
-                  "Routing",
-                  "Data Fetching",
-                  "Rendering",
-                  "Functions",
-                  "API Routes",
+                  "Create a Page",
+                  "Page Structure",
+                  "Navigation",
+                  "Content",
+                  "Page Rendering",
+                  "Components",
+                  "Forms & Actions",
                 ].map((item, i) => (
                   <div
                     key={item}
@@ -105,9 +101,14 @@ export default async function Home() {
                   <div className="h-2 w-1/2 rounded bg-slate-200" />
                 </div>
                 <h3 className="mt-9 text-sm font-bold">Quick example</h3>
-                <pre className="mt-4 overflow-hidden rounded-lg border bg-slate-50 p-4 text-[10px] leading-6 text-slate-600">
-                  <code>{`import Link from 'next/link'\n\nexport default function Home() {\n  return (\n    <main>\n      <h1>Welcome to Baan Pool Villa</h1>`}</code>
-                </pre>
+                <div className="mt-5 space-y-2">
+                  <div className="h-2 w-3/4 rounded bg-slate-200" />
+                  <div className="h-2 w-4/5 rounded bg-slate-200" />
+                  <div className="h-2 w-4/5 rounded bg-slate-200" />
+                  <div className="h-2 w-1/2 rounded bg-slate-200" />
+                  <div className="h-2 w-3/4 rounded bg-slate-200" />
+                  <div className="h-2 w-3/5 rounded bg-slate-200" />
+                </div>
               </div>
             </div>
           </div>
@@ -122,23 +123,30 @@ export default async function Home() {
               เริ่มต้นใช้งานระบบในไม่กี่ขั้นตอน
             </p>
             <div className="mt-5 grid gap-3 md:grid-cols-3">
-              {gettingStartedDocuments.length ? gettingStartedDocuments.map((document, i) => (
-                <Link
-                  key={document.id}
-                  href={document.path}
-                  className="group flex min-h-52 flex-col rounded-lg border p-5 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <span className="mb-5 grid size-11 place-items-center rounded-xl border bg-muted/30 text-sm">
-                    {i + 1}
-                  </span>
-                  <div>
-                    <h3 className="font-semibold">{document.title}</h3>
-                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-                      {document.excerpt?.trim() || "เรียนรู้พื้นฐานและภาพรวมของระบบสำหรับผู้เริ่มต้น"}
-                    </p>
-                  </div>
-                </Link>
-              )) : <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">ยังไม่มีเอกสารในหมวดเริ่มต้น</p>}
+              {gettingStartedDocuments.length ? (
+                gettingStartedDocuments.map((document, i) => (
+                  <Link
+                    key={document.id}
+                    href={document.path}
+                    className="group flex min-h-52 flex-col rounded-lg border p-5 transition-[border-color,box-shadow,transform] hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <span className="mb-5 grid size-11 place-items-center rounded-xl border bg-muted/30 text-sm">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <h3 className="font-semibold">{document.title}</h3>
+                      <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
+                        {document.excerpt?.trim() ||
+                          "เรียนรู้พื้นฐานและภาพรวมของระบบสำหรับผู้เริ่มต้น"}
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
+                  ยังไม่มีเอกสารในหมวดเริ่มต้น
+                </p>
+              )}
             </div>
           </div>
         </section>

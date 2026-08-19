@@ -163,7 +163,7 @@ export function DocumentSetupForm({
           <div className="flex flex-wrap justify-end gap-3 border-t pt-5">
             <Link
               href={`/admin/structure?section=${encodeURIComponent(sectionId)}`}
-              className="inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium hover:bg-muted"
+              className="inline-flex border border-input min-h-11 items-center rounded-full px-4 text-sm font-medium hover:bg-muted"
             >
               ยกเลิก
             </Link>

@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
 import { SectionReorderList } from "./section-reorder-list";
+import { ArrowDownUp } from "lucide-react";
 
 type ReorderTarget = "root" | "child" | null;
 
@@ -21,13 +22,18 @@ export function SectionReorderHub({ sections, onClose, onSaved }: SectionReorder
   const children = selectedRootId
     ? sections.filter((section) => section.parentId === selectedRootId)
     : [];
+  const handleSaved = () => {
+    setTarget(null);
+    setSelectedRootId(null);
+    onSaved();
+  };
 
   if (target === "root") {
-    return <SectionReorderList parentId={null} sections={roots} onCancel={() => setTarget(null)} onSaved={onSaved} />;
+    return <SectionReorderList parentId={null} sections={roots} onCancel={() => setTarget(null)} onSaved={handleSaved} />;
   }
 
   if (target === "child" && selectedRootId) {
-    return <SectionReorderList parentId={selectedRootId} sections={children} onCancel={() => setTarget(null)} onSaved={onSaved} />;
+    return <SectionReorderList parentId={selectedRootId} sections={children} onCancel={() => setTarget(null)} onSaved={handleSaved} />;
   }
 
   return (
@@ -64,9 +70,6 @@ export function SectionReorderHub({ sections, onClose, onSaved }: SectionReorder
         })}
       </ul>
       <div className="grid gap-3 border-t p-4 sm:flex sm:justify-end">
-        <button type="button" onClick={onClose} className="min-h-11 rounded-full border px-4 text-sm font-medium">
-          กลับ
-        </button>
         <button
           type="button"
           disabled={roots.length < 2}

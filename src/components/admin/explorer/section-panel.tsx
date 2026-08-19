@@ -392,7 +392,7 @@ export function SectionPanel({
             <div className="mt-6 flex justify-end gap-3">
               <Dialog.Close
                 disabled={isPending}
-                className="min-h-11 rounded-full px-4 text-sm hover:bg-muted disabled:opacity-50"
+                className="min-h-11 rounded-full px-4 text-sm hover:bg-muted disabled:opacity-50 border"
               >
                 ยกเลิก
               </Dialog.Close>

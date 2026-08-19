@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Folder } from "lucide-react";
+import { ArrowDownUp, ChevronRight, Folder } from "lucide-react";
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
@@ -265,10 +265,10 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
             disabled={creationBlocked}
             title={creationBlocked ? creationBlockMessage : undefined}
             onClick={() => onNavigate("/admin/structure?mode=reorder")}
-            className="flex min-h-11 w-full cursor-pointer items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex min-h-11 w-full cursor-pointer items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 gap-1"
             style={{ paddingInlineStart: "28px" }}
           >
-            จัดลำดับหมวดหมู่
+            <ArrowDownUp className=" size-3" /> จัดลำดับหมวดหมู่
           </button>
         )}
         <button
