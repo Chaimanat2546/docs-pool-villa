@@ -3,7 +3,7 @@
 import { readFileSync } from "node:fs";
 import { Editor, type JSONContent } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +19,7 @@ vi.mock("./pending-images", () => ({ preparePendingImage }));
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 function setupEditorGeometry() {
@@ -27,6 +28,28 @@ function setupEditorGeometry() {
   Object.defineProperty(HTMLElement.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
   Object.defineProperty(Range.prototype, "getClientRects", { configurable: true, value: () => [] });
   Object.defineProperty(Range.prototype, "getBoundingClientRect", { configurable: true, value: () => rect });
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
+
+function preparedImage(file: File, id: string) {
+  return {
+    id,
+    fileName: file.name,
+    blob: new Blob([id], { type: "image/webp" }),
+    previewUrl: `blob:${id}`,
+    width: 800,
+    height: 600,
+    status: "ready" as const,
+  };
 }
 
 describe("DocumentEditor paragraph indent", () => {
@@ -517,6 +540,185 @@ describe("DocumentEditor accessibility", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+});
+
+describe("DocumentEditor image preparation queue", () => {
+  it("reports one preparation batch from selection through conversion success", async () => {
+    const user = userEvent.setup();
+    const firstFile = new File(["first"], "first.jpg", { type: "image/jpeg" });
+    const secondFile = new File(["second"], "second.png", { type: "image/png" });
+    const second = deferred<ReturnType<typeof preparedImage>>();
+    const onPreparationBatchChange = vi.fn();
+    preparePendingImage
+      .mockResolvedValueOnce(preparedImage(firstFile, "batch-first"))
+      .mockImplementationOnce(() => second.promise);
+    const view = render(
+      <DocumentEditor
+        content={{ type: "doc", content: [] }}
+        onChange={() => {}}
+        onPreparationBatchChange={onPreparationBatchChange}
+      />,
+    );
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
+
+    await user.upload(input!, [firstFile, secondFile]);
+    expect(onPreparationBatchChange).toHaveBeenCalledWith({
+      status: "started",
+      total: 2,
+    });
+
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+    await user.type(screen.getByRole("textbox", { name: "Alt text" }), "รูปแรก");
+    await user.click(screen.getByRole("button", { name: "ยืนยัน" }));
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(2));
+    second.resolve(preparedImage(secondFile, "batch-second"));
+
+    await waitFor(() =>
+      expect(onPreparationBatchChange).toHaveBeenCalledWith({
+        status: "completed",
+        total: 2,
+        succeeded: 2,
+        failed: 0,
+      }),
+    );
+  });
+
+  it("cancels and revokes the current ready image before preparing the next one", async () => {
+    const user = userEvent.setup();
+    const revokeObjectURL = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+    const firstFile = new File(["first"], "cancel-first.jpg", {
+      type: "image/jpeg",
+    });
+    const secondFile = new File(["second"], "after-cancel.png", {
+      type: "image/png",
+    });
+    const second = deferred<ReturnType<typeof preparedImage>>();
+    preparePendingImage
+      .mockResolvedValueOnce(preparedImage(firstFile, "cancel-first"))
+      .mockImplementationOnce(() => second.promise);
+    const view = render(
+      <DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />,
+    );
+    const input = view.container.querySelector<HTMLInputElement>(
+      'input[type="file"]',
+    );
+
+    await user.upload(input!, [firstFile, secondFile]);
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+    expect(preparePendingImage).toHaveBeenCalledTimes(1);
+
+    await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:cancel-first");
+    expect(screen.queryByText("cancel-first.jpg")).toBeNull();
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(2));
+    expect(preparePendingImage.mock.calls[1]?.[0]).toBe(secondFile);
+    second.resolve(preparedImage(secondFile, "after-cancel"));
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+  });
+
+  it("forwards every selected file and waits for Alt confirmation before preparing the next one", async () => {
+    const user = userEvent.setup();
+    const firstFile = new File(["first"], "first.jpg", { type: "image/jpeg" });
+    const secondFile = new File(["second"], "second.png", { type: "image/png" });
+    const first = deferred<ReturnType<typeof preparedImage>>();
+    const second = deferred<ReturnType<typeof preparedImage>>();
+    preparePendingImage
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    const onPreparationChange = vi.fn();
+    const view = render(
+      <DocumentEditor
+        content={{ type: "doc", content: [] }}
+        onChange={() => {}}
+        onPreparationChange={onPreparationChange}
+      />,
+    );
+
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
+    expect(input?.multiple).toBe(true);
+    await user.upload(input!, [firstFile, secondFile]);
+
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(1));
+    expect(preparePendingImage.mock.calls[0]?.[0]).toBe(firstFile);
+    expect((await screen.findByRole("status")).textContent).toContain("กำลังเตรียมรูป 1 จาก 2");
+
+    first.resolve(preparedImage(firstFile, "first-ready"));
+    const firstDialog = await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+    expect(firstDialog).not.toBeNull();
+    expect(preparePendingImage).toHaveBeenCalledTimes(1);
+
+    await user.type(screen.getByRole("textbox", { name: "Alt text" }), "รูปแรก");
+    await user.click(screen.getByRole("button", { name: "ยืนยัน" }));
+
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(2));
+    expect(preparePendingImage.mock.calls[1]?.[0]).toBe(secondFile);
+    expect(screen.getByRole("status").textContent).toContain("กำลังเตรียมรูป 2 จาก 2");
+
+    second.resolve(preparedImage(secondFile, "second-ready"));
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+    await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+    await waitFor(() => expect(onPreparationChange).toHaveBeenLastCalledWith(false));
+  });
+
+  it("adds every pasted image to the same FIFO queue", async () => {
+    const user = userEvent.setup();
+    const firstFile = new File(["first"], "paste-first.jpg", { type: "image/jpeg" });
+    const ignoredText = new File(["text"], "notes.txt", { type: "text/plain" });
+    const secondFile = new File(["second"], "paste-second.HEIC", { type: "" });
+    const first = deferred<ReturnType<typeof preparedImage>>();
+    const second = deferred<ReturnType<typeof preparedImage>>();
+    preparePendingImage
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    const view = render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
+    const editor = await waitFor(() => view.container.querySelector<HTMLElement>(".ProseMirror"));
+
+    fireEvent.paste(editor!, {
+      clipboardData: {
+        files: [firstFile, ignoredText, secondFile],
+        getData: () => "",
+      },
+    });
+
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(1));
+    first.resolve(preparedImage(firstFile, "paste-first"));
+    await screen.findByRole("dialog", { name: "คำอธิบายภาพ" });
+    await user.click(screen.getByRole("button", { name: "ยกเลิก" }));
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(2));
+    expect(preparePendingImage.mock.calls.map((call) => call[0])).toEqual([
+      firstFile,
+      secondFile,
+    ]);
+    second.resolve(preparedImage(secondFile, "paste-second"));
+  });
+
+  it("shows retry and remove actions for a failed file without blocking the next file", async () => {
+    const user = userEvent.setup();
+    const broken = new File(["broken"], "broken.jpg", { type: "image/jpeg" });
+    const next = new File(["next"], "next.png", { type: "image/png" });
+    const nextResult = deferred<ReturnType<typeof preparedImage>>();
+    preparePendingImage
+      .mockRejectedValueOnce(new Error("อ่านรูปไม่ได้"))
+      .mockImplementationOnce(() => nextResult.promise);
+    const view = render(<DocumentEditor content={{ type: "doc", content: [] }} onChange={() => {}} />);
+    const input = view.container.querySelector<HTMLInputElement>('input[type="file"]');
+
+    await user.upload(input!, [broken, next]);
+
+    await waitFor(() => expect(preparePendingImage).toHaveBeenCalledTimes(2));
+    expect(screen.getByText("broken.jpg")).not.toBeNull();
+    expect(screen.getByText("อ่านรูปไม่ได้")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "ลองใหม่ broken.jpg" })).not.toBeNull();
+    const remove = screen.getByRole("button", { name: "นำ broken.jpg ออก" });
+    expect(screen.getByRole("status").textContent).toContain("กำลังเตรียมรูป 2 จาก 2");
+
+    await user.click(remove);
+    expect(screen.queryByText("broken.jpg")).toBeNull();
+    nextResult.resolve(preparedImage(next, "next-ready"));
   });
 });
 

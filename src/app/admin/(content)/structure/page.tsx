@@ -14,6 +14,7 @@ export default async function StructurePage({
   const data = await loadAdminExplorerData();
   const requested = typeof query.section === "string" ? query.section : undefined;
   const selectedId = resolveAdminSectionId(data.sections, requested);
+  const mode = sectionMode(query.mode);
   const operationKey = data.pendingSectionOperations.map((operation) => operation.operationId).join(":");
   const invalidSelection = query.section !== undefined && selectedId === null;
 
@@ -29,15 +30,17 @@ export default async function StructurePage({
           <MediaCleanupBanner initialOperation={data.cleanupOperation} />
         </div>
       )}
-      <SectionPanel key={operationKey} selectedSectionId={selectedId} mode={sectionMode(query.mode)} explorer={data} />
-      <div className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
-        <DocumentList
-          key={selectedId ?? "virtual-root"}
-          documents={data.documents}
-          sections={data.sections}
-          selectedSectionId={selectedId}
-        />
-      </div>
+      <SectionPanel key={operationKey} selectedSectionId={selectedId} mode={mode} explorer={data} />
+      {mode !== "reorder" && (
+        <div className="mx-auto w-full max-w-6xl px-4 pb-8 sm:px-6">
+          <DocumentList
+            key={selectedId ?? "virtual-root"}
+            documents={data.documents}
+            sections={data.sections}
+            selectedSectionId={selectedId}
+          />
+        </div>
+      )}
     </>
   );
 }

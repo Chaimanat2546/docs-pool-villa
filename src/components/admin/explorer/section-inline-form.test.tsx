@@ -8,16 +8,18 @@ import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
 import { SectionInlineForm } from "./section-inline-form";
 
-const { refresh, replace, saveSection } = vi.hoisted(() => ({
+const { refresh, replace, saveSection, showLoading, update } = vi.hoisted(() => ({
   refresh: vi.fn(),
   replace: vi.fn(),
   saveSection: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  update: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, replace }) }));
 vi.mock("@/app/admin/(content)/structure/actions", () => ({ saveSection }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn(), showLoading, update, dismiss: vi.fn() }),
 }));
 
 const root: AdminExplorerSection = {
@@ -55,7 +57,7 @@ describe("SectionInlineForm", () => {
     const title = screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement;
     expect(document.activeElement).toBe(title);
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("4");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
     await user.type(title, "การชำระเงิน");
     await user.type(screen.getByRole("textbox", { name: "Slug" }), "payment");
     await user.click(screen.getByRole("button", { name: "บันทึกหมวด" }));
@@ -91,13 +93,26 @@ describe("SectionInlineForm", () => {
     }));
   });
 
-  it("prefills every active field for rename and editing without a description field", () => {
+  it("updates one loading toast to the save result", async () => {
+    const user = userEvent.setup();
+    saveSection.mockResolvedValue({ error: "Slug หรือ Route นี้ถูกใช้งานแล้ว" });
+    render(<SectionInlineForm mode="create-child" section={null} parent={root} rootSections={[root]} initialSortOrder={0} onCancel={vi.fn()} />);
+
+    await user.type(screen.getByRole("textbox", { name: "ชื่อหมวด" }), child.title);
+    await user.type(screen.getByRole("textbox", { name: "Slug" }), child.slug);
+    await user.click(screen.getByRole("button", { name: "บันทึกหมวด" }));
+
+    expect(showLoading).toHaveBeenCalledWith("กำลังบันทึกหมวด");
+    await waitFor(() => expect(update).toHaveBeenCalledWith("toast-1", "error", "Slug หรือ Route นี้ถูกใช้งานแล้ว"));
+  });
+
+  it("does not expose manual ordering while editing a section", () => {
     render(<SectionInlineForm mode="edit" section={child} parent={root} rootSections={[root]} initialSortOrder={99} onCancel={vi.fn()} />);
 
     expect((screen.getByRole("textbox", { name: "ชื่อหมวด" }) as HTMLInputElement).value).toBe(child.title);
     expect((screen.getByRole("textbox", { name: "Slug" }) as HTMLInputElement).value).toBe(child.slug);
     expect(screen.queryByRole("textbox", { name: "คำอธิบาย" })).toBeNull();
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe(String(child.sortOrder));
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
     expect((screen.getByRole("checkbox", { name: /แสดงหมวดนี้/ }) as HTMLInputElement).checked).toBe(false);
     expect((screen.getByRole("combobox", { name: "หมวดแม่" }) as HTMLSelectElement).value).toBe(root.id);
   });

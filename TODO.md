@@ -10,7 +10,10 @@
 - [x] M06 post-closeout safety remediation: apply/verify Staging สำเร็จ
 - [x] Admin File Explorer cross-module follow-up: Local gate และ Staging App/Admin smoke เสร็จแล้ว ([รายละเอียด](docs/todo/admin-file-explorer.md))
 - [x] Admin File Explorer: non-admin browser smoke ผ่าน; ไม่มี Migration หรือ Media Worker deploy
-- [x] Admin document-management status: ใช้ toast กลางบน; Success ปิดอัตโนมัติ 3 วินาที และ Error ค้างจนกดกากบาทปิด
+- [x] Admin document-management ใช้ Admin-only toast กลางบน รองรับ Success/Info/Warning/Error/Loading; local regression 18 ส.ค. ผ่าน (Admin Shell 22/22, Media 52/52, lint, build และ diff check)
+- [x] Admin Toast dev smoke (18 ส.ค.): Local app เชื่อมข้อมูล Staging และภูอนุมัติให้สร้าง/คง `Toast smoke test`; Save แสดง Loading แล้วหลัง navigate เป็น Success `role=status` พร้อมปุ่มปิด, duplicate slug แสดง Error `role=alert` และปิดได้; 390×844 ไม่มี overflow และ close target 44×44
+- [ ] Admin Toast Info/Warning ไม่มี caller ใน Admin ที่ตั้งใจให้ trigger ตอนนี้; provider behavior ครอบคลุมด้วย component tests โดยไม่เพิ่ม live integration path
+- [x] Mobile image preparation verification (18 ส.ค.): Local `test:content` 43/43, `test:media` 59/59, `lint`, `build` และ `git diff --check` ผ่าน; dependency audit ฝั่ง production `npm audit --omit=dev` พบ 0 vulnerabilities; Staging App version `51af8760-1b43-457c-bdd4-1b18441ea2b7` deploy แล้ว, `/` ตอบ 200 และ Guest `/admin` redirect ไป login; ภูยืนยันหลังใช้งานจริงบน iPhone Safari ว่า “ใช้ได้ปกติ”
 - [x] Approved cross-module follow-up: removed the unused section description field; Local tests and Staging migration-history/DB-lint verification complete, Production migration remains pending separate approval
 - [ ] M07 กำลังดำเนินการ: Search Title/H2/H3 และ command palette ผ่าน focused Local tests; browser/performance hardening ค้าง
 

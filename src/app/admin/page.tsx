@@ -3,5 +3,5 @@ import { redirect } from "next/navigation";
 
 export default async function AdminPage() {
   await requireAdmin();
-  redirect("/admin/structure");
+  redirect("/admin/structure?mode=reorder");
 }

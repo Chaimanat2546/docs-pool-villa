@@ -6,15 +6,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
 
-const { createDocumentDraft, replace } = vi.hoisted(() => ({
+const { createDocumentDraft, replace, showLoading, update } = vi.hoisted(() => ({
   createDocumentDraft: vi.fn(),
   replace: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  update: vi.fn(),
 }));
 
 vi.mock("@/app/admin/(content)/documents/actions", () => ({ createDocumentDraft }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn() }),
+  useAdminToast: () => ({ showError: vi.fn(), showLoading, update, dismiss: vi.fn() }),
 }));
 
 import { DocumentSetupForm } from "./document-setup-form";
@@ -97,6 +99,19 @@ describe("DocumentSetupForm", () => {
       slug: "new-doc",
     }));
     expect(replace).toHaveBeenCalledWith(`/admin/documents/${documentId}?section=${rootId}&stage=content`);
+  });
+
+  it("updates one loading toast to success when draft creation succeeds", async () => {
+    const user = userEvent.setup();
+    createDocumentDraft.mockResolvedValue({ success: true, id: documentId, version: 1, path: "/getting-started/new-doc" });
+    render(<DocumentSetupForm sections={sections} selectedSectionId={sectionId} />);
+
+    await user.type(screen.getByRole("textbox", { name: "ชื่อเอกสาร" }), "เอกสารใหม่");
+    await user.type(screen.getByRole("textbox", { name: "Slug" }), "new-doc");
+    await user.click(screen.getByRole("button", { name: "สร้างฉบับร่างและเขียนต่อ" }));
+
+    expect(showLoading).toHaveBeenCalledWith("กำลังสร้างฉบับร่าง");
+    await waitFor(() => expect(update).toHaveBeenCalledWith("toast-1", "success", "สร้างฉบับร่างสำเร็จ"));
   });
 
   it("shows a pending label and prevents duplicate submissions", async () => {

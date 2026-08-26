@@ -22,6 +22,7 @@ import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 import type { MediaOperationView } from "@/lib/media/lifecycle-types";
 
 import { SectionInlineForm } from "./section-inline-form";
+import { SectionReorderHub } from "./section-reorder-hub";
 import { useCreationNavigation } from "./admin-explorer-shell";
 import type { SectionMode } from "./section-mode";
 
@@ -47,7 +48,7 @@ export function SectionPanel({
   explorer,
 }: SectionPanelProps) {
   const router = useRouter();
-  const { showError, showSuccess } = useAdminToast();
+  const { dismiss, showError, showLoading, update } = useAdminToast();
   const [operations, setOperations] = useState(
     explorer.pendingSectionOperations
   );
@@ -124,28 +125,38 @@ export function SectionPanel({
   function confirmDelete() {
     if (!deleteTarget || confirmedName !== deleteTarget.title) return;
     startTransition(async () => {
-      const result = await deleteSection(deleteTarget.id, confirmedName);
-      if ("error" in result) {
-        showError(result.error);
-        return;
-      }
-      if ("pending" in result) {
-        setCreationBlocked(true);
-        setOperations((current) => [
-          ...current.filter(
-            (operation) =>
-              operation.operationId !== result.operation.operationId
-          ),
-          result.operation,
-        ]);
-        closeDeleteDialog();
-        return;
-      }
+      const toastId = showLoading("กำลังลบหมวด");
+      try {
+        const result = await deleteSection(deleteTarget.id, confirmedName);
+        if ("error" in result) {
+          update(toastId, "error", result.error);
+          return;
+        }
+        if ("pending" in result) {
+          dismiss(toastId);
+          setCreationBlocked(true);
+          setOperations((current) => [
+            ...current.filter(
+              (operation) =>
+                operation.operationId !== result.operation.operationId
+            ),
+            result.operation,
+          ]);
+          closeDeleteDialog();
+          return;
+        }
 
-      closeDeleteDialog();
-      showSuccess("ลบหมวดสำเร็จ");
-      router.replace("/admin/structure");
-      router.refresh();
+        closeDeleteDialog();
+        update(toastId, "success", "ลบหมวดสำเร็จ");
+        router.replace("/admin/structure");
+        router.refresh();
+      } catch (error) {
+        update(
+          toastId,
+          "error",
+          error instanceof Error ? error.message : "ลบหมวดไม่สำเร็จ กรุณาลองอีกครั้ง"
+        );
+      }
     });
   }
 
@@ -221,6 +232,9 @@ export function SectionPanel({
         }
       />
     ) : null;
+  const reorder = !mutationsBlocked && mode === "reorder" ? (
+    <SectionReorderHub sections={explorer.sections} onClose={() => router.replace("/admin/structure")} onSaved={() => { router.replace("/admin/structure?mode=reorder"); router.refresh(); }} />
+  ) : null;
 
   return (
     <div className="mx-auto min-w-0 w-full max-w-6xl px-4 py-6 sm:px-6">
@@ -317,9 +331,9 @@ export function SectionPanel({
         </section>
       )}
 
-      {(form || !selectedSection) && (
+      {(form || reorder || !selectedSection) && (
         <div className="mt-6">
-          {form ?? null}
+          {form ?? reorder ?? null}
         </div>
       )}
 
@@ -378,7 +392,7 @@ export function SectionPanel({
             <div className="mt-6 flex justify-end gap-3">
               <Dialog.Close
                 disabled={isPending}
-                className="min-h-11 rounded-full px-4 text-sm hover:bg-muted disabled:opacity-50"
+                className="min-h-11 rounded-full px-4 text-sm hover:bg-muted disabled:opacity-50 border"
               >
                 ยกเลิก
               </Dialog.Close>

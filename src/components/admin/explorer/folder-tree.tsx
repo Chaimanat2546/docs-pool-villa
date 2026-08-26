@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Folder } from "lucide-react";
+import { ArrowDownUp, ChevronRight, Folder } from "lucide-react";
 import { Fragment, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import type { AdminExplorerSection } from "@/lib/docs/admin-explorer";
@@ -55,6 +55,10 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
     }
     return result;
   }, [sections]);
+  const rootSections = useMemo(
+    () => childSectionsByParent.get(null) ?? [],
+    [childSectionsByParent],
+  );
 
   if (selectedSectionId !== previousSelectedSectionId) {
     setPreviousSelectedSectionId(selectedSectionId);
@@ -66,7 +70,6 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
   }
 
   const visibleNodes = useMemo(() => {
-    const rootSections = childSectionsByParent.get(null) ?? [];
     const nodes: VisibleTreeNode[] = [];
 
     for (const rootSection of rootSections) {
@@ -97,7 +100,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
     }
 
     return nodes;
-  }, [childSectionsByParent, expandedKeys]);
+  }, [childSectionsByParent, expandedKeys, rootSections]);
 
   const focusedNodeIsVisible = visibleNodes.some((node) => node.key === focusedKey);
   const requestedSelectedKey = selectedSectionId ? sectionKey(selectedSectionId) : null;
@@ -108,6 +111,7 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
   const reconciledFocusedKey = focusedNodeIsVisible ? focusedKey : selectedNodeIsVisible ? selectedKey : null;
   const shouldRestoreTreeFocus = !focusedNodeIsVisible && treeHasFocus;
   const creationBlockMessage = "กำลังจัดการรูปภาพที่ค้างอยู่";
+  const canReorderSections = rootSections.length > 1 || sections.some((section) => section.parentId !== null);
 
   useLayoutEffect(() => {
     if (shouldRestoreTreeFocus && reconciledFocusedKey) itemRefs.current.get(reconciledFocusedKey)?.focus();
@@ -254,6 +258,19 @@ export function FolderTree({ sections, selectedSectionId, onNavigate, creationBl
       })}
       </div>
       <div aria-label="การสร้างหมวด" className="sticky bottom-0 z-10 space-y-1 border-t bg-card pt-2">
+        {canReorderSections && (
+          <button
+            type="button"
+            aria-label="จัดลำดับหมวดหมู่"
+            disabled={creationBlocked}
+            title={creationBlocked ? creationBlockMessage : undefined}
+            onClick={() => onNavigate("/admin/structure?mode=reorder")}
+            className="flex min-h-11 w-full cursor-pointer items-center rounded-md px-3 text-left text-sm font-medium hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50 gap-1"
+            style={{ paddingInlineStart: "28px" }}
+          >
+            <ArrowDownUp className=" size-3" /> จัดลำดับหมวดหมู่
+          </button>
+        )}
         <button
           type="button"
           aria-label="สร้างหมวดหลัก"

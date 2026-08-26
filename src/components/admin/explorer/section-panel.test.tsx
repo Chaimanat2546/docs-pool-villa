@@ -8,13 +8,15 @@ import type { AdminExplorerData } from "@/lib/docs/admin-explorer-server";
 
 import { SectionPanel } from "./section-panel";
 
-const { deleteSection, getDeletePreview, refresh, replace, retrySectionMediaOperation, saveSection } = vi.hoisted(() => ({
+const { deleteSection, getDeletePreview, refresh, replace, retrySectionMediaOperation, saveSection, showLoading, update } = vi.hoisted(() => ({
   deleteSection: vi.fn(),
   getDeletePreview: vi.fn(),
   refresh: vi.fn(),
   replace: vi.fn(),
   retrySectionMediaOperation: vi.fn(),
   saveSection: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  update: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, replace }) }));
@@ -25,7 +27,12 @@ vi.mock("@/app/admin/(content)/structure/actions", () => ({
   saveSection,
 }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn(), showLoading, update, dismiss: vi.fn() }),
+}));
+vi.mock("./section-reorder-hub", () => ({
+  SectionReorderHub: ({ onSaved }: { onSaved: () => void }) => (
+    <button type="button" onClick={onSaved}>บันทึกการจัดลำดับที่สำเร็จ</button>
+  ),
 }));
 
 const rootId = "11111111-1111-4111-8111-111111111111";
@@ -101,7 +108,17 @@ describe("SectionPanel", () => {
     expect(screen.getByText(/หมวดแม่:/).textContent).toContain("เริ่มต้น");
   });
 
-  it("prefills new root and child sections after their own highest sibling order", async () => {
+  it("returns to reorder mode after saving section order", async () => {
+    const user = userEvent.setup();
+    render(<SectionPanel selectedSectionId={null} mode="reorder" explorer={explorer} />);
+
+    await user.click(screen.getByRole("button", { name: "บันทึกการจัดลำดับที่สำเร็จ" }));
+
+    expect(replace).toHaveBeenCalledWith("/admin/structure?mode=reorder");
+    expect(refresh).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the automatic sibling order hidden while creating root and child sections", async () => {
     const user = userEvent.setup();
     const explorerWithSiblings: AdminExplorerData = {
       ...explorer,
@@ -130,19 +147,19 @@ describe("SectionPanel", () => {
     const { rerender } = render(<SectionPanel selectedSectionId={null} mode="create-root" explorer={explorerWithSiblings} />);
 
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("6");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
 
     rerender(<SectionPanel selectedSectionId={rootId} mode="create-child" explorer={explorerWithSiblings} />);
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("9");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
   });
 
-  it("prefills a new root section with zero when no root siblings exist", async () => {
+  it("keeps the automatic zero order hidden when no root siblings exist", async () => {
     const user = userEvent.setup();
     render(<SectionPanel selectedSectionId={null} mode="create-root" explorer={{ ...explorer, sections: [], documents: [] }} />);
 
     await user.click(screen.getByText("ตั้งค่าเพิ่มเติม"));
-    expect((screen.getByRole("spinbutton", { name: "ลำดับ" }) as HTMLInputElement).value).toBe("0");
+    expect(screen.queryByRole("spinbutton", { name: "ลำดับ" })).toBeNull();
   });
 
   it("disables third-level creation with a visible explanation", () => {
@@ -264,6 +281,8 @@ describe("SectionPanel", () => {
     await user.type(within(dialog).getByRole("textbox", { name: /พิมพ์.*การจอง.*เพื่อยืนยัน/ }), "การจอง");
     await user.click(within(dialog).getByRole("button", { name: "ลบถาวร" }));
 
+    expect(showLoading).toHaveBeenCalledWith("กำลังลบหมวด");
+    await waitFor(() => expect(update).toHaveBeenCalledWith("toast-1", "error", "ลบหมวดไม่สำเร็จ กรุณาลองอีกครั้ง"));
     expect(within(dialog).queryByRole("alert")).toBeNull();
     await user.click(within(dialog).getByRole("button", { name: "ยกเลิก" }));
     expect(screen.getByRole("heading", { name: "การจอง" })).not.toBeNull();

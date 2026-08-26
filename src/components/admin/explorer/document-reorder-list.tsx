@@ -47,7 +47,7 @@ export function DocumentReorderList({
   onSaved,
 }: DocumentReorderListProps) {
   const [orderedDocuments, setOrderedDocuments] = useState(() => [...documents]);
-  const { showError, showSuccess } = useAdminToast();
+  const { showLoading, update } = useAdminToast();
   const [isPending, startTransition] = useTransition();
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -67,25 +67,26 @@ export function DocumentReorderList({
 
   function saveOrder() {
     startTransition(async () => {
+      const toastId = showLoading("กำลังบันทึกลำดับเอกสาร");
       try {
         const result = await reorderDocuments({
           sectionId,
           documentIds: orderedDocuments.map(({ id }) => id),
         });
         if ("error" in result) {
-          showError(result.error);
+          update(toastId, "error", result.error);
           return;
         }
-        showSuccess("บันทึกลำดับเอกสารสำเร็จ");
+        update(toastId, "success", "บันทึกลำดับเอกสารสำเร็จ");
         onSaved();
       } catch {
-        showError("บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง");
+        update(toastId, "error", "บันทึกลำดับเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง");
       }
     });
   }
 
   return (
-    <section aria-labelledby="document-reorder-title" className="w-full rounded-xl border bg-card shadow-sm">
+    <section aria-labelledby="document-reorder-title" className="w-full">
       <div className="border-b p-5">
         <h2 id="document-reorder-title" className="text-lg font-semibold">จัดลำดับเอกสาร</h2>
         <p className="mt-1 text-sm text-muted-foreground">ลากเอกสารเพื่อเปลี่ยนลำดับภายในหมวดนี้</p>

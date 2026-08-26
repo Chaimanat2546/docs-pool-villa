@@ -52,7 +52,7 @@ it("renders the admin navigation with the current page", () => {
   render(<AdminShell><p>เนื้อหาผู้ดูแล</p></AdminShell>);
 
   const contentLink = screen.getByRole("link", { name: "จัดการเนื้อหา" });
-  expect(contentLink.getAttribute("href")).toBe("/admin/structure");
+  expect(contentLink.getAttribute("href")).toBe("/admin/structure?mode=reorder");
   expect(contentLink.getAttribute("aria-current")).toBe("page");
   expect(screen.queryByRole("link", { name: "Editor Sandbox" })).toBeNull();
   expect(screen.queryByRole("link", { name: "โครงสร้าง" })).toBeNull();
@@ -176,7 +176,7 @@ it("closes the mobile drawer only after dirty navigation is confirmed", async ()
   await user.click(screen.getByRole("button", { name: "ออกโดยไม่บันทึก" }));
 
   await waitFor(() => expect(screen.queryByRole("dialog", { name: "เมนูผู้ดูแล" })).toBeNull());
-  expect(push).toHaveBeenCalledWith("/admin/structure");
+  expect(push).toHaveBeenCalledWith("/admin/structure?mode=reorder");
 });
 
 it("provides an internal close control that closes the drawer and returns focus", async () => {

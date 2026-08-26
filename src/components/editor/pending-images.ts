@@ -2,7 +2,7 @@
 
 export type PendingImage = {
   id: string;
-  file: File;
+  fileName: string;
   blob: Blob;
   previewUrl: string;
   width: number;
@@ -13,12 +13,80 @@ export type PendingImage = {
 };
 
 const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const heicTypes = new Set(["image/heic", "image/heif", "image/heic-sequence", "image/heif-sequence"]);
 const maxSourceBytes = 10 * 1024 * 1024;
 const maxDimension = 1920;
 
-async function loadImage(file: File): Promise<{ bitmap: ImageBitmap; width: number; height: number }> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-  return { bitmap, width: bitmap.width, height: bitmap.height };
+type DecodedImage = {
+  source: CanvasImageSource;
+  width: number;
+  height: number;
+  release: () => void;
+};
+
+function throwIfAborted(signal?: AbortSignal) {
+  signal?.throwIfAborted();
+}
+
+function isHeic(file: File) {
+  return heicTypes.has(file.type.toLowerCase()) || /\.(?:heic|heif)$/i.test(file.name);
+}
+
+async function decodeHeic(file: File): Promise<Blob> {
+  try {
+    const { default: heic2any } = await import("heic2any");
+    const decoded = await heic2any({ blob: file, toType: "image/jpeg", quality: 1 });
+    const blob = Array.isArray(decoded) ? decoded[0] : decoded;
+    if (!(blob instanceof Blob)) throw new Error("HEIC decoder returned no image");
+    return blob;
+  } catch {
+    throw new Error("ไม่สามารถอ่านไฟล์ HEIC หรือ HEIF นี้ได้");
+  }
+}
+
+async function loadImage(blob: Blob, signal?: AbortSignal): Promise<DecodedImage> {
+  throwIfAborted(signal);
+
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" });
+      if (signal?.aborted) {
+        bitmap.close();
+        throwIfAborted(signal);
+      }
+      return {
+        source: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        release: () => bitmap.close(),
+      };
+    } catch (error) {
+      if (signal?.aborted) throw error;
+    }
+  }
+
+  const sourceUrl = URL.createObjectURL(blob);
+  const image = document.createElement("img");
+  try {
+    image.src = sourceUrl;
+    await image.decode();
+    throwIfAborted(signal);
+    if (image.naturalWidth < 1 || image.naturalHeight < 1) throw new Error("Invalid image dimensions");
+    return {
+      source: image,
+      width: image.naturalWidth,
+      height: image.naturalHeight,
+      release: () => {
+        image.removeAttribute("src");
+        URL.revokeObjectURL(sourceUrl);
+      },
+    };
+  } catch (error) {
+    image.removeAttribute("src");
+    URL.revokeObjectURL(sourceUrl);
+    if (signal?.aborted) throw error;
+    throw new Error("ไม่สามารถอ่านไฟล์รูปนี้ได้");
+  }
 }
 
 export type UploadedPendingImage = {
@@ -88,34 +156,66 @@ export async function uploadPendingImage(
   });
 }
 
-function canvasToWebp(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("ไม่สามารถแปลงรูปเป็น WebP ได้")), "image/webp", 0.85);
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    try {
+      canvas.toBlob(resolve, "image/webp", 0.85);
+    } catch {
+      resolve(null);
+    }
   });
 }
 
-export async function preparePendingImage(file: File): Promise<PendingImage> {
-  if (!allowedTypes.has(file.type)) throw new Error("รองรับเฉพาะ JPG, PNG และ WebP");
+async function encodeWebp(canvas: HTMLCanvasElement, context: CanvasRenderingContext2D): Promise<Blob> {
+  const nativeBlob = await canvasToBlob(canvas);
+  if (nativeBlob?.type === "image/webp") return nativeBlob;
+
+  try {
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const { encode } = await import("@jsquash/webp");
+    const bytes = await encode(imageData, { quality: 85 });
+    return new Blob([bytes], { type: "image/webp" });
+  } catch {
+    throw new Error("ไม่สามารถแปลงรูปเป็น WebP ได้");
+  }
+}
+
+export async function preparePendingImage(file: File, signal?: AbortSignal): Promise<PendingImage> {
+  const heic = isHeic(file);
+  if (!heic && !allowedTypes.has(file.type.toLowerCase())) {
+    throw new Error("รองรับเฉพาะ JPG, PNG, WebP, HEIC และ HEIF");
+  }
   if (file.size > maxSourceBytes) throw new Error("รูปต้องมีขนาดไม่เกิน 10 MB");
-  const { bitmap, width, height } = await loadImage(file);
-  const scale = Math.min(1, maxDimension / Math.max(width, height));
-  const targetWidth = Math.max(1, Math.round(width * scale));
-  const targetHeight = Math.max(1, Math.round(height * scale));
+  throwIfAborted(signal);
+
+  const normalizedSource = heic ? await decodeHeic(file) : file;
+  throwIfAborted(signal);
+  const decoded = await loadImage(normalizedSource, signal);
   const canvas = document.createElement("canvas");
-  canvas.width = targetWidth;
-  canvas.height = targetHeight;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("เบราว์เซอร์ไม่รองรับการเตรียมรูป");
-  context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
-  bitmap.close();
-  const blob = await canvasToWebp(canvas);
-  return {
-    id: crypto.randomUUID(),
-    file,
-    blob,
-    previewUrl: URL.createObjectURL(blob),
-    width: targetWidth,
-    height: targetHeight,
-    status: "ready",
-  };
+  try {
+    const scale = Math.min(1, maxDimension / Math.max(decoded.width, decoded.height));
+    const targetWidth = Math.max(1, Math.round(decoded.width * scale));
+    const targetHeight = Math.max(1, Math.round(decoded.height * scale));
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("เบราว์เซอร์ไม่รองรับการเตรียมรูป");
+    context.drawImage(decoded.source, 0, 0, targetWidth, targetHeight);
+    throwIfAborted(signal);
+    const blob = await encodeWebp(canvas, context);
+    throwIfAborted(signal);
+    return {
+      id: crypto.randomUUID(),
+      fileName: file.name,
+      blob,
+      previewUrl: URL.createObjectURL(blob),
+      width: targetWidth,
+      height: targetHeight,
+      status: "ready",
+    };
+  } finally {
+    decoded.release();
+    canvas.width = 0;
+    canvas.height = 0;
+  }
 }

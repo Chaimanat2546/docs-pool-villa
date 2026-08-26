@@ -1,17 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createClient, prepareAndDeleteSection } = vi.hoisted(() => ({
+const { createClient, prepareAndDeleteSection, revalidatePath, revalidatePublicDocs } = vi.hoisted(() => ({
   createClient: vi.fn(),
   prepareAndDeleteSection: vi.fn(),
+  revalidatePath: vi.fn(),
+  revalidatePublicDocs: vi.fn(),
 }));
 
-vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("next/cache", () => ({ revalidatePath }));
 vi.mock("@/lib/auth/require-admin", () => ({ requireAdmin: vi.fn().mockResolvedValue(undefined) }));
-vi.mock("@/lib/docs/public-cache", () => ({ revalidatePublicDocs: vi.fn() }));
+vi.mock("@/lib/docs/public-cache", () => ({ revalidatePublicDocs }));
 vi.mock("@/lib/media/lifecycle", () => ({ prepareAndDeleteSection }));
 vi.mock("@/lib/server", () => ({ createClient }));
 
-import { deleteSection, saveSection } from "./actions";
+import { deleteSection, reorderSections, saveSection } from "./actions";
 
 const sectionId = "11111111-1111-4111-8111-111111111111";
 const childId = "22222222-2222-4222-8222-222222222222";
@@ -78,5 +80,50 @@ describe("deleteSection", () => {
     prepareAndDeleteSection.mockResolvedValue({ success: true, kind: "section_delete", targetId: sectionId });
     await expect(deleteSection(sectionId, "คู่มือ")).resolves.toEqual({ success: true });
     expect(prepareAndDeleteSection).toHaveBeenCalledWith(sectionId, "คู่มือ");
+  });
+});
+
+describe("reorderSections", () => {
+  beforeEach(() => {
+    createClient.mockReset();
+    revalidatePath.mockReset();
+    revalidatePublicDocs.mockReset();
+  });
+
+  it("saves a complete root order and refreshes Admin and Public consumers", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    createClient.mockResolvedValue({ rpc });
+
+    await expect(reorderSections({ parentId: null, sectionIds: [sectionId, childId] }))
+      .resolves.toEqual({ success: true });
+
+    expect(rpc).toHaveBeenCalledWith("doc_reorder_sections", {
+      p_parent_id: null,
+      p_section_ids: [sectionId, childId],
+    });
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/structure");
+    expect(revalidatePublicDocs).toHaveBeenCalledOnce();
+  });
+
+  it("rejects duplicate or malformed section ids without calling the database", async () => {
+    await expect(reorderSections({ parentId: sectionId, sectionIds: [childId, childId] }))
+      .resolves.toEqual({ error: "ข้อมูลลำดับหมวดไม่ถูกต้อง" });
+    await expect(reorderSections({ parentId: "bad", sectionIds: [childId] }))
+      .resolves.toEqual({ error: "ข้อมูลลำดับหมวดไม่ถูกต้อง" });
+
+    expect(createClient).not.toHaveBeenCalled();
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidatePublicDocs).not.toHaveBeenCalled();
+  });
+
+  it("keeps caches untouched when the reorder RPC fails", async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: { code: "23514" } });
+    createClient.mockResolvedValue({ rpc });
+
+    await expect(reorderSections({ parentId: sectionId, sectionIds: [childId] }))
+      .resolves.toEqual({ error: "บันทึกลำดับหมวดไม่สำเร็จ กรุณาลองอีกครั้ง" });
+
+    expect(revalidatePath).not.toHaveBeenCalled();
+    expect(revalidatePublicDocs).not.toHaveBeenCalled();
   });
 });

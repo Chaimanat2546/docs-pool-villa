@@ -79,6 +79,13 @@ describe("StructurePage server boundary", () => {
     expect(screen.getByTestId("document-list").getAttribute("data-selected-section")).toBe(sectionId);
   });
 
+  it("hides the document list while reordering sections", async () => {
+    render(await StructurePage({ searchParams: Promise.resolve({ mode: "reorder" }) }));
+
+    expect(screen.queryByTestId("document-list")).toBeNull();
+    expect(screen.getByTestId("section-panel").getAttribute("data-mode")).toBe("reorder");
+  });
+
   it("uses the virtual root and explains an invalid requested section", async () => {
     render(await StructurePage({ searchParams: Promise.resolve({ section: "missing" }) }));
 

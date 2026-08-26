@@ -11,6 +11,7 @@ import { createClient } from "@/lib/server";
 type SectionActionError = { error: string };
 
 export type StructureActionResult = SectionActionError | { success: true; id: string };
+export type ReorderSectionsResult = SectionActionError | { success: true };
 export type DeleteSectionResult = SectionActionError | { success: true } | Extract<LifecycleResult, { pending: true }>;
 export type DeletePreview = {
   childSectionCount: number;
@@ -26,6 +27,11 @@ type SectionInput = {
   parentId: string | null;
   sortOrder: number;
   isPublished: boolean;
+};
+
+type ReorderSectionsInput = {
+  parentId: string | null;
+  sectionIds: string[];
 };
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -48,6 +54,19 @@ function parseSectionInput(value: unknown): SectionInput | null {
   ) return null;
 
   return { id, title, slug, parentId, sortOrder, isPublished };
+}
+
+function parseReorderSectionsInput(value: unknown): ReorderSectionsInput | null {
+  if (!isRecord(value)) return null;
+  const { parentId, sectionIds } = value;
+  if (
+    (parentId !== null && (typeof parentId !== "string" || !uuidPattern.test(parentId))) ||
+    !Array.isArray(sectionIds) || sectionIds.length === 0 ||
+    sectionIds.some((id) => typeof id !== "string" || !uuidPattern.test(id))
+  ) return null;
+
+  const uniqueIds = new Set(sectionIds.map((id) => id.toLowerCase()));
+  return uniqueIds.size === sectionIds.length ? { parentId, sectionIds } : null;
 }
 
 function validateSection(input: SectionInput): string | null {
@@ -97,6 +116,23 @@ export async function saveSection(input: unknown): Promise<StructureActionResult
   revalidatePath("/admin/structure");
   revalidatePublicDocs();
   return { success: true, id: savedId };
+}
+
+export async function reorderSections(value: unknown): Promise<ReorderSectionsResult> {
+  await requireAdmin();
+  const input = parseReorderSectionsInput(value);
+  if (!input) return { error: "ข้อมูลลำดับหมวดไม่ถูกต้อง" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("doc_reorder_sections", {
+    p_parent_id: input.parentId,
+    p_section_ids: input.sectionIds,
+  });
+  if (error) return { error: "บันทึกลำดับหมวดไม่สำเร็จ กรุณาลองอีกครั้ง" };
+
+  revalidatePath("/admin/structure");
+  revalidatePublicDocs();
+  return { success: true };
 }
 
 export async function deleteSection(

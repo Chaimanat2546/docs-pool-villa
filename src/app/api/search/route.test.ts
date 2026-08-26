@@ -28,6 +28,16 @@ describe("public palette search route", () => {
     expect((await response.json()).items).toHaveLength(10);
   });
 
+  it("marks an empty live-search response as non-cacheable", async () => {
+    getPublicSearchResults.mockResolvedValue({ items: [] });
+
+    const response = await GET(new Request("https://docs.test/api/search?q=not-found"));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ items: [] });
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+  });
+
   it("returns a recoverable error when search loading fails", async () => {
     getPublicSearchResults.mockRejectedValue(new Error("database unavailable"));
 

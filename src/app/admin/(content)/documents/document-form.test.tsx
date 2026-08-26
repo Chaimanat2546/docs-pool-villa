@@ -19,7 +19,15 @@ const unsavedNavigation = vi.hoisted(() => ({
   registerDirty: vi.fn(),
   requestNavigation: vi.fn(),
 }));
+const toast = vi.hoisted(() => ({
+  dismiss: vi.fn(),
+  showError: vi.fn(),
+  showLoading: vi.fn(() => "toast-1"),
+  showSuccess: vi.fn(),
+  update: vi.fn(),
+}));
 const bannerBehavior = vi.hoisted(() => ({ triggerRetryBeforeEffect: true }));
+const pendingImages = vi.hoisted(() => ({ uploadPendingImage: vi.fn() }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
 vi.mock("./actions", () => actions);
@@ -28,13 +36,40 @@ vi.mock("@/components/admin/unsaved-navigation", () => ({
   useUnsavedNavigation: () => ({ dirty: false, ...unsavedNavigation }),
 }));
 vi.mock("@/components/admin/admin-toast", () => ({
-  useAdminToast: () => ({ showError: vi.fn(), showSuccess: vi.fn() }),
+  useAdminToast: () => toast,
 }));
+vi.mock("@/components/editor/pending-images", () => pendingImages);
 vi.mock("@/components/editor/document-editor", () => ({
-  DocumentEditor: ({ content, onChange }: { content: unknown; onChange: (content: unknown, pendingImages: unknown[]) => void }) => (
+  DocumentEditor: ({ content, onChange, onPreparationChange, onPreparationBatchChange }: {
+    content: unknown;
+    onChange: (content: unknown, pendingImages: unknown[]) => void;
+    onPreparationChange?: (isPreparing: boolean) => void;
+    onPreparationBatchChange?: (event:
+      | { status: "started"; total: number }
+      | { status: "completed"; total: number; succeeded: number; failed: number }
+    ) => void;
+  }) => (
     <>
       <output data-testid="editor-content">{JSON.stringify(content)}</output>
       <button type="button" onClick={() => onChange({ type: "doc", content: [{ type: "paragraph" }] }, [])}>แก้ไขเนื้อหา</button>
+      <button type="button" onClick={() => onPreparationChange?.(true)}>เริ่มเตรียมรูปจำลอง</button>
+      <button type="button" onClick={() => onPreparationChange?.(false)}>เตรียมรูปจำลองเสร็จ</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "started", total: 2 })}>เริ่มชุดเตรียมรูป</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "completed", total: 2, succeeded: 2, failed: 0 })}>เตรียมรูปสำเร็จทั้งชุด</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "completed", total: 2, succeeded: 1, failed: 1 })}>เตรียมรูปสำเร็จบางส่วน</button>
+      <button type="button" onClick={() => onPreparationBatchChange?.({ status: "completed", total: 2, succeeded: 0, failed: 2 })}>เตรียมรูปไม่สำเร็จทั้งชุด</button>
+      <button
+        type="button"
+        onClick={() => onChange(
+          { type: "doc", content: [{ type: "paragraph" }] },
+          [
+            { id: "pending-1", file: new File(["one"], "one.webp", { type: "image/webp" }), blob: new Blob(["one"], { type: "image/webp" }), previewUrl: "blob:one", width: 1, height: 1, status: "ready" },
+            { id: "pending-2", file: new File(["two"], "two.webp", { type: "image/webp" }), blob: new Blob(["two"], { type: "image/webp" }), previewUrl: "blob:two", width: 1, height: 1, status: "ready" },
+          ],
+        )}
+      >
+        เพิ่มรูปจำลอง
+      </button>
     </>
   ),
 }));
@@ -106,6 +141,7 @@ function renderForm(options: {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  pendingImages.uploadPendingImage.mockReset();
   bannerBehavior.triggerRetryBeforeEffect = true;
 });
 
@@ -121,6 +157,137 @@ it("saves content before advancing to review", async () => {
   expect(navigation.replace).toHaveBeenCalledWith(`/admin/documents/${document.id}?section=${rootSectionId}&stage=review`);
 });
 
+it("updates one loading toast to success when saving content succeeds", async () => {
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledWith("กำลังบันทึกเอกสาร");
+  await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "success", "บันทึกเอกสารสำเร็จ"));
+});
+
+it("updates one image-batch toast to success after every upload and save succeeds", async () => {
+  pendingImages.uploadPendingImage
+    .mockResolvedValueOnce({ mediaId: "media-1", objectKey: "docs/media-1.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 })
+    .mockResolvedValueOnce({ mediaId: "media-2", objectKey: "docs/media-2.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 });
+  actions.saveDocument.mockResolvedValue({ success: true, id: document.id, version: 2, path: "/start/doc" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledTimes(1);
+  expect(toast.showLoading).toHaveBeenCalledWith(
+    "กำลังอัปโหลดรูป 2 รูปและบันทึกเอกสาร",
+  );
+  await waitFor(() =>
+    expect(toast.update).toHaveBeenCalledWith(
+      "toast-1",
+      "success",
+      "บันทึกเอกสารสำเร็จ",
+    ),
+  );
+});
+
+it("blocks saving while the editor is preparing images", async () => {
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เริ่มเตรียมรูปจำลอง" }));
+
+  expect(screen.getByRole("alert").textContent).toBe(
+    "กรุณารอให้เตรียมรูปเสร็จก่อนบันทึก",
+  );
+  expect(
+    (screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }) as HTMLButtonElement)
+      .disabled,
+  ).toBe(true);
+  expect(pendingImages.uploadPendingImage).not.toHaveBeenCalled();
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+  await waitFor(() =>
+    expect(unsavedNavigation.registerDirty).toHaveBeenLastCalledWith(true),
+  );
+});
+
+it.each([
+  {
+    completion: "เตรียมรูปสำเร็จทั้งชุด",
+    kind: "success",
+    message: "เตรียมรูปสำเร็จ 2 รูป",
+  },
+  {
+    completion: "เตรียมรูปสำเร็จบางส่วน",
+    kind: "warning",
+    message: "เตรียมรูปสำเร็จ 1 จาก 2 รูป กรุณาตรวจรายการที่ไม่สำเร็จ",
+  },
+  {
+    completion: "เตรียมรูปไม่สำเร็จทั้งชุด",
+    kind: "error",
+    message: "ไม่สามารถเตรียมรูปได้ กรุณาตรวจรายการและลองใหม่",
+  },
+])("uses one preparation-batch toast for the $kind outcome", async ({
+  completion,
+  kind,
+  message,
+}) => {
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เริ่มชุดเตรียมรูป" }));
+  expect(toast.showLoading).toHaveBeenCalledOnce();
+  expect(toast.showLoading).toHaveBeenCalledWith("กำลังเตรียมรูป 2 รูป");
+
+  await user.click(screen.getByRole("button", { name: completion }));
+  expect(toast.update).toHaveBeenCalledWith("toast-1", kind, message);
+  expect(toast.showLoading).toHaveBeenCalledOnce();
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+});
+
+it("updates one image-batch toast to warning when only some uploads succeed", async () => {
+  pendingImages.uploadPendingImage
+    .mockResolvedValueOnce({ mediaId: "media-1", objectKey: "docs/media-1.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 })
+    .mockRejectedValueOnce(new Error("upload failed"));
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledTimes(1);
+  await waitFor(() =>
+    expect(toast.update).toHaveBeenCalledWith(
+      "toast-1",
+      "warning",
+      "อัปโหลดรูปสำเร็จ 1 จาก 2 รูป กรุณาลองบันทึกอีกครั้ง",
+    ),
+  );
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+});
+
+it("updates one image-batch toast to error when no upload becomes ready", async () => {
+  pendingImages.uploadPendingImage
+    .mockRejectedValueOnce(new Error("first upload failed"))
+    .mockRejectedValueOnce(new Error("second upload failed"));
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledTimes(1);
+  await waitFor(() =>
+    expect(toast.update).toHaveBeenCalledWith(
+      "toast-1",
+      "error",
+      "ไม่สามารถอัปโหลดรูปได้ กรุณาลองบันทึกอีกครั้ง",
+    ),
+  );
+  expect(actions.saveDocument).not.toHaveBeenCalled();
+});
+
 it("keeps content stage and values when save fails", async () => {
   actions.saveDocument.mockResolvedValue({ error: "Version conflict กรุณา Reload" });
   const user = userEvent.setup();
@@ -134,6 +301,37 @@ it("keeps content stage and values when save fails", async () => {
   expect(screen.queryByRole("alert")).toBeNull();
   expect(screen.getByRole("heading", { name: "เขียนเนื้อหา" })).not.toBeNull();
   expect((title as HTMLInputElement).value).toBe("ชื่อที่ยังไม่บันทึก");
+  expect(navigation.replace).not.toHaveBeenCalled();
+});
+
+it("updates the same loading toast to error when saving content fails", async () => {
+  actions.saveDocument.mockResolvedValue({ error: "Version conflict กรุณา Reload" });
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  expect(toast.showLoading).toHaveBeenCalledWith("กำลังบันทึกเอกสาร");
+  await waitFor(() => expect(toast.update).toHaveBeenCalledWith("toast-1", "error", "Version conflict กรุณา Reload"));
+});
+
+it("keeps the aggregate warning when uploaded-media rollback rejects", async () => {
+  pendingImages.uploadPendingImage
+    .mockResolvedValueOnce({ mediaId: "media-1", objectKey: "docs/media-1.webp", mimeType: "image/webp", sizeBytes: 3, width: 1, height: 1 })
+    .mockRejectedValueOnce(new Error("upload failed"));
+  actions.rollbackUploadedMedia.mockRejectedValue(new Error("rollback failed"));
+  const user = userEvent.setup();
+  renderForm();
+
+  await user.click(screen.getByRole("button", { name: "เพิ่มรูปจำลอง" }));
+  await user.click(screen.getByRole("button", { name: "บันทึกและตรวจต่อ" }));
+
+  await waitFor(() => expect(actions.rollbackUploadedMedia).toHaveBeenCalledOnce());
+  await waitFor(() => expect(toast.update).toHaveBeenCalledWith(
+    "toast-1",
+    "warning",
+    "อัปโหลดรูปสำเร็จ 1 จาก 2 รูป กรุณาลองบันทึกอีกครั้ง",
+  ));
   expect(navigation.replace).not.toHaveBeenCalled();
 });
 

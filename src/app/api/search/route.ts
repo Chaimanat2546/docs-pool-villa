@@ -6,7 +6,10 @@ export async function GET(request: Request): Promise<Response> {
 
   try {
     const results = await getPublicSearchResults({ query: input.query, page: 1 });
-    return Response.json({ items: results.items.slice(0, 10) });
+    return Response.json(
+      { items: results.items.slice(0, 10) },
+      { headers: { "Cache-Control": "no-store" } },
+    );
   } catch {
     return Response.json({ error: "ไม่สามารถค้นหาคู่มือได้" }, { status: 500 });
   }

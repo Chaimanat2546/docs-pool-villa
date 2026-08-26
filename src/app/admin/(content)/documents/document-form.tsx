@@ -12,7 +12,10 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { DocumentEditor } from "@/components/editor/document-editor";
+import {
+  DocumentEditor,
+  type ImagePreparationBatchEvent,
+} from "@/components/editor/document-editor";
 import { EditorPreview } from "@/components/editor/editor-preview";
 import type {
   PendingImage,
@@ -100,9 +103,10 @@ export function DocumentForm({
   hardDeleteFiles?: string[];
 }) {
   const router = useRouter();
-  const { showError, showSuccess } = useAdminToast();
+  const { dismiss, showError, showLoading, update } = useAdminToast();
   const { registerDirty, requestNavigation } = useUnsavedNavigation();
   const idRef = useRef(document.id);
+  const preparationToastIdRef = useRef<string | null>(null);
   const [stage, setStage] = useState<DocumentStage>(initialStage);
   const [form, setForm] = useState<FormState>({
     sectionId: document.sectionId,
@@ -116,6 +120,7 @@ export function DocumentForm({
   const [contentRevision, setContentRevision] = useState(0);
   const [version, setVersion] = useState<number>(document.version);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [isPreparingImages, setIsPreparingImages] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [saving, setSaving] = useState(false);
@@ -143,14 +148,60 @@ export function DocumentForm({
     )
   );
   const dirty = useMemo(
-    () => snapshot(form, content) !== savedSnapshot || pendingImages.length > 0,
-    [form, content, pendingImages.length, savedSnapshot]
+    () =>
+      snapshot(form, content) !== savedSnapshot ||
+      pendingImages.length > 0 ||
+      isPreparingImages,
+    [form, content, isPreparingImages, pendingImages.length, savedSnapshot]
   );
 
   useEffect(() => {
     registerDirty(dirty);
     return () => registerDirty(false);
   }, [dirty, registerDirty]);
+
+  useEffect(
+    () => () => {
+      if (preparationToastIdRef.current)
+        dismiss(preparationToastIdRef.current);
+      preparationToastIdRef.current = null;
+    },
+    [dismiss],
+  );
+
+  const handlePreparationBatchChange = useCallback(
+    (event: ImagePreparationBatchEvent) => {
+      if (event.status === "started") {
+        const message = `กำลังเตรียมรูป ${event.total} รูป`;
+        if (preparationToastIdRef.current) {
+          update(preparationToastIdRef.current, "loading", message);
+        } else {
+          preparationToastIdRef.current = showLoading(message);
+        }
+        return;
+      }
+
+      const toastId = preparationToastIdRef.current;
+      if (!toastId) return;
+      preparationToastIdRef.current = null;
+      if (event.failed === 0) {
+        update(toastId, "success", `เตรียมรูปสำเร็จ ${event.succeeded} รูป`);
+      } else if (event.succeeded > 0) {
+        update(
+          toastId,
+          "warning",
+          `เตรียมรูปสำเร็จ ${event.succeeded} จาก ${event.total} รูป กรุณาตรวจรายการที่ไม่สำเร็จ`,
+        );
+      } else {
+        update(
+          toastId,
+          "error",
+          "ไม่สามารถเตรียมรูปได้ กรุณาตรวจรายการและลองใหม่",
+        );
+      }
+    },
+    [showLoading, update],
+  );
 
   const retryOperation = useCallback(
     (currentOperation: MediaOperationView) => {
@@ -212,9 +263,17 @@ export function DocumentForm({
   }
 
   async function persist(): Promise<boolean> {
-    if (saving || operation || !validateFields()) return false;
+    if (saving || operation || isPreparingImages || !validateFields())
+      return false;
     setSaving(true);
+    const batchSize = pendingImages.length;
+    const toastId = showLoading(
+      batchSize > 0
+        ? `กำลังอัปโหลดรูป ${batchSize} รูปและบันทึกเอกสาร`
+        : "กำลังบันทึกเอกสาร"
+    );
     const uploaded = new Map<string, UploadedPendingImage>();
+    const uploadFailures: string[] = [];
     let saveSubmitted = false;
     try {
       for (const image of pendingImages) {
@@ -225,20 +284,63 @@ export function DocumentForm({
               : candidate
           )
         );
-        const result = await uploadPendingImage(
-          idRef.current,
-          image,
-          (progress) =>
-            setPendingImages((current) =>
-              current.map((candidate) =>
-                candidate.id === image.id
-                  ? { ...candidate, status: "uploading", progress }
-                  : candidate
-              )
-            ),
-          createMediaUploadTicket
+        try {
+          const result = await uploadPendingImage(
+            idRef.current,
+            image,
+            (progress) =>
+              setPendingImages((current) =>
+                current.map((candidate) =>
+                  candidate.id === image.id
+                    ? { ...candidate, status: "uploading", progress }
+                    : candidate
+                )
+              ),
+            createMediaUploadTicket
+          );
+          uploaded.set(image.id, result);
+        } catch (error) {
+          const message =
+            error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ";
+          uploadFailures.push(message);
+          setPendingImages((current) =>
+            current.map((candidate) =>
+              candidate.id === image.id
+                ? { ...candidate, status: "error", error: message }
+                : candidate
+            )
+          );
+        }
+      }
+      if (uploadFailures.length > 0) {
+        if (uploaded.size > 0) {
+          try {
+            await rollbackUploadedMedia(
+              idRef.current,
+              [...uploaded.values()].map((item) => ({
+                ...item,
+                displayLabel: `${item.mediaId}.webp`,
+              }))
+            );
+          } catch {
+            // The per-file upload errors remain the user-facing recovery path.
+          }
+          setPendingImages((current) =>
+            current.map((candidate) =>
+              uploaded.has(candidate.id)
+                ? { ...candidate, status: "ready", progress: undefined }
+                : candidate
+            )
+          );
+        }
+        update(
+          toastId,
+          uploaded.size > 0 ? "warning" : "error",
+          uploaded.size > 0
+            ? `อัปโหลดรูปสำเร็จ ${uploaded.size} จาก ${batchSize} รูป กรุณาลองบันทึกอีกครั้ง`
+            : "ไม่สามารถอัปโหลดรูปได้ กรุณาลองบันทึกอีกครั้ง"
         );
-        uploaded.set(image.id, result);
+        return false;
       }
       const persistedContent = replacePendingImages(
         content,
@@ -261,10 +363,11 @@ export function DocumentForm({
         media: [...uploaded.values()],
       });
       if ("error" in result) {
-        showError(result.error);
+        update(toastId, "error", result.error);
         return false;
       }
       if ("pending" in result) {
+        dismiss(toastId);
         setOperation(result.operation);
         return false;
       }
@@ -275,18 +378,25 @@ export function DocumentForm({
       setSavedSnapshot(snapshot(form, persistedContent));
       setSavedSectionId(form.sectionId);
       registerDirty(false);
-      showSuccess("บันทึกเอกสารสำเร็จ");
+      update(toastId, "success", "บันทึกเอกสารสำเร็จ");
       return true;
     } catch (error) {
-      if (!saveSubmitted && uploaded.size > 0)
-        await rollbackUploadedMedia(
-          idRef.current,
-          [...uploaded.values()].map((item) => ({
-            ...item,
-            displayLabel: `${item.mediaId}.webp`,
-          }))
-        );
-      showError(
+      if (!saveSubmitted && uploaded.size > 0) {
+        try {
+          await rollbackUploadedMedia(
+            idRef.current,
+            [...uploaded.values()].map((item) => ({
+              ...item,
+              displayLabel: `${item.mediaId}.webp`,
+            }))
+          );
+        } catch {
+          // The original upload failure remains the user-facing result.
+        }
+      }
+      update(
+        toastId,
+        "error",
         error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ"
       );
       return false;
@@ -325,20 +435,32 @@ export function DocumentForm({
   async function remove() {
     if (saving || operation) return;
     setSaving(true);
-    const result = await deleteDocument(document.id, version);
-    setSaving(false);
-    if ("error" in result) {
-      showError(result.error);
-      return;
+    const toastId = showLoading("กำลังลบเอกสาร");
+    try {
+      const result = await deleteDocument(document.id, version);
+      if ("error" in result) {
+        update(toastId, "error", result.error);
+        return;
+      }
+      if ("pending" in result) {
+        dismiss(toastId);
+        setOperation(result.operation);
+        return;
+      }
+      registerDirty(false);
+      update(toastId, "success", "ลบเอกสารสำเร็จ");
+      requestNavigation(
+        `/admin/structure?section=${encodeURIComponent(savedSectionId)}`
+      );
+    } catch (error) {
+      update(
+        toastId,
+        "error",
+        error instanceof Error ? error.message : "ลบเอกสารไม่สำเร็จ กรุณาลองอีกครั้ง"
+      );
+    } finally {
+      setSaving(false);
     }
-    if ("pending" in result) {
-      setOperation(result.operation);
-      return;
-    }
-    registerDirty(false);
-    requestNavigation(
-      `/admin/structure?section=${encodeURIComponent(savedSectionId)}`
-    );
   }
 
   const savedReturnHref =
@@ -484,7 +606,14 @@ export function DocumentForm({
                 setContent(nextContent);
                 setPendingImages(nextPending);
               }}
+              onPreparationChange={setIsPreparingImages}
+              onPreparationBatchChange={handlePreparationBatchChange}
             />
+            {isPreparingImages && (
+              <p role="alert" className="mt-3 text-sm text-amber-700">
+                กรุณารอให้เตรียมรูปเสร็จก่อนบันทึก
+              </p>
+            )}
             <MediaProgressList images={pendingImages} />
             <div className="sticky bottom-0 z-10 mt-6 flex flex-wrap justify-end gap-2 rounded-lg border bg-background/95 p-2 shadow-sm backdrop-blur sm:bottom-4 sm:p-3">
               <button
@@ -496,7 +625,7 @@ export function DocumentForm({
               </button>
               <button
                 type="submit"
-                disabled={saving || Boolean(operation)}
+                disabled={saving || Boolean(operation) || isPreparingImages}
                 className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
               >
                 <Save size={16} aria-hidden="true" />
@@ -569,7 +698,7 @@ export function DocumentForm({
             </button>
             <button
               type="button"
-              disabled={saving || Boolean(operation)}
+              disabled={saving || Boolean(operation) || isPreparingImages}
               onClick={finalSave}
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-50"
             >

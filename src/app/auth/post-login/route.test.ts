@@ -15,7 +15,7 @@ describe("GET /auth/post-login", () => {
 
     const response = await GET(new Request("http://localhost/auth/post-login"));
 
-    expect(response.headers.get("location")).toBe("http://localhost/admin/structure");
+    expect(response.headers.get("location")).toBe("http://localhost/admin/structure?mode=reorder");
   });
 
   it("signs out a non-admin before returning a generic credential error", async () => {
