@@ -31,6 +31,16 @@
 - [ ] Production readiness checklist, Backup/Rollback plan
 - [x] อัปเดต Context/TODO สำหรับ heading search
 
+## Production-readiness รอบ 26 สิงหาคม 2026
+
+- [x] แก้ Staging-only regression: `/api/search` ที่คืนผลว่างเคยเกิด Cloudflare Worker 1101 (`Cannot perform I/O on behalf of a different request`); เพิ่ม regression test ให้ success response มี `Cache-Control: no-store` และ deploy เฉพาะ Docs App Staging version `a6a54c82-0bb6-4039-86c1-b28d5dbce8e9` ด้วย `--keep-vars` (ไม่ deploy Media Worker/Migration/Production)
+- [x] Staging smoke หลัง deploy: `/api/search?q=zzzzzz` 200 ขนาด 12 bytes, `/api/search?q=test1` 200, Guest `/admin` 307 ไป `/auth/login`, `/` 200; search p95 266.33 ms และ published Reader `/test1/introduction` p95 296.48 ms จาก 30 request serial ต่อ endpoint
+- [x] In-app browser Staging: trigger/focus, Ctrl+K, empty state, Arrow selection, Escape focus restore และ 390×844 ไม่มี horizontal overflow (document client/scroll width = 375) ผ่าน
+- [x] Production Supabase read-only audit: history ตรง baseline ถึง `20260806173000`; dry-run ของ `rqizfiayvcbozlzuvbok` แสดง Docs migration 13 ไฟล์เท่านั้นและไม่มี seed/roles
+- [x] Local pgTAP/RLS gate: หลัง Docker Desktop พร้อม พบ Local schema ค้างที่ `20260813150200`; apply เฉพาะ 4 migrations ที่ขาด (`20260814085611` ถึง `20260818085232`) โดยไม่ reset แล้ว `npm run test:db` ผ่าน 194/194
+- [ ] ยังไม่ได้วัด Mobile LCP p75, load/capacity 500 Public/10 Admin, และ Safari macOS/iOS/Chrome Android matrix
+- [ ] ยังต้องยืนยัน Production backup ล่าสุด, ชื่อ App/Media Worker, R2 bucket, allowed origin และ secret-name inventory ก่อนเสนอ Production gate
+
 ## Acceptance
 
 - Search p95 ไม่เกิน 1 วินาทีตาม Baseline test
