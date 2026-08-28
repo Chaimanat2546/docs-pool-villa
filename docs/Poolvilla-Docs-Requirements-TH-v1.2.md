@@ -4,7 +4,7 @@
 
 **เวอร์ชัน:** 1.2 (ขอบเขต MVP)  
 **วันที่:** 10 สิงหาคม 2026  
-**สถานะ:** ยืนยัน Requirement แล้ว — รออนุมัติเริ่ม Module M01  
+**สถานะ:** Requirement baseline ยืนยันแล้ว; M01–M06 ปิดงานพร้อมหลักฐาน Local/Staging รวม migration `20260813150200` ที่ apply/verify Staging แล้ว; M07 ยังไม่เริ่มและไม่มี Production action
 **ผู้รับผิดชอบ:** ทีม Poolvilla
 
 ## 1. วัตถุประสงค์
@@ -29,7 +29,7 @@
 - หมวดหลักและหมวดย่อยรวมสูงสุด 2 ระดับ
 - จัดการหมวด เอกสาร ลำดับ Slug, Redirect, Draft, Published, Archived และ Preview
 - Tiptap Editor พร้อม Toolbar และ Slash Command
-- Paragraph, Heading, List, Link, Table, Code block, Callout, Image และ YouTube Embed
+- Paragraph, Heading, List, Link, Code block, Callout, Image และ YouTube Embed
 - อัปโหลดรูปด้วยปุ่ม Upload และวางรูปจาก Clipboard
 - จัดการวงจรชีวิตรูปตามเอกสาร โดยไม่มี Media Library
 - Supabase Auth, PostgreSQL, Docs-only RLS และ `pg_trgm` Search
@@ -176,7 +176,7 @@
 ### 7.4 Tiptap Content
 
 - เก็บ Content เป็น Tiptap JSONB ที่ผ่าน Schema validation
-- รองรับ Paragraph, Heading, List, Link, Table, Code block, Callout, Image และ YouTube
+- รองรับ Paragraph, Heading, List, Link, Code block, Callout, Image และ YouTube
 - มี Toolbar และ Slash Command ที่ใช้งานด้วย Keyboard ได้
 - Editor และ Viewer ใช้ Node styling และ validation ชุดเดียวกัน
 - ไม่รองรับ Raw HTML
@@ -252,7 +252,6 @@
 | `id` | UUID | Primary key |
 | `parent_id` | UUID nullable | อ้างถึงหมวดหลัก; ลึกได้สูงสุด 2 ระดับ |
 | `name`, `slug` | Text | Required; Slug unique ภายใต้ Parent |
-| `description` | Text nullable | คำอธิบายหมวด |
 | `sort_order` | Integer | ลำดับใน Parent เดียวกัน |
 | `is_published` | Boolean | ควบคุมการแสดง Public |
 | Metadata | UUID/timestamptz | `created_by`, `updated_by`, `created_at`, `updated_at` |

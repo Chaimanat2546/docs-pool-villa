@@ -1,0 +1,87 @@
+import { Fragment, type ReactNode } from "react";
+
+import { getDocumentHeadings, type DocumentHeading } from "@/lib/docs/headings";
+
+import { YouTubePlayer } from "./youtube-player";
+
+type ContentMark = { type?: string; attrs?: { href?: unknown } };
+type ContentNode = {
+  type?: string;
+  text?: string;
+  attrs?: Record<string, unknown>;
+  marks?: ContentMark[];
+  content?: ContentNode[];
+};
+
+export type TocItem = DocumentHeading;
+export const getTableOfContents = getDocumentHeadings;
+
+function isSafeHref(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return ["http:", "https:", "mailto:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
+}
+
+function withMarks(children: ReactNode, marks: ContentMark[] | undefined): ReactNode {
+  return marks?.reduce<ReactNode>((result, mark, index) => {
+    const key = `${mark.type ?? "mark"}-${index}`;
+    if (mark.type === "bold") return <strong key={key}>{result}</strong>;
+    if (mark.type === "italic") return <em key={key}>{result}</em>;
+    if (mark.type === "strike") return <s key={key}>{result}</s>;
+    if (mark.type === "code") return <code key={key}>{result}</code>;
+    if (mark.type === "link" && isSafeHref(mark.attrs?.href)) {
+      const external = mark.attrs.href.startsWith("http");
+      return <a key={key} href={mark.attrs.href} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}>{result}</a>;
+    }
+    return result;
+  }, children) ?? children;
+}
+
+function renderNode(node: ContentNode, headingIds: TocItem[], headingIndex: { value: number }): ReactNode {
+  if (node.type === "table") return null;
+  const children = node.content?.map((child, index) => <Fragment key={index}>{renderNode(child, headingIds, headingIndex)}</Fragment>) ?? [];
+  switch (node.type) {
+    case "text": return withMarks(node.text ?? "", node.marks);
+    case "hardBreak": return <br />;
+    case "paragraph": {
+      const indentLevel = node.attrs?.indentLevel;
+      return <p {...(indentLevel === 1 || indentLevel === 2 || indentLevel === 3 ? { "data-indent-level": indentLevel } : {})}>{children}</p>;
+    }
+    case "heading": {
+      const item = headingIds[headingIndex.value++];
+      return node.attrs?.level === 3 ? <h3 id={item?.id}>{children}</h3> : <h2 id={item?.id}>{children}</h2>;
+    }
+    case "bulletList": return <ul>{children}</ul>;
+    case "orderedList": return <ol>{children}</ol>;
+    case "listItem": return <li>{children}</li>;
+    case "blockquote": return <blockquote>{children}</blockquote>;
+    case "codeBlock": return <pre><code>{children}</code></pre>;
+    case "callout": return <aside className={`doc-callout doc-callout-${node.attrs?.kind === "warning" ? "warning" : node.attrs?.kind === "tip" ? "tip" : "info"}`}>{children}</aside>;
+    case "image": {
+      const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";
+      const alt = typeof node.attrs?.alt === "string" ? node.attrs.alt : "";
+      // R2 URLs are document-specific and are not configured as a Next image optimization remote pattern.
+      // eslint-disable-next-line @next/next/no-img-element
+      return src && alt ? <img className="doc-image" src={src} alt={alt} loading="lazy" /> : null;
+    }
+    case "youtube": {
+      const src = typeof node.attrs?.src === "string" ? node.attrs.src : "";
+      return src.startsWith("https://www.youtube-nocookie.com/embed/")
+        ? <YouTubePlayer src={src} />
+        : null;
+    }
+    default: return children;
+  }
+}
+
+export function DocumentContent({ content }: { content: unknown }) {
+  const root = content as ContentNode;
+  const toc = getTableOfContents(content);
+  if (!root || root.type !== "doc" || !Array.isArray(root.content)) return null;
+  const headingIndex = { value: 0 };
+  return <div className="docs-content">{root.content.map((node, index) => <Fragment key={index}>{renderNode(node, toc, headingIndex)}</Fragment>)}</div>;
+}
