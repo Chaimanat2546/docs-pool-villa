@@ -2,6 +2,12 @@
 
 ## Current status
 
+- [x] Production rollout 15 September: Staging resumed and App smoke passed; deployed Production App `e9c281b5-d0f8-4f13-9d36-2cbad67925c4` at `https://docs-pool-villa.poolvilla.workers.dev`. Public/Guest and signed Media lifecycle smoke passed; full local source suite 334/334. Authenticated Production browser smoke remains unverified. [Details](docs/todo/M07-production-readiness.md)
+
+- [ ] Production workers.dev URL approved; App rebuild/dry-run passed and Media allowed origin deployed/verified. Staging resume is blocked by Supabase free-project quota; App rollout pending quota resolution. [Details](docs/todo/M07-production-readiness.md)
+
+- [ ] Production rollout requested 15 September: Media Worker deployed and verified for CORS/unsigned deletion; App build/dry-run passed. App rollout awaits Staging Supabase restoration (`INACTIVE`) and domain decision. Docs migrations already exist on Production; no DB changes made. [Details](docs/todo/M07-production-readiness.md)
+
 - [x] จัดทำ Requirement ภาษาไทย
 - [x] ตรวจ Requirement และยืนยันประเด็นสำคัญ
 - [x] แยก Context/TODO สำหรับการทำงานแบบ Module
@@ -37,6 +43,7 @@
 |---|---|---|
 | Admin File Explorer | Complete — Guest/Admin/non-admin browser smoke ผ่าน | [TODO](docs/todo/admin-file-explorer.md) |
 | Admin-only session termination | Complete — local verification completed; no migration, RLS, or production action occurred | — |
+| คู่มือ WeBooks | Complete — เผยแพร่ 16 บทแบบ Desktop-only; แทนภาพ 9 บทและแก้คำอธิบายแล้ว ตรวจ URL/รูป/เนื้อหา 16/16 รูปเก่า 404 ครบ 9 และไม่มี media operation/cleanup ค้าง | [รายละเอียด](docs/manuals/webook/README.md) |
 
 Post-closeout safety migration `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Local gate, dry-run และ apply/verify บน Staging แล้วเมื่อ 13 สิงหาคม 2026; migration parity ตรง, DB lint ไม่มี schema error และ advisor พบ `doc_*` = 0. ไม่มี Production action
 

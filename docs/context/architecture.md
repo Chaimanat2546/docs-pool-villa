@@ -23,6 +23,12 @@
 
 ## Isolation
 
+Current deployment (15 September 2026): Production App is live at `https://docs-pool-villa.poolvilla.workers.dev`, version `e9c281b5-d0f8-4f13-9d36-2cbad67925c4`; Media version `84de2c49-7141-4b20-9020-4e2235b13961`. Staging was resumed successfully and current App smoke passed before Production rollout. The historical quota/domain blockers below are resolved; custom domain remains deferred by user choice.
+
+ภู approved `https://docs-pool-villa.poolvilla.workers.dev` for initial Production on 15 September 2026. App config and deployed Media allowed origin use this URL. App rollout remains pending: Supabase Dashboard blocks Staging resume because the account has reached the active free-project quota.
+
+Production setup 15 September 2026: explicit configs are `wrangler.production.jsonc` and `workers/docs-media/wrangler.production.jsonc`. Media Worker `docs-media` is deployed at `https://docs-media.poolvilla.workers.dev` using the existing Production bucket and the `docs/` key boundary. App `docs-pool-villa` is prepared but not deployed; custom domain remains unresolved. See [deployment status](../todo/M07-production-readiness.md). Staging Supabase currently reports `INACTIVE`.
+
 - Docs Worker/Secret แยกจาก `webook-media` Worker เดิม
 - Worker จำกัดสิทธิ์เฉพาะ prefix `docs/`
 - Server operations ของ Docs App เรียก Docs Media Worker ผ่าน Cloudflare Service Binding `DOCS_MEDIA`; Browser ใช้ public Worker URL เฉพาะ upload/read ที่จำเป็น และ secret อ่านจาก runtime binding เท่านั้น
