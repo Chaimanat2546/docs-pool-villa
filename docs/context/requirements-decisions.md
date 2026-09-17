@@ -20,6 +20,7 @@
 - Search รอบนี้ค้นหา Title และหัวข้อ H2/H3 ของ Published documents แบบ partial match; heading result ลิงก์ไป anchor เดิมของหน้า reader, query ว่างแสดงเอกสารทั้งหมดแบบ 10 รายการต่อหน้า และไม่ค้น Excerpt/paragraph/content, typo หรือ autocomplete; ไม่สร้าง `search_text` หรือข้อมูลหัวข้อซ้ำ
 - Public Search ใช้ `Ctrl+K`/`⌘K` เพื่อไปหรือโฟกัสช่องค้นหา; Enter ส่ง native GET form
 - Homepage สร้างอัตโนมัติ ไม่มี Admin configuration
+- Homepage follow-up ที่ภูอนุมัติ 16 ก.ย. 2026: กล่อง “เริ่มใช้งาน Baan Pool Villa” เลือกหมวดหลัก slug `baan-pool-villa` รวมเอกสาร Published ในหมวดย่อยตามลำดับ navigation สูงสุด 3 บท ไม่ขึ้นกับหมวดแรกและไม่ fallback ไปคู่มืออื่น; คง URL เอกสารและปุ่ม Hero เดิม ไม่มีการย้ายข้อมูล (Local verified; deployment pending)
 - Staging/Production แยก Cloudflare/Supabase ทั้งหมด
 - ชื่อระบบที่แสดง: "คู่มือสำหรับเว็บ Baan Pool Villa"
 - Domain Production ที่วางแผน: `docs.poolvilla.co.th` แต่ยังไม่ตั้งค่าหรือใช้งานจริง
