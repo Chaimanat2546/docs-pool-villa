@@ -72,8 +72,8 @@ describe("Home", () => {
     const hero = screen.getByRole("heading", { name: "Documentation for Baan Pool Villa", level: 1 }).closest("section");
     expect(hero).not.toBeNull();
     expect(within(hero!).getByRole("link", { name: "เริ่มต้นใช้งาน" }).getAttribute("href")).toBe("/getting-started/getting-started");
-    expect(screen.getByRole("heading", { name: "Getting started", level: 2 })).not.toBeNull();
-    expect(screen.getAllByText("ภาพรวมการใช้งานระบบสำหรับผู้เริ่มต้น")).toHaveLength(2);
+    expect(screen.getByRole("heading", { name: "เริ่มใช้งาน Baan Pool Villa", level: 2 })).not.toBeNull();
+    expect(screen.getAllByText("ภาพรวมการใช้งานระบบสำหรับผู้เริ่มต้น")).toHaveLength(1);
     expect(screen.queryByRole("link", { name: "อ่านต่อ" })).toBeNull();
     expect(screen.getAllByRole("link").some((link) => link.className.includes("group"))).toBe(true);
     expect(screen.getByRole("heading", { name: "Explore documentation", level: 2 })).not.toBeNull();
@@ -104,6 +104,34 @@ describe("Home", () => {
 
     expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(5);
     expect(screen.queryByRole("heading", { name: "หมวด 6" })).toBeNull();
+  });
+
+  it.each([true, false])("uses only the Baan Pool Villa tree, including child documents (present: %s)", async (present) => {
+    const document = (id: string, sectionId: string, path: string) => ({
+      id, sectionId, path, title: id, slug: id, excerpt: null,
+      updatedAt: "2026-09-16T00:00:00.000Z", sortOrder: 0,
+      sectionTitle: "เริ่มใช้งาน", parentTitle: null,
+    });
+    const other = document("WeBooks intro", "webook", "/webook/start/getting-started");
+    const baanDocuments = Array.from({ length: 4 }, (_, i) =>
+      document(`Baan ${i + 1}`, "baan-start", `/baan-pool-villa/start/guide-${i + 1}`));
+    const otherSection = { id: "webook", parentId: null, title: "WeBooks", slug: "webook", sortOrder: 0, documents: [other], children: [] };
+    const baan = { id: "baan", parentId: null, title: "คู่มือ Baan Pool Villa", slug: "baan-pool-villa", sortOrder: 1, documents: [], children: [
+      { id: "baan-start", parentId: "baan", title: "เริ่มใช้งาน", slug: "start", sortOrder: 0, documents: baanDocuments, children: [] },
+    ] };
+    getPublicDocsIndex.mockResolvedValue({ documents: [other, ...baanDocuments], sections: present ? [otherSection, baan] : [otherSection], recentUpdates: [] });
+    render(await Home());
+    const section = screen.getByRole("heading", { name: "เริ่มใช้งาน Baan Pool Villa", level: 2 }).closest("section")!;
+    expect(within(section).queryByText("WeBooks intro")).toBeNull();
+    if (present) {
+      expect(within(section).getAllByRole("link").map(link => link.getAttribute("href"))).toEqual([
+        "/baan-pool-villa/start/guide-1", "/baan-pool-villa/start/guide-2", "/baan-pool-villa/start/guide-3",
+      ]);
+      expect(within(section).queryByText("Baan 4")).toBeNull();
+    } else {
+      expect(within(section).queryAllByRole("link")).toHaveLength(0);
+      expect(within(section).getByText("ยังไม่มีคู่มือ Baan Pool Villa ที่เผยแพร่")).not.toBeNull();
+    }
   });
 
   it("explains that guides are being prepared when there is no published document", async () => {

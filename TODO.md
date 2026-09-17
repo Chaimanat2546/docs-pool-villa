@@ -39,11 +39,16 @@
 
 ## Approved cross-module follow-up
 
+- [x] Homepage Baan Pool Villa starter: เปลี่ยนกล่อง Getting started ให้รวมเอกสารหมวด `baan-pool-villa` และหมวดย่อย สูงสุด 3 บท; Local tests 8/8, build และ lint ผ่าน (lint 3 warnings ในไฟล์อื่น); ยังไม่ deploy Staging/Production
+
+- [x] คู่มือ Baan Pool Villa: เอา “งานที่…” ออกจาก 40 หัวข้อใน 13 บทตาม feedback; คงขั้นตอนและภาพเดิม ตรวจ Staging rollback และ Production ครบแล้ว
+
 | งาน | สถานะ | รายละเอียด |
 |---|---|---|
 | Admin File Explorer | Complete — Guest/Admin/non-admin browser smoke ผ่าน | [TODO](docs/todo/admin-file-explorer.md) |
 | Admin-only session termination | Complete — local verification completed; no migration, RLS, or production action occurred | — |
 | คู่มือ WeBooks | Complete — เผยแพร่ 16 บทแบบ Desktop-only; แทนภาพ 9 บทและแก้คำอธิบายแล้ว ตรวจ URL/รูป/เนื้อหา 16/16 รูปเก่า 404 ครบ 9 และไม่มี media operation/cleanup ค้าง | [รายละเอียด](docs/manuals/webook/README.md) |
+| คู่มือ Baan Pool Villa | Complete — 16 ก.ย. ปรับทั้ง 14 บทเป็นคำอธิบายจับมือทำสำหรับแอดมินเริ่มต้นบน Desktop; คง 20 ภาพ/ลิงก์เดิม เพิ่มผลที่ควรเห็น การแก้ปัญหา และคำเตือนงานเสี่ยง; tests 10/10, Staging rollback/conflict และ Production 14 บทผ่าน WeBooks/รูปเดิมไม่เปลี่ยน | [รายละเอียด](docs/manuals/baan-pool-villa/README.md) |
 
 Post-closeout safety migration `20260813150200_docs_section_delete_race_guard.sql` ผ่าน Local gate, dry-run และ apply/verify บน Staging แล้วเมื่อ 13 สิงหาคม 2026; migration parity ตรง, DB lint ไม่มี schema error และ advisor พบ `doc_*` = 0. ไม่มี Production action
 
