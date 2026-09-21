@@ -29,8 +29,12 @@ function formatDate(value: string) {
 export default async function Home() {
   const index = await getPublicDocsIndex();
   const startPath = index.documents[0]?.path;
-  const gettingStartedDocuments =
-    index.sections[0]?.documents.slice(0, 3) ?? [];
+  const baanPoolVillaSection = index.sections.find(
+    (section) => section.slug === "baan-pool-villa",
+  );
+  const gettingStartedDocuments = baanPoolVillaSection
+    ? documentsForCard(baanPoolVillaSection).slice(0, 3)
+    : [];
   return (
     <>
       <PublicHeader />
@@ -117,7 +121,7 @@ export default async function Home() {
         <section className="border-t" id="getting-started">
           <div className="mx-auto max-w-6xl px-6 py-8">
             <h2 className="text-2xl font-bold tracking-tight">
-              Getting started
+              เริ่มใช้งาน Baan Pool Villa
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
               เริ่มต้นใช้งานระบบในไม่กี่ขั้นตอน
@@ -144,7 +148,7 @@ export default async function Home() {
                 ))
               ) : (
                 <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">
-                  ยังไม่มีเอกสารในหมวดเริ่มต้น
+                  ยังไม่มีคู่มือ Baan Pool Villa ที่เผยแพร่
                 </p>
               )}
             </div>

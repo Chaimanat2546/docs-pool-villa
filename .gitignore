@@ -47,3 +47,7 @@ cloudflare-env.d.ts
 .superpowers/
 workers/docs-media/.dev.vars*
 workers/docs-media/src/env.d.ts
+
+# Published manual images are stored in Cloudflare R2; keep source WebP out of Git.
+docs/manuals/**/images/
+docs/manuals/**/published-preview.webp
